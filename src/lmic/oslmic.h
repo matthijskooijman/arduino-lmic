@@ -17,7 +17,7 @@
 // These settings can be adapted to the underlying system.
 // You should not, however, change the lmic.[hc]
 
-
+#include "config.h"
 
 //================================================================================
 //================================================================================
