@@ -18,19 +18,20 @@
 // You should not, however, change the lmic.[hc]
 
 #include "config.h"
+#include <stdint.h>
 
 //================================================================================
 //================================================================================
 // Target platform as C library
-typedef unsigned char      bit_t;
-typedef unsigned char      u1_t;
-typedef   signed char      s1_t;
-typedef unsigned short     u2_t;
-typedef          short     s2_t;
-typedef unsigned int       u4_t;
-typedef          int       s4_t;
-typedef unsigned long long u8_t;
-typedef          long long s8_t;
+typedef uint8_t            bit_t;
+typedef uint8_t            u1_t;
+typedef int8_t             s1_t;
+typedef uint16_t           u2_t;
+typedef int16_t            s2_t;
+typedef uint32_t           u4_t;
+typedef int32_t            s4_t;
+typedef uint64_t           u8_t;
+typedef int64_t            s8_t;
 typedef unsigned int       uint;
 typedef const char* str_t;
 
