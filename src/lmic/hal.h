@@ -78,6 +78,6 @@ u1_t hal_checkTimer (u4_t targettime);
  *   - called by assertions
  *   - action could be HALT or reboot
  */
-void hal_failed (void);
+void hal_failed (const char *file, u2_t line);
 
 #endif // _hal_hpp_
