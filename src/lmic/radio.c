@@ -780,7 +780,7 @@ void radio_irq_handler (u1_t dio) {
             // indicate timeout
             LMIC.dataLen = 0;
         } else {
-            while(1);
+            ASSERT(0);
         }
     }
     // go from stanby to sleep
