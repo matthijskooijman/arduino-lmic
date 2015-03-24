@@ -81,7 +81,7 @@ enum { EU868_FREQ_MIN = 863000000,
 
 enum { CHNL_PING         = 5 };
 enum { FREQ_PING         = EU868_F6 };  // default ping freq
-enum { DR_PING           = SF9 };       // default ping DR
+enum { DR_PING           = DR_SF9 };       // default ping DR
 enum { CHNL_DNW2         = 5 };
 enum { FREQ_DNW2         = EU868_F6 };
 enum { DR_DNW2           = DR_SF12 };
