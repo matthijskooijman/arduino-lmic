@@ -547,8 +547,6 @@ static void rxlora (u1_t rxmode) {
     writeReg(RegLna, LNA_RX_GAIN);
     // set max payload size
     writeReg(LORARegPayloadMaxLength, 64);
-    // use inverted I/Q signal (prevent mote-to-mote communication)
-    writeReg(LORARegInvertIQ, readReg(LORARegInvertIQ)|(1<<6));
     // set symbol timeout (for single rx)
     writeReg(LORARegSymbTimeoutLsb, LMIC.rxsyms);
     // set sync word
