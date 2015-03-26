@@ -85,21 +85,25 @@ void os_setTimedCallback (osjob_t* job, ostime_t time, osjobcb_t cb) {
 // execute jobs from timer and from run queue
 void os_runloop () {
     while(1) {
-        osjob_t* j = NULL;
-        hal_disableIRQs();
-        // check for runnable jobs
-        if(OS.runnablejobs) {
-            j = OS.runnablejobs;
-            OS.runnablejobs = j->next;
-        } else if(OS.scheduledjobs && hal_checkTimer(OS.scheduledjobs->deadline)) { // check for expired timed jobs
-            j = OS.scheduledjobs;
-            OS.scheduledjobs = j->next;
-        } else { // nothing pending
-            hal_sleep(); // wake by irq (timer already restarted)
-        }
-        hal_enableIRQs();
-        if(j) { // run job callback
-            j->func(j);
-        }
+        os_runloop_once();
+    }
+}
+
+void os_runloop_once() {
+    osjob_t* j = NULL;
+    hal_disableIRQs();
+    // check for runnable jobs
+    if(OS.runnablejobs) {
+        j = OS.runnablejobs;
+        OS.runnablejobs = j->next;
+    } else if(OS.scheduledjobs && hal_checkTimer(OS.scheduledjobs->deadline)) { // check for expired timed jobs
+        j = OS.scheduledjobs;
+        OS.scheduledjobs = j->next;
+    } else { // nothing pending
+        hal_sleep(); // wake by irq (timer already restarted)
+    }
+    hal_enableIRQs();
+    if(j) { // run job callback
+        j->func(j);
     }
 }

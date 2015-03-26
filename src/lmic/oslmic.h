@@ -82,6 +82,7 @@ void radio_init (void);
 void radio_irq_handler (u1_t dio);
 void os_init (void);
 void os_runloop (void);
+void os_runloop_once (void);
 
 //================================================================================
 
