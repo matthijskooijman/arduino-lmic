@@ -68,12 +68,19 @@ void hal_pin_nss (u1_t val) {
     else
         SPI.endTransaction();
 
+    //Serial.println(val?">>":"<<");
     digitalWrite(pins.nss, val);
 }
 
 // perform SPI transaction with radio
 u1_t hal_spi (u1_t out) {
     u1_t res = SPI.transfer(out);
+/*
+    Serial.print(">");
+    Serial.print(out, HEX);
+    Serial.print("<");
+    Serial.println(res, HEX);
+    */
     return res;
 }
 
@@ -160,3 +167,6 @@ void hal_failed (const char *file, u2_t line) {
     hal_disableIRQs();
     while(1);
 }
+
+void debug(u4_t n) {Serial.println(n); Serial.flush();}
+void debug_str(const char *s) {Serial.println(s); Serial.flush();}

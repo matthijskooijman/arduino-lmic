@@ -12,6 +12,9 @@
 #ifndef _hal_hpp_
 #define _hal_hpp_
 
+void debug(u4_t n);
+void debug_str(const char *);
+
 /*
  * initialize hardware (IO, SPI, TIMER, IRQ).
  */
