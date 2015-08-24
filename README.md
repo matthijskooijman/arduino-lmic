@@ -35,6 +35,10 @@ evaluation board, or moving R2 to R1). I'm not sure why you wouldn't
 always want this connection to be made, but apparently there is a reason
 to control the switch from the Arduino instead of from the SX1272.
 
+Wiki
+-----------
+Please take a look at the Wiki, to be sure howto connect your SX127X to your arduino.
+
 License
 -------
 The source files in this repository are made available under the Eclipse
