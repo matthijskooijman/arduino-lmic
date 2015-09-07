@@ -12,6 +12,9 @@
 // bitlash function added. When not transmitting, rx is enabled.
 // Compiling this sketch requires the Pinoccio core and the full set of
 // Pinoccio libraries.
+//
+// Don't bother trying this sketch if you are not using the Pinoccio
+// Scout board!
 
 #include <SPI.h>
 #include <Wire.h>

@@ -6,6 +6,14 @@
  * to do whatever they want with them without any restriction,
  * including, but not limited to, copying, modification and redistribution.
  * NO WARRANTY OF ANY KIND IS PROVIDED.
+ *
+ * This example transmits data on hardcoded channel and receives data
+ * when not transmitting. Running this sketch on two nodes should allow
+ * them to communicate.
+ *
+ * WARNING: This sketch almost certainly violates duty cycle limits,
+ * since it bypasses the LoRaWAN stuff and directly talks to the
+ * transceiver.
  *******************************************************************************/
 
 #include <lmic.h>
