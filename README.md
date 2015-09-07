@@ -6,7 +6,7 @@ LoRa tranceiver with an Arduino.
 
 This repository is just a proof-of-concept to send data between two
 SX1272 modules. It is not intended as a complete library and was not
-tested in a full LoraWAN setup with a gateay (though feel free to fork
+tested in a full LoraWAN setup with a gateway (though feel free to fork
 it and turn it into one if you want).
 
 If you want to actually use this code, note that it contains version 1.4
