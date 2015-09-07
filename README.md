@@ -13,7 +13,7 @@ If you want to actually use this code, note that it contains version 1.4
 of the library, but there are newer versions available already. Also,
 the LMIC library is modified to allow device-to-device communication,
 at the same time breaking device-to-gateway communication. If you need
-that, make sure to revert commit 7561aa74c (Do not invert I/Q signals to
+that, make sure to revert [commit 7561aa74c](https://github.com/matthijskooijman/arduino-lmic/commit/7561aa74c6f3c54b05968df17ee5f3cd3dd71bad) (Do not invert I/Q signals to
 allow communication between nodes).
 
 At this time, this code needs an hourly build of the Arduino IDE (or
