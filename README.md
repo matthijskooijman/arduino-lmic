@@ -16,6 +16,9 @@ at the same time breaking device-to-gateway communication. If you need
 that, make sure to revert commit 7561aa74c (Do not invert I/Q signals to
 allow communication between nodes).
 
+At this time, this code needs an hourly build of the Arduino IDE (or
+1.6.6 once it is released), since that enables C99 code to be compiled.
+
 Connections
 -----------
 Note that the SX1272 module runs at 3.3V and likely does not like 5V on
