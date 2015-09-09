@@ -11,10 +11,13 @@ it and turn it into one if you want).
 
 If you want to actually use this code, note that it contains version 1.4
 of the library, but there are newer versions available already. Also,
-the LMIC library is modified to allow device-to-device communication,
-at the same time breaking device-to-gateway communication. If you need
-that, make sure to revert commit 7561aa74c (Do not invert I/Q signals to
-allow communication between nodes).
+the LMIC library needs to be modified to not invert IQ signals, in order
+to allow device-to-device communication as used in the raw.ino example,
+at the same time breaking device-to-gateway communication.
+
+If you need device-to-device communication, make sure you reapply commit
+7561aa74c (Do not invert I/Q signals to allow communication between
+nodes), which was reverted in master.
 
 At this time, this code needs an hourly build of the Arduino IDE (or
 1.6.6 once it is released), since that enables C99 code to be compiled.
