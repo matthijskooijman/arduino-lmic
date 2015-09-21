@@ -1,3 +1,19 @@
+ *******************************************************************************
+ * Copyright (c) 2015 Matthijs Kooijman and Thomas Telkamp
+ *
+ * Permission is hereby granted, free of charge, to anyone
+ * obtaining a copy of this document and accompanying files,
+ * to do whatever they want with them without any restriction,
+ * including, but not limited to, copying, modification and redistribution.
+ * NO WARRANTY OF ANY KIND IS PROVIDED.
+ *
+ *
+ * WARNING: This sketch almost certainly violates duty cycle limits,
+ * since it bypasses the LoRaWAN stuff and directly talks to the
+ * transceiver.
+ *******************************************************************************
+
+
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
@@ -50,15 +66,14 @@ void onEvent (ev_t ev) {} ;
 void do_send(){
     LMIC_reset();
     
-    LMIC_setSession (0x3, 0x0000EF01, (uint8_t*)DEVKEY, (uint8_t*)ARTKEY);
+    LMIC_setSession (0x0, 0x0000EF01, (uint8_t*)DEVKEY, (uint8_t*)ARTKEY);
     
     LMIC_setDrTxpow(DR_SF12,0);
     LMIC_setAdrMode(0);
     
     mycount++;
     LMIC.seqnoUp=mycount;
-    //LMIC.txpow = 3;
-    //LMIC.freq = EU868_F4;
+    //LMIC.freq = EU868_F2;
     Serial.println(millis() / 1000);
     Serial.print("Send\n");
     LMIC_setTxData2(1, mydata, sizeof(mydata), 0);
