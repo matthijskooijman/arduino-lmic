@@ -7,8 +7,8 @@
 
 #define CFG_eu868 1
 //#define CFG_us915 1
-#define CFG_sx1272_radio 1
-//#define CFG_sx1276_radio 1
+//#define CFG_sx1272_radio 1
+#define CFG_sx1276_radio 1
 
 // 16 μs per tick
 #define US_PER_OSTICK 16
