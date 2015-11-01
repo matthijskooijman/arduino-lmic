@@ -164,13 +164,13 @@ u1_t hal_checkTimer (u4_t time) {
 static uint8_t irqlevel = 0;
 
 void hal_disableIRQs () {
-    cli();
+    noInterrupts();
     irqlevel++;
 }
 
 void hal_enableIRQs () {
     if(--irqlevel == 0) {
-        sei();
+        interrupts();
 
         // Instead of using proper interrupts (which are a bit tricky
         // and/or not available on all pins on AVR), just poll the pin
