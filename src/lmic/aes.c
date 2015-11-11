@@ -194,10 +194,10 @@ static const u4_t AES_E4[256] = {
                                    r0 ^= AES_E1[  (i>>24)]
 
 #define AES_expr(a,r0,r1,r2,r3,i)  a = ki[i];                    \
-                                   a ^= (AES_S[   r0>>24 ]<<24); \
-                                   a ^= (AES_S[u1(r1>>16)]<<16); \
-                                   a ^= (AES_S[u1(r2>> 8)]<< 8); \
-                                   a ^=  AES_S[u1(r3)    ]
+                                   a ^= ((u4_t)AES_S[   r0>>24 ]<<24); \
+                                   a ^= ((u4_t)AES_S[u1(r1>>16)]<<16); \
+                                   a ^= ((u4_t)AES_S[u1(r2>> 8)]<< 8); \
+                                   a ^=  (u4_t)AES_S[u1(r3)    ]
 
 // global area for passing parameters (aux, key) and for storing round keys
 u4_t AESAUX[16/sizeof(u4_t)];
@@ -217,10 +217,10 @@ static void aesroundkeys () {
     for( ; i<44; i++ ) {
         if( i%4==0 ) {
             // b = SubWord(RotWord(b)) xor Rcon[i/4]
-            b = (AES_S[u1(b >> 16)] << 24) ^
-                (AES_S[u1(b >>  8)] << 16) ^
-                (AES_S[u1(b)      ] <<  8) ^
-                (AES_S[   b >> 24 ]      ) ^
+            b = ((u4_t)AES_S[u1(b >> 16)] << 24) ^
+                ((u4_t)AES_S[u1(b >>  8)] << 16) ^
+                ((u4_t)AES_S[u1(b)      ] <<  8) ^
+                ((u4_t)AES_S[   b >> 24 ]      ) ^
                  AES_RCON[(i-4)/4];
         }
         AESKEY[i] = b ^= AESKEY[i-4];
