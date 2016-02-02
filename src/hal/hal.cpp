@@ -12,6 +12,7 @@
 #include <SPI.h>
 #include "../lmic.h"
 #include "hal.h"
+#include <stdio.h>
 
 // -----------------------------------------------------------------------------
 // I/O
@@ -149,6 +150,26 @@ void hal_sleep () {
 
 // -----------------------------------------------------------------------------
 
+#if defined(LMIC_PRINTF_TO)
+static int uart_putchar (char c, FILE *)
+{
+    LMIC_PRINTF_TO.write(c) ;
+    return 0 ;
+}
+
+void hal_printf_init() {
+    // create a FILE structure to reference our UART output function
+    static FILE uartout;
+    memset(&uartout, 0, sizeof(uartout));
+
+    // fill in the UART file descriptor with pointer to writer.
+    fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);
+
+    // The uart is the standard output device STDOUT.
+    stdout = &uartout ;
+}
+#endif // defined(LMIC_PRINTF_TO)
+
 void hal_init () {
     // configure radio I/O and interrupt handler
     hal_io_init();
@@ -156,17 +177,17 @@ void hal_init () {
     hal_spi_init();
     // configure timer and interrupt handler
     hal_time_init();
+#if defined(LMIC_PRINTF_TO)
+    // printf support
+    hal_printf_init();
+#endif
 }
 
 void hal_failed (const char *file, u2_t line) {
-    Serial.println("FAILURE");
-    Serial.print(file);
-    Serial.print(':');
-    Serial.println(line);
-    Serial.flush();
+#if defined(LMIC_PRINTF_TO)
+    printf("FAILURE %s:%u\n", file, (int)line);
+    LMIC_PRINTF_TO.flush();
+#endif
     hal_disableIRQs();
     while(1);
 }
-
-void debug(u4_t n) {Serial.println(n); Serial.flush();}
-void debug_str(const char *s) {Serial.println(s); Serial.flush();}

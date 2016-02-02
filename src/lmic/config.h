@@ -14,4 +14,10 @@
 #define US_PER_OSTICK 16
 #define OSTICKS_PER_SEC (1000000 / US_PER_OSTICK)
 
+// hal.cpp sets up stdio so that a plain "printf" call prints to the
+// given serial port (or any other Print object). Any assertion errors
+// are also printed to the same place. Comment this define to prevent
+// this printf setup, as well as making failed assertions silent.
+#define LMIC_PRINTF_TO Serial
+
 #endif // _lmic_config_h_
