@@ -562,7 +562,7 @@ static void initDefaultChannels (bit_t join) {
     LMIC.bands[BAND_CENTI].lastchnl = os_getRndU1() % MAX_CHANNELS;
     LMIC.bands[BAND_DECI ].txcap    = 10;    // 10%
     LMIC.bands[BAND_DECI ].txpow    = 27;
-    LMIC.bands[BAND_CENTI].lastchnl = os_getRndU1() % MAX_CHANNELS;
+    LMIC.bands[BAND_DECI ].lastchnl = os_getRndU1() % MAX_CHANNELS;
     LMIC.bands[BAND_MILLI].avail =
     LMIC.bands[BAND_CENTI].avail =
     LMIC.bands[BAND_DECI ].avail = os_getTime();
