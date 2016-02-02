@@ -315,11 +315,6 @@ ostime_t calcAirTime (rps_t rps, u1_t plen) {
     return (((ostime_t)tmp << sfx) * OSTICKS_PER_SEC + div/2) / div;
 }
 
-extern inline s1_t  rssi2s1 (int v);
-extern inline int   s12rssi (s1_t v);
-extern inline float  s12snr (s1_t v);
-extern inline s1_t   snr2s1 (double v);
-
 extern inline rps_t updr2rps (dr_t dr);
 extern inline rps_t dndr2rps (dr_t dr);
 extern inline int isFasterDR (dr_t dr1, dr_t dr2);
@@ -612,7 +607,7 @@ void LMIC_disableChannel (u1_t channel) {
 
 static u4_t convFreq (xref2u1_t ptr) {
     u4_t freq = (os_rlsbf4(ptr-1) >> 8) * 100;
-    if( freq >= EU868_FREQ_MIN && freq <= EU868_FREQ_MAX )
+    if( freq < EU868_FREQ_MIN || freq > EU868_FREQ_MAX )
         freq = 0;
     return freq;
 }
@@ -741,7 +736,7 @@ static void initDefaultChannels (void) {
 
 static u4_t convFreq (xref2u1_t ptr) {
     u4_t freq = (os_rlsbf4(ptr-1) >> 8) * 100;
-    if( freq >= US915_FREQ_MIN && freq <= US915_FREQ_MAX )
+    if( freq < US915_FREQ_MIN || freq > US915_FREQ_MAX )
         freq = 0;
     return freq;
 }
@@ -1375,14 +1370,15 @@ static bit_t processJoinAccept (void) {
     initDefaultChannels(0);
 #endif
     if( dlen > LEN_JA ) {
-        dlen = OFF_CFLIST;
-#if defined(CFG_eu868)
-        u1_t chidx=3;
-#elif defined(CFG_us915)
-        u1_t chidx=72;
+#if defined(CFG_us915)
+        goto badframe;
 #endif
-        for( ; chidx<8; chidx++, dlen+=3 )
-            LMIC_setupChannel(chidx, os_rlsbf4(&LMIC.frame[dlen-1]) >> 8, 0, -1);
+        dlen = OFF_CFLIST;
+        for( u1_t chidx=3; chidx<8; chidx++, dlen+=3 ) {
+            u4_t freq = convFreq(&LMIC.frame[dlen]);
+            if( freq )
+                LMIC_setupChannel(chidx, freq, 0, -1);
+        }
     }
 
     // already incremented when JOIN REQ got sent off
@@ -1543,7 +1539,7 @@ static void buildDataFrame (void) {
     }
     if( LMIC.snchAns ) {
         LMIC.frame[end+0] = MCMD_SNCH_ANS;
-        LMIC.frame[end+1] = LMIC.snchAns;
+        LMIC.frame[end+1] = LMIC.snchAns & ~MCMD_SNCH_ANS_RFU;
         end += 2;
         LMIC.snchAns = 0;
     }
@@ -1929,6 +1925,7 @@ static void engineUpdate (void) {
         // Earliest possible time vs overhead to setup radio
         if( txbeg - (now + TX_RAMPUP) < 0 ) {
             // We could send right now!
+        txbeg = now;
             dr_t txdr = (dr_t)LMIC.datarate;
             if( jacc ) {
                 u1_t ftype;
@@ -2155,6 +2152,12 @@ void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t
     LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_REJOIN|OP_TXRXPEND|OP_PINGINI);
     LMIC.opmode |= OP_NEXTCHNL;
     stateJustJoined();
+    DO_DEVDB(LMIC.netid,   netid);
+    DO_DEVDB(LMIC.devaddr, devaddr);
+    DO_DEVDB(LMIC.nwkKey,  nwkkey);
+    DO_DEVDB(LMIC.artKey,  artkey);
+    DO_DEVDB(LMIC.seqnoUp, seqnoUp);
+    DO_DEVDB(LMIC.seqnoDn, seqnoDn);
 }
 
 // Enable/disable link check validation.
