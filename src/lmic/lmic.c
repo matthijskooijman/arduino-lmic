@@ -640,7 +640,7 @@ static void updateTx (ostime_t txbeg) {
 static ostime_t nextTx (ostime_t now) {
     u1_t bmap=0xF;
     do {
-        ostime_t mintime = now + /*10h*/36000*OSTICKS_PER_SEC;
+        ostime_t mintime = now + /*8h*/sec2osticks(28800);
         u1_t band=0;
         for( u1_t bi=0; bi<4; bi++ ) {
             if( (bmap & (1<<bi)) && mintime - LMIC.bands[bi].avail > 0 )
