@@ -211,10 +211,10 @@ static void aes_sessKeys (u2_t devnonce, xref2cu1_t artnonce, xref2u1_t nwkkey, 
 
 #if defined(CFG_eu868) // ========================================
 
-#define maxFrameLen(dr) ((dr)<=DR_SF9 ? maxFrameLens[(dr)] : 0xFF)
-const u1_t maxFrameLens [] = { 64,64,64,123 };
+#define maxFrameLen(dr) ((dr)<=DR_SF9 ? TABLE_GET_U1(maxFrameLens, (dr)) : 0xFF)
+CONST_TABLE(u1_t, maxFrameLens) [] = { 64,64,64,123 };
 
-const u1_t _DR2RPS_CRC[] = {
+CONST_TABLE(u1_t, _DR2RPS_CRC)[] = {
     ILLEGAL_RPS,
     (u1_t)MAKERPS(SF12, BW125, CR_4_5, 0, 0),
     (u1_t)MAKERPS(SF11, BW125, CR_4_5, 0, 0),
@@ -227,17 +227,17 @@ const u1_t _DR2RPS_CRC[] = {
     ILLEGAL_RPS
 };
 
-static const s1_t TXPOWLEVELS[] = {
+static CONST_TABLE(s1_t, TXPOWLEVELS)[] = {
     20, 14, 11, 8, 5, 2, 0,0, 0,0,0,0, 0,0,0,0
 };
-#define pow2dBm(mcmd_ladr_p1) (TXPOWLEVELS[(mcmd_ladr_p1&MCMD_LADR_POW_MASK)>>MCMD_LADR_POW_SHIFT])
+#define pow2dBm(mcmd_ladr_p1) (TABLE_GET_S1(TXPOWLEVELS, (mcmd_ladr_p1&MCMD_LADR_POW_MASK)>>MCMD_LADR_POW_SHIFT))
 
 #elif defined(CFG_us915) // ========================================
 
-#define maxFrameLen(dr) ((dr)<=DR_SF11CR ? maxFrameLens[(dr)] : 0xFF)
-const u1_t maxFrameLens [] = { 24,66,142,255,255,255,255,255,  66,142 };
+#define maxFrameLen(dr) ((dr)<=DR_SF11CR ? TABLE_GET_U1(maxFrameLens, (dr)) : 0xFF)
+CONST_TABLE(u1_t, maxFrameLens) [] = { 24,66,142,255,255,255,255,255,  66,142 };
 
-const u1_t _DR2RPS_CRC[] = {
+CONST_TABLE(u1_t, _DR2RPS_CRC)[] = {
     ILLEGAL_RPS,
     MAKERPS(SF10, BW125, CR_4_5, 0, 0),
     MAKERPS(SF9 , BW125, CR_4_5, 0, 0),
@@ -260,7 +260,7 @@ const u1_t _DR2RPS_CRC[] = {
 
 #endif // ================================================
 
-static const u1_t SENSITIVITY[7][3] = {
+static CONST_TABLE(u1_t, SENSITIVITY)[7][3] = {
     // ------------bw----------
     // 125kHz    250kHz    500kHz
     { 141-109,  141-109, 141-109 },  // FSK
@@ -273,7 +273,7 @@ static const u1_t SENSITIVITY[7][3] = {
 };
 
 int getSensitivity (rps_t rps) {
-    return -141 + SENSITIVITY[getSf(rps)][getBw(rps)];
+    return -141 + TABLE_GET_U1_TWODIM(SENSITIVITY, getSf(rps), getBw(rps));
 }
 
 ostime_t calcAirTime (rps_t rps, u1_t plen) {
@@ -344,7 +344,7 @@ extern inline int   sameSfBw (rps_t r1, rps_t r2);
 // Adjust DR for TX retries
 //  - indexed by retry count
 //  - return steps to lower DR
-static const u1_t DRADJUST[2+TXCONF_ATTEMPTS] = {
+static CONST_TABLE(u1_t, DRADJUST)[2+TXCONF_ATTEMPTS] = {
     // normal frames - 1st try / no retry
     0,
     // confirmed frames
@@ -363,9 +363,9 @@ static const u1_t DRADJUST[2+TXCONF_ATTEMPTS] = {
 //
 // Times for half symbol per DR
 // Per DR table to minimize rounding errors
-static const ostime_t DR2HSYM_osticks[] = {
+static CONST_TABLE(ostime_t, DR2HSYM_osticks)[] = {
 #if defined(CFG_eu868)
-#define dr2hsym(dr) (DR2HSYM_osticks[(dr)])
+#define dr2hsym(dr) (TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)))
     us2osticksRound(128<<7),  // DR_SF12
     us2osticksRound(128<<6),  // DR_SF11
     us2osticksRound(128<<5),  // DR_SF10
@@ -375,7 +375,7 @@ static const ostime_t DR2HSYM_osticks[] = {
     us2osticksRound(128<<1),  // DR_SF7B
     us2osticksRound(80)       // FSK -- not used (time for 1/2 byte)
 #elif defined(CFG_us915)
-#define dr2hsym(dr) (DR2HSYM_osticks[(dr)&7])  // map DR_SFnCR -> 0-6
+#define dr2hsym(dr) (TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)&7))  // map DR_SFnCR -> 0-6
     us2osticksRound(128<<5),  // DR_SF10   DR_SF12CR
     us2osticksRound(128<<4),  // DR_SF9    DR_SF11CR
     us2osticksRound(128<<3),  // DR_SF8    DR_SF10CR
@@ -527,7 +527,7 @@ void LMIC_setPingable (u1_t intvExp) {
 // BEG: EU868 related stuff
 //
 enum { NUM_DEFAULT_CHANNELS=6 };
-static const u4_t iniChannelFreq[12] = {
+static CONST_TABLE(u4_t, iniChannelFreq)[12] = {
     // Join frequencies and duty cycle limit (0.1%)
     EU868_F1|BAND_MILLI, EU868_J4|BAND_MILLI,
     EU868_F2|BAND_MILLI, EU868_J5|BAND_MILLI,
@@ -545,7 +545,7 @@ static void initDefaultChannels (bit_t join) {
     LMIC.channelMap = 0x3F;
     u1_t su = join ? 0 : 6;
     for( u1_t fu=0; fu<6; fu++,su++ ) {
-        LMIC.channelFreq[fu]  = iniChannelFreq[su];
+        LMIC.channelFreq[fu]  = TABLE_GET_U4(iniChannelFreq, su);
         LMIC.channelDrMap[fu] = DR_RANGE_MAP(DR_SF12,DR_SF7);
     }
     if( !join ) {
@@ -1564,7 +1564,7 @@ static void buildDataFrame (void) {
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = LMIC.seqnoUp-1,
                            e_.info2  = ((LMIC.txCnt+1) |
-                                        (DRADJUST[LMIC.txCnt+1] << 8) |
+                                        (TABLE_GET_U1(DRADJUST, LMIC.txCnt+1) << 8) |
                                         ((LMIC.datarate|DR_PAGE)<<16))));
     }
     os_wlsbf2(LMIC.frame+OFF_DAT_SEQNO, LMIC.seqnoUp-1);
@@ -1747,7 +1747,7 @@ static bit_t processDnData (void) {
         if( LMIC.txCnt != 0 ) {
             if( LMIC.txCnt < TXCONF_ATTEMPTS ) {
                 LMIC.txCnt += 1;
-                setDrTxpow(DRCHG_NOACK, lowerDR(LMIC.datarate, DRADJUST[LMIC.txCnt]), KEEP_TXPOW);
+                setDrTxpow(DRCHG_NOACK, lowerDR(LMIC.datarate, TABLE_GET_U1(DRADJUST, LMIC.txCnt)), KEEP_TXPOW);
                 // Schedule another retransmission
                 txDelay(LMIC.rxtime, RETRY_PERIOD_secs);
                 LMIC.opmode &= ~OP_TXRXPEND;

@@ -13,12 +13,12 @@
 
 #define AES_MICSUB 0x30 // internal use only
 
-static const u4_t AES_RCON[10] = {
+static CONST_TABLE(u4_t, AES_RCON)[10] = {
     0x01000000, 0x02000000, 0x04000000, 0x08000000, 0x10000000,
     0x20000000, 0x40000000, 0x80000000, 0x1B000000, 0x36000000
 };
 
-static const u1_t AES_S[256] = {
+static CONST_TABLE(u1_t, AES_S)[256] = {
   0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
   0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
   0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15,
@@ -37,7 +37,7 @@ static const u1_t AES_S[256] = {
   0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16,
 };
 
-static const u4_t AES_E1[256] = {
+static CONST_TABLE(u4_t, AES_E1)[256] = {
   0xC66363A5, 0xF87C7C84, 0xEE777799, 0xF67B7B8D, 0xFFF2F20D, 0xD66B6BBD, 0xDE6F6FB1, 0x91C5C554,
   0x60303050, 0x02010103, 0xCE6767A9, 0x562B2B7D, 0xE7FEFE19, 0xB5D7D762, 0x4DABABE6, 0xEC76769A,
   0x8FCACA45, 0x1F82829D, 0x89C9C940, 0xFA7D7D87, 0xEFFAFA15, 0xB25959EB, 0x8E4747C9, 0xFBF0F00B,
@@ -72,7 +72,7 @@ static const u4_t AES_E1[256] = {
   0x824141C3, 0x299999B0, 0x5A2D2D77, 0x1E0F0F11, 0x7BB0B0CB, 0xA85454FC, 0x6DBBBBD6, 0x2C16163A,
 };
 
-static const u4_t AES_E2[256] = {
+static CONST_TABLE(u4_t, AES_E2)[256] = {
   0xA5C66363, 0x84F87C7C, 0x99EE7777, 0x8DF67B7B, 0x0DFFF2F2, 0xBDD66B6B, 0xB1DE6F6F, 0x5491C5C5,
   0x50603030, 0x03020101, 0xA9CE6767, 0x7D562B2B, 0x19E7FEFE, 0x62B5D7D7, 0xE64DABAB, 0x9AEC7676,
   0x458FCACA, 0x9D1F8282, 0x4089C9C9, 0x87FA7D7D, 0x15EFFAFA, 0xEBB25959, 0xC98E4747, 0x0BFBF0F0,
@@ -107,7 +107,7 @@ static const u4_t AES_E2[256] = {
   0xC3824141, 0xB0299999, 0x775A2D2D, 0x111E0F0F, 0xCB7BB0B0, 0xFCA85454, 0xD66DBBBB, 0x3A2C1616,
 };
 
-static const u4_t AES_E3[256] = {
+static CONST_TABLE(u4_t, AES_E3)[256] = {
   0x63A5C663, 0x7C84F87C, 0x7799EE77, 0x7B8DF67B, 0xF20DFFF2, 0x6BBDD66B, 0x6FB1DE6F, 0xC55491C5,
   0x30506030, 0x01030201, 0x67A9CE67, 0x2B7D562B, 0xFE19E7FE, 0xD762B5D7, 0xABE64DAB, 0x769AEC76,
   0xCA458FCA, 0x829D1F82, 0xC94089C9, 0x7D87FA7D, 0xFA15EFFA, 0x59EBB259, 0x47C98E47, 0xF00BFBF0,
@@ -142,7 +142,7 @@ static const u4_t AES_E3[256] = {
   0x41C38241, 0x99B02999, 0x2D775A2D, 0x0F111E0F, 0xB0CB7BB0, 0x54FCA854, 0xBBD66DBB, 0x163A2C16,
 };
 
-static const u4_t AES_E4[256] = {
+static CONST_TABLE(u4_t, AES_E4)[256] = {
   0x6363A5C6, 0x7C7C84F8, 0x777799EE, 0x7B7B8DF6, 0xF2F20DFF, 0x6B6BBDD6, 0x6F6FB1DE, 0xC5C55491,
   0x30305060, 0x01010302, 0x6767A9CE, 0x2B2B7D56, 0xFEFE19E7, 0xD7D762B5, 0xABABE64D, 0x76769AEC,
   0xCACA458F, 0x82829D1F, 0xC9C94089, 0x7D7D87FA, 0xFAFA15EF, 0x5959EBB2, 0x4747C98E, 0xF0F00BFB,
@@ -188,16 +188,16 @@ static const u4_t AES_E4[256] = {
                                    r3 = ki[i+3]; \
                                    r0 = ki[i]
 
-#define AES_expr4(r1,r2,r3,r0,i)   r1 ^= AES_E4[u1(i)];     \
-                                   r2 ^= AES_E3[u1(i>>8)];  \
-                                   r3 ^= AES_E2[u1(i>>16)]; \
-                                   r0 ^= AES_E1[  (i>>24)]
+#define AES_expr4(r1,r2,r3,r0,i)   r1 ^= TABLE_GET_U4(AES_E4, u1(i));     \
+                                   r2 ^= TABLE_GET_U4(AES_E3, u1(i>>8));  \
+                                   r3 ^= TABLE_GET_U4(AES_E2, u1(i>>16)); \
+                                   r0 ^= TABLE_GET_U4(AES_E1,   (i>>24))
 
 #define AES_expr(a,r0,r1,r2,r3,i)  a = ki[i];                    \
-                                   a ^= ((u4_t)AES_S[   r0>>24 ]<<24); \
-                                   a ^= ((u4_t)AES_S[u1(r1>>16)]<<16); \
-                                   a ^= ((u4_t)AES_S[u1(r2>> 8)]<< 8); \
-                                   a ^=  (u4_t)AES_S[u1(r3)    ]
+                                   a ^= ((u4_t)TABLE_GET_U1(AES_S,    r0>>24 )<<24); \
+                                   a ^= ((u4_t)TABLE_GET_U1(AES_S, u1(r1>>16))<<16); \
+                                   a ^= ((u4_t)TABLE_GET_U1(AES_S, u1(r2>> 8))<< 8); \
+                                   a ^=  (u4_t)TABLE_GET_U1(AES_S, u1(r3)    )
 
 // global area for passing parameters (aux, key) and for storing round keys
 u4_t AESAUX[16/sizeof(u4_t)];
@@ -217,11 +217,11 @@ static void aesroundkeys () {
     for( ; i<44; i++ ) {
         if( i%4==0 ) {
             // b = SubWord(RotWord(b)) xor Rcon[i/4]
-            b = ((u4_t)AES_S[u1(b >> 16)] << 24) ^
-                ((u4_t)AES_S[u1(b >>  8)] << 16) ^
-                ((u4_t)AES_S[u1(b)      ] <<  8) ^
-                ((u4_t)AES_S[   b >> 24 ]      ) ^
-                 AES_RCON[(i-4)/4];
+            b = ((u4_t)TABLE_GET_U1(AES_S, u1(b >> 16)) << 24) ^
+                ((u4_t)TABLE_GET_U1(AES_S, u1(b >>  8)) << 16) ^
+                ((u4_t)TABLE_GET_U1(AES_S, u1(b)      ) <<  8) ^
+                ((u4_t)TABLE_GET_U1(AES_S,    b >> 24 )      ) ^
+                 TABLE_GET_U4(AES_RCON, (i-4)/4);
         }
         AESKEY[i] = b ^= AESKEY[i-4];
     }
