@@ -20,6 +20,10 @@
 #include "config.h"
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 //================================================================================
 //================================================================================
 // Target platform as C library
@@ -213,6 +217,8 @@ extern xref2u1_t AESaux;
 u4_t os_aes (u1_t mode, xref2u1_t buf, u2_t len);
 #endif
 
-
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // _oslmic_h_

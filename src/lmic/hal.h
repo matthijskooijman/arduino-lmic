@@ -12,6 +12,10 @@
 #ifndef _hal_hpp_
 #define _hal_hpp_
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 /*
  * initialize hardware (IO, SPI, TIMER, IRQ).
  */
@@ -79,5 +83,9 @@ u1_t hal_checkTimer (u4_t targettime);
  *   - action could be HALT or reboot
  */
 void hal_failed (const char *file, u2_t line);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // _hal_hpp_
