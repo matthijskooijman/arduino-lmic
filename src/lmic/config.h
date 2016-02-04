@@ -11,7 +11,9 @@
 //#define CFG_sx1276_radio 1
 
 // 16 μs per tick
-#define US_PER_OSTICK 16
+// LMIC requires ticks to be 15.5μs - 100 μs long
+#define US_PER_OSTICK_EXPONENT 4
+#define US_PER_OSTICK (1 << US_PER_OSTICK_EXPONENT)
 #define OSTICKS_PER_SEC (1000000 / US_PER_OSTICK)
 
 // hal.cpp sets up stdio so that a plain "printf" call prints to the
