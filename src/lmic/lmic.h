@@ -70,6 +70,7 @@ enum { DRCHG_SET, DRCHG_NOJACC, DRCHG_NOACK, DRCHG_NOADRACK, DRCHG_NWKCMD };
 enum { KEEP_TXPOW = -128 };
 
 
+#if !defined(DISABLE_PING)
 //! \internal
 struct rxsched_t {
     u1_t     dr;
@@ -81,8 +82,10 @@ struct rxsched_t {
     u4_t     freq;
 };
 TYPEDEF_xref2rxsched_t;  //!< \internal
+#endif // !DISABLE_PING
 
 
+#if !defined(DISABLE_BEACONS)
 //! Parsing and tracking states of beacons.
 enum { BCN_NONE    = 0x00,   //!< No beacon received
        BCN_PARTIAL = 0x01,   //!< Only first (common) part could be decoded (info,lat,lon invalid/previous)
@@ -101,6 +104,7 @@ struct bcninfo_t {
     s4_t     lat;     //!< Lat field of last beacon (valid only if BCN_FULL set)
     s4_t     lon;     //!< Lon field of last beacon (valid only if BCN_FULL set)
 };
+#endif // !DISABLE_BEACONS
 
 // purpose of receive window - lmic_t.rxState
 enum { RADIO_RST=0, RADIO_TX=1, RADIO_RX=2, RADIO_RXON=3 };
@@ -210,10 +214,16 @@ struct lmic_t {
     u1_t        dn2Ans;       // 0=no answer pend, 0x80+ACKs
 
     // Class B state
+#if !defined(DISABLE_BEACONS)
     u1_t        missedBcns;   // unable to track last N beacons
     u1_t        bcninfoTries; // how often to try (scan mode only)
+#endif
+#if !defined(DISABLE_PING)
     u1_t        pingSetAns;   // answer set cmd and ACK bits
+#endif
+#if !defined(DISABLE_PING)
     rxsched_t   ping;         // pingable setup
+#endif
 
     // Public part of MAC state
     u1_t        txCnt;
@@ -222,10 +232,12 @@ struct lmic_t {
     u1_t        dataLen;    // 0 no data or zero length data, >0 byte count of data
     u1_t        frame[MAX_LEN_FRAME];
 
+#if !defined(DISABLE_BEACONS)
     u1_t        bcnChnl;
     u1_t        bcnRxsyms;    //
     ostime_t    bcnRxtime;
     bcninfo_t   bcninfo;      // Last received beacon info
+#endif
 };
 //! \var struct lmic_t LMIC
 //! The state of LMIC MAC layer is encapsulated in this variable.
@@ -242,7 +254,9 @@ void  LMIC_disableChannel (u1_t channel);
 
 void  LMIC_setDrTxpow   (dr_t dr, s1_t txpow);  // set default/start DR/txpow
 void  LMIC_setAdrMode   (bit_t enabled);        // set ADR mode (if mobile turn off)
+#if !defined(DISABLE_JOIN)
 bit_t LMIC_startJoining (void);
+#endif
 
 void  LMIC_shutdown     (void);
 void  LMIC_init         (void);
@@ -252,12 +266,18 @@ void  LMIC_setTxData    (void);
 int   LMIC_setTxData2   (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
 void  LMIC_sendAlive    (void);
 
+#if !defined(DISABLE_BEACONS)
 bit_t LMIC_enableTracking  (u1_t tryBcnInfo);
 void  LMIC_disableTracking (void);
+#endif
 
+#if !defined(DISABLE_PING)
 void  LMIC_stopPingable  (void);
 void  LMIC_setPingable   (u1_t intvExp);
+#endif
+#if !defined(DISABLE_JOIN)
 void  LMIC_tryRejoin     (void);
+#endif
 
 void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t artKey);
 void LMIC_setLinkCheckMode (bit_t enabled);
