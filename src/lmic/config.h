@@ -30,4 +30,13 @@
 // Requires ping to be disabled too
 //#define DISABLE_BEACONS
 
+// Uncomment these to disable the corresponding MAC commands.
+// Class A
+//#define DISABLE_MCMD_DCAP_REQ // duty cycle cap
+//#define DISABLE_MCMD_DN2P_SET // 2nd DN window param
+//#define DISABLE_MCMD_SNCH_REQ // set new channel
+// Class B
+//#define DISABLE_MCMD_PING_SET // set ping freq, automatically disabled by DISABLE_PING
+//#define DISABLE_MCMD_BCNI_ANS // next beacon start, automatical disabled by DISABLE_BEACON
+
 #endif // _lmic_config_h_

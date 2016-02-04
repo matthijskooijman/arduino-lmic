@@ -917,8 +917,17 @@ static void stateJustJoined (void) {
     LMIC.seqnoDn     = LMIC.seqnoUp = 0;
     LMIC.rejoinCnt   = 0;
     LMIC.dnConf      = LMIC.adrChanged = LMIC.ladrAns = LMIC.devsAns = 0;
-    LMIC.moreData    = LMIC.dn2Ans = LMIC.snchAns = LMIC.dutyCapAns = 0;
-#if !defined(DISABLE_PING)
+#if !defined(DISABLE_MCMD_SNCH_REQ)
+    LMIC.snchAns     = 0;
+#endif
+#if !defined(DISABLE_MCMD_DN2P_SET)
+    LMIC.dn2Ans      = 0;
+#endif
+    LMIC.moreData    = 0;
+#if !defined(DISABLE_MCMD_DCAP_REQ)
+    LMIC.dutyCapAns  = 0;
+#endif
+#if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
     LMIC.pingSetAns  = 0;
 #endif
     LMIC.upRepeat    = 0;
@@ -1122,9 +1131,9 @@ static bit_t decodeFrame (void) {
             continue;
         }
         case MCMD_DN2P_SET: {
+#if !defined(DISABLE_MCMD_DN2P_SET)
             dr_t dr = (dr_t)(opts[oidx+1] & 0x0F);
             u4_t freq = convFreq(&opts[oidx+2]);
-            oidx += 5;
             LMIC.dn2Ans = 0x80;   // answer pending
             if( validDR(dr) )
                 LMIC.dn2Ans |= MCMD_DN2P_ANS_DRACK;
@@ -1136,11 +1145,13 @@ static bit_t decodeFrame (void) {
                 DO_DEVDB(LMIC.dn2Dr,dn2Dr);
                 DO_DEVDB(LMIC.dn2Freq,dn2Freq);
             }
+#endif // !DISABLE_MCMD_DN2P_SET
+            oidx += 5;
             continue;
         }
         case MCMD_DCAP_REQ: {
+#if !defined(DISABLE_MCMD_DCAP_REQ)
             u1_t cap = opts[oidx+1];
-            oidx += 2;
             // A value cap=0xFF means device is OFF unless enabled again manually.
             if( cap==0xFF )
                 LMIC.opmode |= OP_SHUTDOWN;  // stop any sending
@@ -1148,20 +1159,24 @@ static bit_t decodeFrame (void) {
             LMIC.globalDutyAvail = os_getTime();
             DO_DEVDB(cap,dutyCap);
             LMIC.dutyCapAns = 1;
+            oidx += 2;
+#endif // !DISABLE_MCMD_DCAP_REQ
             continue;
         }
         case MCMD_SNCH_REQ: {
+#if !defined(DISABLE_MCMD_SNCH_REQ)
             u1_t chidx = opts[oidx+1];  // channel
             u4_t freq  = convFreq(&opts[oidx+2]); // freq
             u1_t drs   = opts[oidx+5];  // datarate span
             LMIC.snchAns = 0x80;
             if( freq != 0 && LMIC_setupChannel(chidx, freq, DR_RANGE_MAP(drs&0xF,drs>>4), -1) )
                 LMIC.snchAns |= MCMD_SNCH_ANS_DRACK|MCMD_SNCH_ANS_FQACK;
+#endif // !DISABLE_MCMD_SNCH_REQ
             oidx += 6;
             continue;
         }
         case MCMD_PING_SET: {
-#if !defined(DISABLE_PING)
+#if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
             u4_t freq = convFreq(&opts[oidx+1]);
             u1_t flags = 0x80;
             if( freq != 0 ) {
@@ -1172,12 +1187,12 @@ static bit_t decodeFrame (void) {
                 DO_DEVDB(LMIC.ping.dr, pingDr);
             }
             LMIC.pingSetAns = flags;
-#endif // !DISABLE_PING
+#endif // !DISABLE_MCMD_PING_SET && !DISABLE_PING
             oidx += 4;
             continue;
         }
         case MCMD_BCNI_ANS: {
-#if !defined(DISABLE_BEACONS)
+#if !defined(DISABLE_MCMD_BCNI_ANS) && !defined(DISABLE_BEACONS)
             // Ignore if tracking already enabled
             if( (LMIC.opmode & OP_TRACK) == 0 ) {
                 LMIC.bcnChnl = opts[oidx+3];
@@ -1201,7 +1216,7 @@ static bit_t decodeFrame (void) {
                                                                - LMIC.bcnRxtime) << 8)),
                                      e_.time    = MAIN::CDEV->ostime2ustime(LMIC.bcninfo.txtime + BCN_INTV_osticks)));
             }
-#endif // !DISABLE_BEACONS
+#endif // !DISABLE_MCMD_BCNI_ANS && !DISABLE_BEACONS
             oidx += 4;
             continue;
         }
@@ -1530,17 +1545,21 @@ static void buildDataFrame (void) {
         end += 2;
     }
 #endif // !DISABLE_PING
+#if !defined(DISABLE_MCMD_DCAP_REQ)
     if( LMIC.dutyCapAns ) {
         LMIC.frame[end] = MCMD_DCAP_ANS;
         end += 1;
         LMIC.dutyCapAns = 0;
     }
+#endif // !DISABLE_MCMD_DCAP_REQ
+#if !defined(DISABLE_MCMD_DN2P_SET)
     if( LMIC.dn2Ans ) {
         LMIC.frame[end+0] = MCMD_DN2P_ANS;
         LMIC.frame[end+1] = LMIC.dn2Ans & ~MCMD_DN2P_ANS_RFU;
         end += 2;
         LMIC.dn2Ans = 0;
     }
+#endif // !DISABLE_MCMD_DN2P_SET
     if( LMIC.devsAns ) {  // answer to device status
         LMIC.frame[end+0] = MCMD_DEVS_ANS;
         LMIC.frame[end+1] = LMIC.margin;
@@ -1565,20 +1584,22 @@ static void buildDataFrame (void) {
             LMIC.adrAckReq = 0;
         LMIC.adrChanged = 0;
     }
-#if !defined(DISABLE_PING)
+#if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
     if( LMIC.pingSetAns != 0 ) {
         LMIC.frame[end+0] = MCMD_PING_ANS;
         LMIC.frame[end+1] = LMIC.pingSetAns & ~MCMD_PING_ANS_RFU;
         end += 2;
         LMIC.pingSetAns = 0;
     }
-#endif // !DISABLE_PING
+#endif // !DISABLE_MCMD_PING_SET && !DISABLE_PING
+#if !defined(DISABLE_MCMD_SNCH_REQ)
     if( LMIC.snchAns ) {
         LMIC.frame[end+0] = MCMD_SNCH_ANS;
         LMIC.frame[end+1] = LMIC.snchAns & ~MCMD_SNCH_ANS_RFU;
         end += 2;
         LMIC.snchAns = 0;
     }
+#endif // !DISABLE_MCMD_SNCH_REQ
     ASSERT(end <= OFF_DAT_OPTS+16);
 
     u1_t flen = end + (txdata ? 5+dlen : 4);

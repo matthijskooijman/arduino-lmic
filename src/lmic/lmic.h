@@ -206,19 +206,25 @@ struct lmic_t {
     bit_t       devsAns;      // device status answer pending
     u1_t        adrEnabled;
     u1_t        moreData;     // NWK has more data pending
+#if !defined(DISABLE_MCMD_DCAP_REQ)
     bit_t       dutyCapAns;   // have to ACK duty cycle settings
+#endif
+#if !defined(DISABLE_MCMD_SNCH_REQ)
     u1_t        snchAns;      // answer set new channel
+#endif
     // 2nd RX window (after up stream)
     u1_t        dn2Dr;
     u4_t        dn2Freq;
+#if !defined(DISABLE_MCMD_DN2P_SET)
     u1_t        dn2Ans;       // 0=no answer pend, 0x80+ACKs
+#endif
 
     // Class B state
 #if !defined(DISABLE_BEACONS)
     u1_t        missedBcns;   // unable to track last N beacons
     u1_t        bcninfoTries; // how often to try (scan mode only)
 #endif
-#if !defined(DISABLE_PING)
+#if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
     u1_t        pingSetAns;   // answer set cmd and ACK bits
 #endif
 #if !defined(DISABLE_PING)
