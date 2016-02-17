@@ -61,20 +61,20 @@ static void startScan (void);
 
 #if !defined(os_rlsbf2)
 u2_t os_rlsbf2 (xref2cu1_t buf) {
-    return (u2_t)(buf[0] | (buf[1]<<8));
+    return (u2_t)((u2_t)buf[0] | ((u2_t)buf[1]<<8));
 }
 #endif
 
 #if !defined(os_rlsbf4)
 u4_t os_rlsbf4 (xref2cu1_t buf) {
-    return (u4_t)(buf[0] | (buf[1]<<8) | ((u4_t)buf[2]<<16) | ((u4_t)buf[3]<<24));
+    return (u4_t)((u4_t)buf[0] | ((u4_t)buf[1]<<8) | ((u4_t)buf[2]<<16) | ((u4_t)buf[3]<<24));
 }
 #endif
 
 
 #if !defined(os_rmsbf4)
 u4_t os_rmsbf4 (xref2cu1_t buf) {
-    return (u4_t)(buf[3] | (buf[2]<<8) | ((u4_t)buf[1]<<16) | ((u4_t)buf[0]<<24));
+    return (u4_t)((u4_t)buf[3] | ((u4_t)buf[2]<<8) | ((u4_t)buf[1]<<16) | ((u4_t)buf[0]<<24));
 }
 #endif
 
