@@ -18,21 +18,35 @@
 // I/O
 
 static void hal_io_init () {
+    // NSS and DIO0 are required, DIO1 is required for LoRa, DIO2 for FSK
+    ASSERT(lmic_pins.nss != LMIC_UNUSED_PIN);
+    ASSERT(lmic_pins.dio[0] != LMIC_UNUSED_PIN);
+    ASSERT(lmic_pins.dio[1] != LMIC_UNUSED_PIN || lmic_pins.dio[2] != LMIC_UNUSED_PIN);
+
     pinMode(lmic_pins.nss, OUTPUT);
-    pinMode(lmic_pins.rxtx, OUTPUT);
-    pinMode(lmic_pins.rst, OUTPUT);
+    if (lmic_pins.rxtx != LMIC_UNUSED_PIN)
+        pinMode(lmic_pins.rxtx, OUTPUT);
+    if (lmic_pins.rst != LMIC_UNUSED_PIN)
+        pinMode(lmic_pins.rst, OUTPUT);
+
     pinMode(lmic_pins.dio[0], INPUT);
-    pinMode(lmic_pins.dio[1], INPUT);
-    pinMode(lmic_pins.dio[2], INPUT);
+    if (lmic_pins.dio[1] != LMIC_UNUSED_PIN)
+        pinMode(lmic_pins.dio[1], INPUT);
+    if (lmic_pins.dio[2] != LMIC_UNUSED_PIN)
+        pinMode(lmic_pins.dio[2], INPUT);
 }
 
 // val == 1  => tx 1
 void hal_pin_rxtx (u1_t val) {
-    digitalWrite(lmic_pins.rxtx, val);
+    if (lmic_pins.rxtx != LMIC_UNUSED_PIN)
+        digitalWrite(lmic_pins.rxtx, val);
 }
 
 // set radio RST pin to given value (or keep floating!)
 void hal_pin_rst (u1_t val) {
+    if (lmic_pins.rst == LMIC_UNUSED_PIN)
+        return;
+
     if(val == 0 || val == 1) { // drive pin
         pinMode(lmic_pins.rst, OUTPUT);
         digitalWrite(lmic_pins.rst, val);
@@ -46,6 +60,9 @@ static bool dio_states[NUM_DIO] = {0};
 static void hal_io_check() {
     uint8_t i;
     for (i = 0; i < NUM_DIO; ++i) {
+        if (lmic_pins.dio[i] == LMIC_UNUSED_PIN)
+            continue;
+
         if (dio_states[i] != digitalRead(lmic_pins.dio[i])) {
             dio_states[i] = !dio_states[i];
             if (dio_states[i])
