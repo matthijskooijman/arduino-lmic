@@ -10,10 +10,6 @@
  * This example transmits data on hardcoded channel and receives data
  * when not transmitting. Running this sketch on two nodes should allow
  * them to communicate.
- *
- * WARNING: This sketch almost certainly violates duty cycle limits,
- * since it bypasses the LoRaWAN stuff and directly talks to the
- * transceiver.
  *******************************************************************************/
 
 #include <lmic.h>
@@ -25,11 +21,20 @@
        config.h in the lmic library to set it.
 #endif
 
+// How often to send a packet. Note that this sketch bypasses the normal
+// LMIC duty cycle limiting, so when you change anything in this sketch
+// (payload length, frequency, spreading factor), be sure to check if
+// this interval should not also be increased.
+// See this spreadsheet for an easy airtime and duty cycle calculator:
+// https://docs.google.com/spreadsheets/d/1voGAtQAjC1qBmaVuP1ApNKs1ekgUjavHuVQIXyYSvNc 
+#define TX_INTERVAL 2000
+
+// Pin mapping
 const lmic_pinmap lmic_pins = {
-  .nss = SS,
-  .rxtx = 8, // Not connected
-  .rst = A7, // Not connected
-  .dio = {4, 5, 7},
+    .nss = 6,
+    .rxtx = LMIC_UNUSED_PIN,
+    .rst = 5,
+    .dio = {2, 3, 4},
 };
 
 //LMIC application callbacks not used in his example
@@ -72,32 +77,21 @@ void rx(osjobcb_t func) {
 }
 
 static void rxtimeout_func(osjob_t *job) {
-  #ifdef LED_RED
-  digitalWrite(LED_RED, LOW); // on
-  digitalWrite(LED_GREEN, HIGH); // off
-  #else
   digitalWrite(LED_BUILTIN, LOW); // off
-  #endif
 }
 
 static void rx_func (osjob_t* job) {
-  #ifdef LED_RED
-  digitalWrite(LED_RED, HIGH); // off
-  digitalWrite(LED_GREEN, HIGH); // off
-  delay(10);
-  digitalWrite(LED_GREEN, LOW); // on
-  #else
-  digitalWrite(LED_BUILTIN, HIGH); // off
+  // Blink once to confirm reception and then keep the led on
+  digitalWrite(LED_BUILTIN, LOW); // off
   delay(10);
   digitalWrite(LED_BUILTIN, HIGH); // on
-  #endif
 
-  // Timeout RX (i.e. update led status) after 1 second without RX
-  os_setTimedCallback(&timeoutjob, os_getTime() + ms2osticks(2500), rxtimeout_func);
+  // Timeout RX (i.e. update led status) after 3 periods without RX
+  os_setTimedCallback(&timeoutjob, os_getTime() + ms2osticks(3*TX_INTERVAL), rxtimeout_func);
 
   // Reschedule TX so that it should not collide with the other side's
   // next TX
-  os_setTimedCallback(&txjob, os_getTime() + ms2osticks(500), tx_func);
+  os_setTimedCallback(&txjob, os_getTime() + ms2osticks(TX_INTERVAL/2), tx_func);
 
   Serial.print("Got ");
   Serial.print(LMIC.dataLen);
@@ -117,9 +111,10 @@ static void txdone_func (osjob_t* job) {
 static void tx_func (osjob_t* job) {
   // say hello
   tx("Hello, world!", txdone_func);
-  // reschedule job every 1000-1500ms, unless packets are received, then
-  // rx_func will reschedule more often
-  os_setTimedCallback(job, os_getTime() + ms2osticks(1000 + random(500)), tx_func);
+  // reschedule job every TX_INTERVAL (plus a bit of random to prevent
+  // systematic collisions), unless packets are received, then rx_func
+  // will reschedule at half this time.
+  os_setTimedCallback(job, os_getTime() + ms2osticks(TX_INTERVAL + random(500)), tx_func);
 }
 
 // application entry point
@@ -133,28 +128,22 @@ void setup() {
   delay(1000);
   #endif
 
-  #ifdef LED_RED
-  pinMode(LED_RED, OUTPUT);
-  pinMode(LED_GREEN, OUTPUT);
-  pinMode(LED_BLUE, OUTPUT);
-  digitalWrite(LED_RED, LOW);
-  digitalWrite(LED_GREEN, HIGH);
-  digitalWrite(LED_BLUE, HIGH);
-  #else
   pinMode(LED_BUILTIN, OUTPUT);
-  #endif
 
   // initialize runtime env
   os_init();
 
   // Set up these settings once, and use them for both TX and RX
 
-  // Use the ping settings. In 868Mhz, this is F6 frequency which allows
-  // 10% duty cycle and the most tx power (27dBm). In 868 this is
-  // channel 0, which allows up to 30dBm.
-  LMIC.datarate = DR_PING;
-  LMIC.freq = FREQ_PING;
+  // Use a frequency in the g3 which allows 10% duty cycling.
+  LMIC.freq = 869525000;
+  // Maximum TX power
   LMIC.txpow = 27;
+  // Use a medium spread factor. This can be increased up to SF12 for
+  // better range, but then the interval should be (significantly)
+  // lowered to comply with duty cycle limits as well.
+  LMIC.datarate = DR_SF9;
+  // This sets CR 4/5, BW125 (except for DR_SF7B, which uses BW250)
   LMIC.rps = updr2rps(LMIC.datarate);
 
   Serial.println("Started");
@@ -166,7 +155,5 @@ void setup() {
 
 void loop() {
   // execute scheduled jobs and events
-  os_runloop();
-
-  // (not reached)
+  os_runloop_once();
 }
