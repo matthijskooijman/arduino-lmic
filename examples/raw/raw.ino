@@ -20,6 +20,11 @@
 #include <hal/hal.h>
 #include <SPI.h>
 
+#if !defined(DISABLE_INVERT_IQ_ON_RX)
+#error This example requires DISABLE_INVERT_IQ_ON_RX to be set. Update \
+       config.h in the lmic library to set it.
+#endif
+
 lmic_pinmap pins = {
   .nss = SS,
   .rxtx = 8, // Not connected

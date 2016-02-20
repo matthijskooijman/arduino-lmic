@@ -39,4 +39,14 @@
 //#define DISABLE_MCMD_PING_SET // set ping freq, automatically disabled by DISABLE_PING
 //#define DISABLE_MCMD_BCNI_ANS // next beacon start, automatical disabled by DISABLE_BEACON
 
+// In LoRaWAN, a gateway applies I/Q inversion on TX, and nodes do the
+// same on RX. This ensures that gateways can talk to nodes and vice
+// versa, but gateways will not hear other gateways and nodes will not
+// hear other nodes. By uncommenting this macro, this inversion is
+// disabled and this node can hear other nodes. If two nodes both have
+// this macro set, they can talk to each other (but they can no longer
+// hear gateways). This should probably only be used when debugging
+// and/or when talking to the radio directly (e.g. like in the "raw"
+// example).
+#define DISABLE_INVERT_IQ_ON_RX
 #endif // _lmic_config_h_
