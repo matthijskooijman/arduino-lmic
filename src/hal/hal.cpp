@@ -18,26 +18,26 @@
 // I/O
 
 static void hal_io_init () {
-    pinMode(pins.nss, OUTPUT);
-    pinMode(pins.rxtx, OUTPUT);
-    pinMode(pins.rst, OUTPUT);
-    pinMode(pins.dio[0], INPUT);
-    pinMode(pins.dio[1], INPUT);
-    pinMode(pins.dio[2], INPUT);
+    pinMode(lmic_pins.nss, OUTPUT);
+    pinMode(lmic_pins.rxtx, OUTPUT);
+    pinMode(lmic_pins.rst, OUTPUT);
+    pinMode(lmic_pins.dio[0], INPUT);
+    pinMode(lmic_pins.dio[1], INPUT);
+    pinMode(lmic_pins.dio[2], INPUT);
 }
 
 // val == 1  => tx 1
 void hal_pin_rxtx (u1_t val) {
-    digitalWrite(pins.rxtx, val);
+    digitalWrite(lmic_pins.rxtx, val);
 }
 
 // set radio RST pin to given value (or keep floating!)
 void hal_pin_rst (u1_t val) {
     if(val == 0 || val == 1) { // drive pin
-        pinMode(pins.rst, OUTPUT);
-        digitalWrite(pins.rst, val);
+        pinMode(lmic_pins.rst, OUTPUT);
+        digitalWrite(lmic_pins.rst, val);
     } else { // keep pin floating
-        pinMode(pins.rst, INPUT);
+        pinMode(lmic_pins.rst, INPUT);
     }
 }
 
@@ -46,7 +46,7 @@ static bool dio_states[NUM_DIO] = {0};
 static void hal_io_check() {
     uint8_t i;
     for (i = 0; i < NUM_DIO; ++i) {
-        if (dio_states[i] != digitalRead(pins.dio[i])) {
+        if (dio_states[i] != digitalRead(lmic_pins.dio[i])) {
             dio_states[i] = !dio_states[i];
             if (dio_states[i])
                 radio_irq_handler(i);
@@ -70,7 +70,7 @@ void hal_pin_nss (u1_t val) {
         SPI.endTransaction();
 
     //Serial.println(val?">>":"<<");
-    digitalWrite(pins.nss, val);
+    digitalWrite(lmic_pins.nss, val);
 }
 
 // perform SPI transaction with radio

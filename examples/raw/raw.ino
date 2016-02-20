@@ -25,7 +25,7 @@
        config.h in the lmic library to set it.
 #endif
 
-lmic_pinmap pins = {
+const lmic_pinmap lmic_pins = {
   .nss = SS,
   .rxtx = 8, // Not connected
   .rst = A7, // Not connected

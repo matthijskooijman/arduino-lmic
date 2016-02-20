@@ -20,6 +20,6 @@ struct lmic_pinmap {
 };
 
 // Declared here, to be defined an initialized by the application
-extern lmic_pinmap pins;
+extern const lmic_pinmap lmic_pins;
 
 #endif // _hal_hal_h_
