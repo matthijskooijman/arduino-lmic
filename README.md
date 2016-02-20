@@ -48,6 +48,18 @@ What has not been tested:
 If you try one of these untested features and it works, be sure to let
 us know (creating a github issue is probably the best way for that).
 
+Configuration
+-------------
+A number of features can be configured or disabled by editing the
+`config.h` file in the library folder. Unfortunately the Arduino
+environment does not offer any way to do this (compile-time)
+configuration from the sketch, so be careful to recheck your
+configuration when you switch between sketches or update the library.
+
+At the very least, you should set the right type of transceiver (SX1272
+vs SX1276) in config.h, most other values should be fine at their
+defaults.
+
 Supported hardware
 ------------------
 This library is intended to be used with plain LoRa transceivers,
