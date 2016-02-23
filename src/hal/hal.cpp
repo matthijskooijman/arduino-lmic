@@ -241,9 +241,12 @@ void hal_init () {
 }
 
 void hal_failed (const char *file, u2_t line) {
-#if defined(LMIC_PRINTF_TO)
-    printf("FAILURE %s:%u\n", file, (int)line);
-    LMIC_PRINTF_TO.flush();
+#if defined(LMIC_FAILURE_TO)
+    LMIC_FAILURE_TO.println("FAILURE ");
+    LMIC_FAILURE_TO.print(file);
+    LMIC_FAILURE_TO.print(':');
+    LMIC_FAILURE_TO.println(line);
+    LMIC_FAILURE_TO.flush();
 #endif
     hal_disableIRQs();
     while(1);

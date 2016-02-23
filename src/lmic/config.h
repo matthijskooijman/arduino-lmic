@@ -20,11 +20,15 @@
 #define US_PER_OSTICK (1 << US_PER_OSTICK_EXPONENT)
 #define OSTICKS_PER_SEC (1000000 / US_PER_OSTICK)
 
-// hal.cpp sets up stdio so that a plain "printf" call prints to the
-// given serial port (or any other Print object). Any assertion errors
-// are also printed to the same place. Comment this define to prevent
-// this printf setup, as well as making failed assertions silent.
+// Enable this to allow using printf() to print to the given serial port
+// (or any other Print object). This can be easy for debugging. The
+// current implementation only works on AVR, though.
 #define LMIC_PRINTF_TO Serial
+
+// Any runtime assertion failures are printed to this serial port (or
+// any other Print object). If this is unset, any failures just silently
+// halt execution.
+#define LMIC_FAILURE_TO Serial
 
 // Uncomment this to disable all code related to joining
 //#define DISABLE_JOIN
