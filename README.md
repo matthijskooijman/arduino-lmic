@@ -112,13 +112,11 @@ count on that.
 
 ### Power
 The SX127x transceivers need a supply voltage between 1.8V and 3.9V.
-Using a 3.3V supply is typical. The SX127x chips have various supply
-lines (*VR_ANA*, *VR_DIG* and *VR_PA*), all of which need the same
-supply voltage. Some modules (like the Semtech evaluation board) expose
-these pins separately, just connect them all together to a 3.3V source.
-Some boards, like the HopeRF boards just have a single supply pin
-labeled *3.3V*. Any *GND* pins need to be connected to the Arduino *GND*
-pin(s).
+Using a 3.3V supply is typical. Some modules have a single power pin
+(like the HopeRF modules, labeled 3.3V) but others expose multiple power
+pins for different parts (like the Semtech evaluation board that has
+`VDD_RF`, `VDD_ANA` and `VDD_FEM`), which can all be connected together.
+Any *GND* pins need to be connected to the Arduino *GND* pin(s).
 
 ### SPI
 The primary way of communicating with the transceiver is through SPI
