@@ -1562,8 +1562,8 @@ static void buildDataFrame (void) {
 #endif // !DISABLE_MCMD_DN2P_SET
     if( LMIC.devsAns ) {  // answer to device status
         LMIC.frame[end+0] = MCMD_DEVS_ANS;
-        LMIC.frame[end+1] = LMIC.margin;
-        LMIC.frame[end+2] = os_getBattLevel();
+        LMIC.frame[end+1] = os_getBattLevel();
+        LMIC.frame[end+2] = LMIC.margin;
         end += 3;
         LMIC.devsAns = 0;
     }
