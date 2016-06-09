@@ -1325,9 +1325,9 @@ static void setupRx2 (void) {
 }
 
 
-static void schedRx2 (ostime_t delay, osjobcb_t func) {
+static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
     // Add 1.5 symbols we need 5 out of 8. Try to sync 1.5 symbols into the preamble.
-    LMIC.rxtime = LMIC.txend + delay + (PAMBL_SYMS-MINRX_SYMS)*dr2hsym(LMIC.dn2Dr);
+    LMIC.rxtime = LMIC.txend + delay + (PAMBL_SYMS-MINRX_SYMS)*dr2hsym(dr);
     os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
 }
 
@@ -1359,14 +1359,14 @@ static void txDone (ostime_t delay, osjobcb_t func) {
     if( /* TX datarate */LMIC.rxsyms == DR_FSK ) {
         LMIC.rxtime = LMIC.txend + delay - PRERX_FSK*us2osticksRound(160);
         LMIC.rxsyms = RXLEN_FSK;
+        os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
     }
     else
 #endif
     {
-        LMIC.rxtime = LMIC.txend + delay + (PAMBL_SYMS-MINRX_SYMS)*dr2hsym(LMIC.dndr);
+        schedRx12(delay, func, LMIC.dndr);
         LMIC.rxsyms = MINRX_SYMS;
     }
-    os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
 }
 
 
@@ -1498,7 +1498,7 @@ static void setupRx2Jacc (xref2osjob_t osjob) {
 
 static void processRx1Jacc (xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 || !processJoinAccept() )
-        schedRx2(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc));
+        schedRx12(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc), LMIC.dn2Dr);
 }
 
 
@@ -1544,7 +1544,7 @@ static void setupRx2DnData (xref2osjob_t osjob) {
 
 static void processRx1DnData (xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 || !processDnData() )
-        schedRx2(sec2osticks(LMIC.rxDelay +(int)DELAY_EXTDNW2), FUNC_ADDR(setupRx2DnData));
+        schedRx12(sec2osticks(LMIC.rxDelay +(int)DELAY_EXTDNW2), FUNC_ADDR(setupRx2DnData), LMIC.dn2Dr);
 }
 
 
