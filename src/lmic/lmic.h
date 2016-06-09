@@ -181,9 +181,11 @@ struct lmic_t {
     u1_t        datarate;     // current data rate
     u1_t        errcr;        // error coding rate (used for TX only)
     u1_t        rejoinCnt;    // adjustment for rejoin datarate
+#if !defined(DISABLE_BEACONS)
     s2_t        drift;        // last measured drift
     s2_t        lastDriftDiff;
     s2_t        maxDriftDiff;
+#endif
 
     u1_t        pendTxPort;
     u1_t        pendTxConf;   // confirmed data
