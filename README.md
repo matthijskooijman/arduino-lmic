@@ -38,12 +38,12 @@ What certainly works:
  - Encryption and message integrity checking.
  - Receiving downlink packets in the RX2 window.
  - Custom frequencies and datarate settings.
+ - Over-the-air activation (OTAA / joining).
 
 What has not been tested:
  - Receiving downlink packets in the RX1 window.
  - Receiving and processing MAC commands.
  - Class B operation.
- - Over-the-air activation (OTAA / joining).
 
 If you try one of these untested features and it works, be sure to let
 us know (creating a github issue is probably the best way for that).
@@ -238,18 +238,24 @@ This board uses the following pin mapping:
 
 Examples
 --------
-This library currently provides two examples:
+This library currently provides three examples:
 
- - `ttn.ino` shows a basic transmission of a "Hello, world!" message
+ - `ttn-abp.ino` shows a basic transmission of a "Hello, world!" message
    using the LoRaWAN protocol. It contains some frequency settings and
    encryption keys intended for use with The Things Network, but these
    also correspond to the default settings of most gateways, so it
    should work with other networks and gateways as well. This example
-   uses "personalization" (preconfiguring a device address and
-   encryption keys), and does not employ over-the-air activation.
+   uses activation-by-personalization (ABP, preconfiguring a device
+   address and encryption keys), and does not employ over-the-air
+   activation.
 
    Reception of packets (in response to transmission, using the RX1 and
    RX2 receive windows is also supported).
+
+ - `ttn-otaa.ino` also sends a "Hello, world!" message, but uses over
+   the air activation (OTAA) to first join a network to establish a
+   session and security keys. This was tested with The Things Network,
+   but should also work (perhaps with some changes) for other networks.
 
  - `raw.ino` shows how to access the radio on a somewhat low level,
    and allows to send raw (non-LoRaWAN) packets between nodes directly.
