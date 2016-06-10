@@ -276,12 +276,13 @@ meaning that a inacurracy of plus or minus 2.5 symbol times should be
 acceptable.
 
 At the fastest LoRa setting supported by the tranceiver (SF5BW500) a
-single preamble symbol takes 128μs, so the receive window timing should
-be accurate within 320 μs. This is certainly within a crystal's
-accuracy, but using the internal oscillator is probably not feasible
-(which is 1% - 10% accurate, depending on calibration). This accuracy
-should also be feasible with the polling approach used, provided that
-the LMIC loop is run often enough.
+single preamble symbol takes 64μs, so the receive window timing should
+be accurate within 160μs (for LoRaWAN this is SF7BW250, needing accuracy
+within 1280μs). This is certainly within a crystal's accuracy, but using
+the internal oscillator is probably not feasible (which is 1% - 10%
+accurate, depending on calibration). This accuracy should also be
+feasible with the polling approach used, provided that the LMIC loop is
+run often enough.
 
 It would be good to properly review this code at some point, since it
 seems that in some places some offsets and corrections are applied that
