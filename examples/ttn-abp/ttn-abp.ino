@@ -9,13 +9,21 @@
  *
  * This example sends a valid LoRaWAN packet with payload "Hello,
  * world!", using frequency and encryption settings matching those of
- * the (early prototype version of) The Things Network.
+ * the The Things Network.
  *
- * Note: LoRaWAN per sub-band duty-cycle limitation is enforced (1% in g1,
- *  0.1% in g2).
+ * This uses ABP (Activation-by-personalisation), where a DevAddr and
+ * Session keys are preconfigured (unlike OTAA, where a DevEUI and
+ * application key is configured, while the DevAddr and session keys are
+ * assigned/generated in the over-the-air-activation procedure).
  *
- * Change DEVADDR to a unique address!
- * See http://thethingsnetwork.org/wiki/AddressSpace
+ * Note: LoRaWAN per sub-band duty-cycle limitation is enforced (1% in
+ * g1, 0.1% in g2), but not the TTN fair usage policy (which is probably
+ * violated by this sketch when left running for longer)!
+ *
+ * To use this sketch, first register your application and device with
+ * the things network, to set or generate a DevAddr, NwkSKey and
+ * AppSKey. Each device should have their own unique values for these
+ * fields.
  *
  * Do not forget to define the radio type correctly in config.h.
  *
@@ -26,17 +34,16 @@
 #include <SPI.h>
 
 // LoRaWAN NwkSKey, network session key
-// This is the default Semtech key, which is used by the prototype TTN
-// network initially.
+// This is the default Semtech key, which is used by the early prototype TTN
+// network.
 static const PROGMEM u1_t NWKSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C };
 
 // LoRaWAN AppSKey, application session key
-// This is the default Semtech key, which is used by the prototype TTN
-// network initially.
+// This is the default Semtech key, which is used by the early prototype TTN
+// network.
 static const u1_t PROGMEM APPSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C };
 
 // LoRaWAN end-device address (DevAddr)
-// See http://thethingsnetwork.org/wiki/AddressSpace
 static const u4_t DEVADDR = 0x03FF0001 ; // <-- Change this address for every node!
 
 // These callbacks are only used in over-the-air activation, so they are
