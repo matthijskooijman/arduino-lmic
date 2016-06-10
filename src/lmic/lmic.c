@@ -1326,8 +1326,35 @@ static void setupRx2 (void) {
 
 
 static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
-    // Add 1.5 symbols we need 5 out of 8. Try to sync 1.5 symbols into the preamble.
-    LMIC.rxtime = LMIC.txend + delay + (PAMBL_SYMS-MINRX_SYMS)*dr2hsym(dr);
+    ostime_t hsym = dr2hsym(dr);
+
+    LMIC.rxsyms = MINRX_SYMS;
+
+    // If a clock error is specified, compensate for it by extending the
+    // receive window
+    if (LMIC.clockError != 0) {
+        // Calculate how much the clock will drift maximally after delay has
+        // passed. This indicates the amount of time we can be early
+        // _or_ late.
+        ostime_t drift = (s8_t)delay * LMIC.clockError / MAX_CLOCK_ERROR;
+
+        // Increase the receive window by twice the maximum drift (to
+        // compensate for a slow or a fast clock).
+        // decrease the rxtime to compensate for. Note that hsym is a
+        // *half* symbol time, so the factor 2 is hidden. First check if
+        // this would overflow (which can happen if the drift is very
+        // high, or the symbol time is low at high datarates).
+        if ((255 - LMIC.rxsyms) * hsym < drift)
+            LMIC.rxsyms = 255;
+        else
+            LMIC.rxsyms += drift / hsym;
+
+    }
+
+    // Center the receive window on the center of the expected preamble
+    // (again note that hsym is half a sumbol time, so no /2 needed)
+    LMIC.rxtime = LMIC.txend + delay + PAMBL_SYMS * hsym - LMIC.rxsyms * hsym;
+
     os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
 }
 
@@ -1365,7 +1392,6 @@ static void txDone (ostime_t delay, osjobcb_t func) {
 #endif
     {
         schedRx12(delay, func, LMIC.dndr);
-        LMIC.rxsyms = MINRX_SYMS;
     }
 }
 
@@ -2292,4 +2318,9 @@ void LMIC_setLinkCheckMode (bit_t enabled) {
     LMIC.adrAckReq = enabled ? LINK_CHECK_INIT : LINK_CHECK_OFF;
 }
 
-
+// Sets the max clock error to compensate for (defaults to 0, which
+// allows for +/- 640 at SF7BW250). MAX_CLOCK_ERROR represents +/-100%,
+// so e.g. for a +/-1% error you would pass MAX_CLOCK_ERROR * 1 / 100.
+void LMIC_setClockError(u2_t error) {
+    LMIC.clockError = error;
+}
