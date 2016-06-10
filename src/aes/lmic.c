@@ -9,6 +9,8 @@
  *    IBM Zurich Research Lab - initial API, implementation and documentation
  *******************************************************************************/
 
+#if defined(USE_ORIGINAL_AES)
+
 #include "oslmic.h"
 
 #define AES_MICSUB 0x30 // internal use only
@@ -365,3 +367,4 @@ u4_t os_aes (u1_t mode, xref2u1_t buf, u2_t len) {
         return AESAUX[0];
 }
 
+#endif
