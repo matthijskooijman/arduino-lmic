@@ -323,14 +323,23 @@ a bit vague on the RC oscillator's accuracy and how to use it exactly
 (some registers seem to be FSK-mode only), so this needs some
 experiments.
 
-Downlink packets
-----------------
-Testing downlink packets is easy using the iot.semtech.com interface.
-However, note that it seems downlink packets from there are sent using
-the RX2 window and SF9BW125 settings, but LMIC defaults to SF12BW125 for
-the RX2 window (as indicated by the LoRaWAN specification). If downlink
-reception is not working, try changing the `DR_DNW2` parameter in
-`lorabase.h`.
+Downlink datarate
+-----------------
+Note that the datarate used for downlink packets in the RX2 window
+defaults to SF12BW125 according to the specification, but some networks
+use different values (iot.semtech.com and The Things Network both use
+SF9BW). When using personalized activate (ABP), it is your
+responsibility to set the right settings, e.g. by adding this to your
+sketch (after calling `LMIC_setSession`). `ttn-abp.ino` already does
+this.
+
+     LMIC.dn2Dr = DR_SF9;
+
+When using OTAA, the network communicates the RX2 settings in the
+join accept message, but the LMIC library does not currently process
+these settings. Until that is solved (see issue #20), you should
+manually set the RX2 rate, *after* joining (see the handling of
+`EV_JOINED` in the `ttn-otaa.ino` for an example.
 
 License
 -------

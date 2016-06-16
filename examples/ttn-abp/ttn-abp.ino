@@ -210,7 +210,10 @@ void setup() {
     // Disable link check validation
     LMIC_setLinkCheckMode(0);
 
-    // Set data rate and transmit power (note: txpow seems to be ignored by the library)
+    // TTN uses SF9 for its RX2 window.
+    LMIC.dn2Dr = DR_SF9;
+
+    // Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
     LMIC_setDrTxpow(DR_SF7,14);
 
     // Start job
