@@ -226,6 +226,16 @@ see the notes above for when a pin can or cannot be left out).
 The name of this struct must always be `lmic_pins`, which is a special name
 recognized by the library.
 
+#### LoRa Nexus by Ideetron
+This board uses the following pin mapping:
+
+    const lmic_pinmap lmic_pins = {
+        .nss = 10,
+        .rxtx = LMIC_UNUSED_PIN,
+        .rst = LMIC_UNUSED_PIN, // hardwired to AtMega RESET
+        .dio = {4, 5, 7},
+    };
+
 Examples
 --------
 This library currently provides two examples:
