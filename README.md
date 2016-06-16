@@ -131,7 +131,7 @@ slave side (the transceiver), this must be connect to the pin
 (typically) labeled *NSS*. On the SPI master (Arduino) side, this pin
 can connect to any I/O pin. Most Arduinos also have a pin labeled "SS",
 but this is only relevant when the Arduino works as an SPI slave, which
-is not the case here. Whatever pin you pick, you need to tell thlibrary what pin you used through the pin mapping (see below).
+is not the case here. Whatever pin you pick, you need to tell the
 library what pin you used through the pin mapping (see below).
 
 [SPI]: https://www.arduino.cc/en/Reference/SPI
