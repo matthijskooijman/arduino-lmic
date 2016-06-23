@@ -201,6 +201,8 @@ struct lmic_t {
     s1_t        adrAckReq;    // counter until we reset data rate (0=off)
     u1_t        adrChanged;
 
+    u1_t        rxDelay;      // Rx delay after TX
+    
     u1_t        margin;
     bit_t       ladrAns;      // link adr adapt answer pending
     bit_t       devsAns;      // device status answer pending
