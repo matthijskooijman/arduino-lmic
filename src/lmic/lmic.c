@@ -27,8 +27,6 @@
 #define BCN_INTV_osticks       sec2osticks(BCN_INTV_sec)
 #define TXRX_GUARD_osticks     ms2osticks(TXRX_GUARD_ms)
 #define JOIN_GUARD_osticks     ms2osticks(JOIN_GUARD_ms)
-#define DELAY_DNW1_osticks     sec2osticks(DELAY_DNW1)
-#define DELAY_DNW2_osticks     sec2osticks(DELAY_DNW2)
 #define DELAY_JACC1_osticks    sec2osticks(DELAY_JACC1)
 #define DELAY_JACC2_osticks    sec2osticks(DELAY_JACC2)
 #define DELAY_EXTDNW2_osticks  sec2osticks(DELAY_EXTDNW2)
@@ -1543,7 +1541,7 @@ static void setupRx2DnData (xref2osjob_t osjob) {
 
 static void processRx1DnData (xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 || !processDnData() )
-        schedRx2(DELAY_DNW2_osticks, FUNC_ADDR(setupRx2DnData));
+        schedRx2(sec2osticks(LMIC.rxDelay +(int)DELAY_EXTDNW2), FUNC_ADDR(setupRx2DnData));
 }
 
 
@@ -1553,7 +1551,7 @@ static void setupRx1DnData (xref2osjob_t osjob) {
 
 
 static void updataDone (xref2osjob_t osjob) {
-    txDone(DELAY_DNW1_osticks, FUNC_ADDR(setupRx1DnData));
+    txDone(sec2osticks(LMIC.rxDelay), FUNC_ADDR(setupRx1DnData));
 }
 
 // ========================================
@@ -2169,6 +2167,7 @@ void LMIC_reset (void) {
     LMIC.adrEnabled   =  FCT_ADREN;
     LMIC.dn2Dr        =  DR_DNW2;   // we need this for 2nd DN window of join accept
     LMIC.dn2Freq      =  FREQ_DNW2; // ditto
+    LMIC.rxDelay      =  DELAY_DNW1;
 #if !defined(DISABLE_PING)
     LMIC.ping.freq    =  FREQ_PING; // defaults for ping
     LMIC.ping.dr      =  DR_PING;   // ditto
