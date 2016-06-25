@@ -219,6 +219,8 @@ struct lmic_t {
     u1_t        moreData;     // NWK has more data pending
     
     bit_t       lchkReq;      // Send lCheckReq MAC command
+    u1_t        gwMargin;     // Gateway margin    (lcheckAns)
+    u1_t        nGws;         // Number of gateways (lcheckAns)
 #if !defined(DISABLE_MCMD_DCAP_REQ)
     bit_t       dutyCapAns;   // have to ACK duty cycle settings
 #endif

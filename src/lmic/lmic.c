@@ -1124,8 +1124,8 @@ static bit_t decodeFrame (void) {
     while( oidx < olen ) {
         switch( opts[oidx] ) {
         case MCMD_LCHK_ANS: {
-            //int gwmargin = opts[oidx+1];
-            //int ngws = opts[oidx+2];
+            LMIC.gwMargin = opts[oidx+1];
+            LMIC.nGws = opts[oidx+2];
             oidx += 3;
             LMIC.lchkReq = 0;       // Request only once
             continue;
@@ -2218,6 +2218,8 @@ void LMIC_reset (void) {
     LMIC.dn2Freq      =  FREQ_DNW2; // ditto
     LMIC.rxDelay      =  DELAY_DNW1;
     LMIC.lchkReq      = 0;
+    LMIC.gwMargin     = 0;
+    LMIC.nGws         = 0;
 #if !defined(DISABLE_PING)
     LMIC.ping.freq    =  FREQ_PING; // defaults for ping
     LMIC.ping.dr      =  DR_PING;   // ditto
