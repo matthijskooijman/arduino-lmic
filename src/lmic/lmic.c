@@ -759,7 +759,7 @@ bit_t LMIC_setupChannel (u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
 
 void LMIC_disableChannel (u1_t channel) {
     if( channel < 72+MAX_XCHANNELS )
-        LMIC.channelMap[channel/4] &= ~(1<<(channel&0xF));
+        LMIC.channelMap[channel>>4] &= ~(1<<(channel&0xF));
 }
 
 void LMIC_enableChannel (u1_t channel) {
