@@ -74,7 +74,7 @@ static void hal_io_check() {
 // -----------------------------------------------------------------------------
 // SPI
 
-static const SPISettings settings(1E6, MSBFIRST, SPI_MODE0);
+static const SPISettings settings(LMIC_SPI_FREQ, MSBFIRST, SPI_MODE0);
 
 static void hal_spi_init () {
     SPI.begin();
