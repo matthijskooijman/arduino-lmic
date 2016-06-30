@@ -20,6 +20,11 @@
 #define US_PER_OSTICK (1 << US_PER_OSTICK_EXPONENT)
 #define OSTICKS_PER_SEC (1000000 / US_PER_OSTICK)
 
+// Change the SPI clock speed if you encounter errors
+// communicating with the radio.
+// The standard range is 125kHz-8MHz, but some boards can go faster.
+#define LMIC_SPI_FREQ 1E6
+
 // Enable this to allow using printf() to print to the given serial port
 // (or any other Print object). This can be easy for debugging. The
 // current implementation only works on AVR, though.
