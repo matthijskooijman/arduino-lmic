@@ -762,6 +762,34 @@ void LMIC_disableChannel (u1_t channel) {
         LMIC.channelMap[channel>>4] &= ~(1<<(channel&0xF));
 }
 
+void LMIC_enableChannel (u1_t channel, bit_t fEnableIfTrue) {
+    if( channel < 72+MAX_XCHANNELS ) {
+        if (fEnableIfTrue) {
+          /* set the bit */
+          LMIC.channelMap[channel >> 4] |=  (1<<(channel&0xF));
+        } else {
+          /* clear the bit */
+          LMIC.channelMap[channel >> 4] &= ~(1<<(channel&0xF));
+        }
+    } /* else the channel number is out of range */
+}
+
+void LMIC_selectSubBand(u1_t uSubBandIndex) {
+    // set up the channel mask so that exactly one group of channels
+    // from uSubBandIndex*8 .. uSubSubBandIndex*8+7 is enabled, and all
+    // others are disabled.
+    unsigned iChannel;
+    unsigned const uSubBandFirstCh = uSubBandIndex * 8;
+    unsigned const uSubBandLastCh = uSubBandFirstCh + 7;
+
+    for (iChannel = 0; iChannel < 72+MAX_XCHANNELS; ++iChannel) {
+        /* enable iChannel if it's in the subband, disable otherwise */
+        LMIC_enableChannel(iChannel, uSubBandFirstCh <= iChannel &&
+                                     iChannel <= uSubBandLastCh
+                          );
+    }
+}
+
 static u1_t mapChannels (u1_t chpage, u2_t chmap) {
     if( chpage == MCMD_LADR_CHP_125ON || chpage == MCMD_LADR_CHP_125OFF ) {
         u2_t en125 = chpage == MCMD_LADR_CHP_125ON ? 0xFFFF : 0x0000;

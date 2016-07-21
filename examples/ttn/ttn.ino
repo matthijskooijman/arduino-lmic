@@ -21,6 +21,14 @@
  *
  *******************************************************************************/
 
+ // References:
+ // [feather] adafruit-feather-m0-radio-with-lora-module.pdf
+
+//#if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
+//  // Required for Serial on Zero based boards
+//  #define Serial SERIAL_PORT_USBVIRTUAL
+//#endif
+
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
@@ -37,7 +45,7 @@ static const u1_t PROGMEM APPSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0x
 
 // LoRaWAN end-device address (DevAddr)
 // See http://thethingsnetwork.org/wiki/AddressSpace
-static const u4_t DEVADDR = 0x03FF0001 ; // <-- Change this address for every node!
+static const u4_t DEVADDR = 0x958C84AF ; // <-- Change this address for every node!  //GENERATED
 
 // These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless
@@ -46,19 +54,22 @@ void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
-static uint8_t mydata[] = "Hello, world!";
+static uint8_t mydata[] = "Hello there friend!";
 static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const unsigned TX_INTERVAL = 60;
+const unsigned TX_INTERVAL = 5;
 
 // Pin mapping
+// Adapted for Feather M0 per p.10 of [feather]
 const lmic_pinmap lmic_pins = {
-    .nss = 6,
+    .nss = 8,                       // chip select on feather (rf95module) CS
     .rxtx = LMIC_UNUSED_PIN,
-    .rst = 5,
-    .dio = {2, 3, 4},
+    .rst = 4,                       // reset pin
+    .dio = {6, 5, LMIC_UNUSED_PIN}, // assumes external jumpers [feather_lora_jumper]
+                                    // DIO1 is on JP1-1: is io1 - we connect to GPO6
+                                    // DIO1 is on JP5-3: is D2 - we connect to GPO5
 };
 
 void onEvent (ev_t ev) {
@@ -139,7 +150,10 @@ void do_send(osjob_t* j){
 }
 
 void setup() {
+//    pinMode(13, OUTPUT); 
+    while (!Serial); // wait for Serial to be initialized
     Serial.begin(115200);
+    delay(100);     // per sample code on RF_95 test
     Serial.println(F("Starting"));
 
     #ifdef VCC_ENABLE
@@ -201,10 +215,23 @@ void setup() {
     // Set data rate and transmit power (note: txpow seems to be ignored by the library)
     LMIC_setDrTxpow(DR_SF7,14);
 
+    // Select SubBand
+    LMIC_selectSubBand(7);
+
     // Start job
     do_send(&sendjob);
 }
 
 void loop() {
+    unsigned long now;
+    now = millis();
+    if ((now & 512) != 0) {
+      digitalWrite(13, HIGH);
+    }
+    else {
+      digitalWrite(13, LOW);
+    }
+      
     os_runloop_once();
+    
 }

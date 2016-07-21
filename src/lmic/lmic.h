@@ -257,6 +257,8 @@ bit_t LMIC_setupBand (u1_t bandidx, s1_t txpow, u2_t txcap);
 #endif
 bit_t LMIC_setupChannel (u1_t channel, u4_t freq, u2_t drmap, s1_t band);
 void  LMIC_disableChannel (u1_t channel);
+void  LMIC_enaableChannel (u1_t channel, bit_t fEnableIfTrue);
+void  LMIC_selectSubBand (u1_t uSubBandIndex);
 
 void  LMIC_setDrTxpow   (dr_t dr, s1_t txpow);  // set default/start DR/txpow
 void  LMIC_setAdrMode   (bit_t enabled);        // set ADR mode (if mobile turn off)
