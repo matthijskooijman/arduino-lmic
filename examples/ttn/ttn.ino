@@ -166,10 +166,11 @@ void setup() {
     memcpy_P(nwkskey, NWKSKEY, sizeof(NWKSKEY));
     LMIC_setSession (0x1, DEVADDR, nwkskey, appskey);
     #else
-    // If not running an AVR with PROGMEM, just use the arrays directly 
+    // If not running an AVR with PROGMEM, just use the arrays directly
     LMIC_setSession (0x1, DEVADDR, NWKSKEY, APPSKEY);
     #endif
 
+    #if defined(CFG_eu868)
     // Set up the channels used by the Things Network, which corresponds
     // to the defaults of most gateways. Without this, only three base
     // channels from the LoRaWAN specification are used, which certainly
@@ -191,6 +192,13 @@ void setup() {
     // devices' ping slots. LMIC does not have an easy way to define set this
     // frequency and support for class B is spotty and untested, so this
     // frequency is not configured here.
+    #elif defined(CFG_us915)
+    // NA-US channels 0-71 are configured automatically
+    // but only one group of 8 should (a subband) should be active
+    // TTN recommends the second sub band, 1 in a zero based count.
+    // https://github.com/TheThingsNetwork/gateway-conf/blob/master/US-global_conf.json
+    LMIC_selectSubBand(1);
+    #endif
 
     // Disable link check validation
     LMIC_setLinkCheckMode(0);
