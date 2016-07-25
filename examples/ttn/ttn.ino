@@ -195,9 +195,9 @@ void setup() {
     #elif defined(CFG_us915)
     // NA-US channels 0-71 are configured automatically
     // but only one group of 8 should (a subband) should be active
-    // TTN recommends the second sub band, 1 in a zero based count.
+    // TTN recommends the second sub band.
     // https://github.com/TheThingsNetwork/gateway-conf/blob/master/US-global_conf.json
-    LMIC_selectSubBand(1);
+    LMIC_selectSubBand(2);
     #endif
 
     // Disable link check validation
