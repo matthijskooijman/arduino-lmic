@@ -53,6 +53,31 @@ void hal_pin_rst (u1_t val) {
     }
 }
 
+#if !defined(LMIC_USE_INTERRUPTS)
+static void hal_interrupt_init() {
+    pinMode(lmic_pins.dio[0], INPUT);
+    if (lmic_pins.dio[1] != LMIC_UNUSED_PIN)
+        pinMode(lmic_pins.dio[1], INPUT);
+    if (lmic_pins.dio[2] != LMIC_UNUSED_PIN)
+        pinMode(lmic_pins.dio[2], INPUT);
+}
+
+static bool dio_states[NUM_DIO] = {0};
+static void hal_io_check() {
+    uint8_t i;
+    for (i = 0; i < NUM_DIO; ++i) {
+        if (lmic_pins.dio[i] == LMIC_UNUSED_PIN)
+            continue;
+
+        if (dio_states[i] != digitalRead(lmic_pins.dio[i])) {
+            dio_states[i] = !dio_states[i];
+            if (dio_states[i])
+                radio_irq_handler(i);
+        }
+    }
+}
+
+#else
 // Interrupt handlers
 static bool interrupt_flags[NUM_DIO] = {0};
 
@@ -90,6 +115,7 @@ static void hal_io_check() {
         }
     }
 }
+#endif // LMIC_USE_INTERRUPTS
 
 // -----------------------------------------------------------------------------
 // SPI
