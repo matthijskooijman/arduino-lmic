@@ -260,8 +260,8 @@ receive windows at a fixed time after the end of transmission.
 This timing uses the Arduino `micros()` timer, which has a granularity
 of 4μs and is based on the primary microcontroller clock.  For timing
 events, the tranceiver uses its DIOx pins as interrupt outputs. In the
-current implementation, these pins are not handled by an actual
-interrupt handler, but they are just polled once every LMIC loop,
+current implementation, these pins are handled by an interrupt handler,
+but only to set a flag - actual processing is done once every LMIC loop,
 resulting in a bit inaccuracy in the timestamping. Also, running
 scheduled jobs (such as opening up the receive windows) is done using a
 polling approach, which might also result in further delays.
