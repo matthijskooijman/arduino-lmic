@@ -30,6 +30,10 @@
 // current implementation only works on AVR, though.
 //#define LMIC_PRINTF_TO Serial
 
+// Enable this to use interrupt handler routines listening for RISING signals.
+// Otherwise, the library polls digital input lines for changes.
+//#define LMIC_USE_INTERRUPTS
+
 // Any runtime assertion failures are printed to this serial port (or
 // any other Print object). If this is unset, any failures just silently
 // halt execution.
