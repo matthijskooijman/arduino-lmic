@@ -1827,7 +1827,7 @@ bit_t LMIC_startJoining (void) {
         // Cancel scanning
         LMIC.opmode &= ~(OP_SCAN|OP_REJOIN|OP_LINKDEAD|OP_NEXTCHNL);
         // Setup state
-        LMIC.rejoinCnt = LMIC.txCnt = LMIC.pendTxConf = 0;
+        LMIC.rejoinCnt = LMIC.txCnt = 0;
         initJoinLoop();
         LMIC.opmode |= OP_JOINING;
         // reportEvent will call engineUpdate which then starts sending JOIN REQUESTS
