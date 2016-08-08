@@ -679,7 +679,7 @@ static void setBcnRxParams (void) {
 
 #if !defined(DISABLE_JOIN)
 static void initJoinLoop (void) {
-    LMIC.txChnl = os_getRndU1() % 6;
+    LMIC.txChnl = os_getRndU1() % 3;
     LMIC.adrTxPow = 14;
     setDrJoin(DRCHG_SET, DR_SF7);
     initDefaultChannels(1);
@@ -693,7 +693,7 @@ static ostime_t nextJoinState (void) {
 
     // Try 869.x and then 864.x with same DR
     // If both fail try next lower datarate
-    if( ++LMIC.txChnl == 6 )
+    if( ++LMIC.txChnl == 3 )
         LMIC.txChnl = 0;
     if( (++LMIC.txCnt & 1) == 0 ) {
         // Lower DR every 2nd try (having tried 868.x and 864.x with the same DR)
