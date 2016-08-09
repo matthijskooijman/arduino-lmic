@@ -35,7 +35,7 @@
 // This file was taken from
 // https://github.com/Ideetron/RFM95W_Nexus/tree/master/LoRaWAN_V31 for
 // use with LMIC. It was only cosmetically modified:
-//  - AES_Encrypt was renamed to aes_encrypt.
+//  - AES_Encrypt was renamed to lmic_aes_encrypt.
 //  - All other functions and variables were made static
 //  - Tabs were converted to 2 spaces
 //  - An #include and #if guard was added
@@ -72,7 +72,7 @@ static CONST_TABLE(unsigned char, S_Table)[16][16] = {
   {0x8C,0xA1,0x89,0x0D,0xBF,0xE6,0x42,0x68,0x41,0x99,0x2D,0x0F,0xB0,0x54,0xBB,0x16}
 };
 
-extern "C" void aes_encrypt(unsigned char *Data, unsigned char *Key);
+extern "C" void lmic_aes_encrypt(unsigned char *Data, unsigned char *Key);
 static void AES_Add_Round_Key(unsigned char *Round_Key);
 static unsigned char AES_Sub_Byte(unsigned char Byte);
 static void AES_Shift_Rows();
@@ -88,7 +88,7 @@ static void Send_State();
 *               *Key    Key to encrypt data with is a 16 byte long arry
 *****************************************************************************************
 */
-void aes_encrypt(unsigned char *Data, unsigned char *Key)
+void lmic_aes_encrypt(unsigned char *Data, unsigned char *Key)
 {
   unsigned char i;
   unsigned char Row,Collum;
