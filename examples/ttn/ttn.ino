@@ -92,7 +92,6 @@ void onEvent (ev_t ev) {
         case EV_REJOIN_FAILED:
             Serial.println(F("EV_REJOIN_FAILED"));
             break;
-            break;
         case EV_TXCOMPLETE:
             Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
             if(LMIC.dataLen) {
