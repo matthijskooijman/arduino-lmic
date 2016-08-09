@@ -1336,7 +1336,7 @@ static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
         // Calculate how much the clock will drift maximally after delay has
         // passed. This indicates the amount of time we can be early
         // _or_ late.
-        ostime_t drift = (s8_t)delay * LMIC.clockError / MAX_CLOCK_ERROR;
+        ostime_t drift = (int64_t)delay * LMIC.clockError / MAX_CLOCK_ERROR;
 
         // Increase the receive window by twice the maximum drift (to
         // compensate for a slow or a fast clock).
