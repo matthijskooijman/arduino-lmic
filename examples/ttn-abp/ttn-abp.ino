@@ -101,11 +101,10 @@ void onEvent (ev_t ev) {
             break;
         case EV_TXCOMPLETE:
             Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
-            if(LMIC.dataLen) {
-                // data received in rx slot after tx
-                Serial.print(F("Data Received: "));
-                Serial.write(LMIC.frame+LMIC.dataBeg, LMIC.dataLen);
-                Serial.println();
+            if (LMIC.dataLen) {
+              Serial.println(F("Received "));
+              Serial.println(LMIC.dataLen);
+              Serial.println(F(" bytes of payload"));
             }
             // Schedule next transmission
             os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
