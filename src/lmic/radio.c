@@ -669,7 +669,10 @@ static void startrx (u1_t rxmode) {
 
 // get random seed from wideband noise rssi
 void radio_init () {
+
+#ifndef ESP8266
     hal_disableIRQs();
+#endif
 
     // manually reset radio
 #ifdef CFG_sx1276_radio
@@ -725,7 +728,9 @@ void radio_init () {
 
     opmode(OPMODE_SLEEP);
 
+#ifndef ESP8266
     hal_enableIRQs();
+#endif
 }
 
 // return next random byte derived from seed buffer
@@ -758,6 +763,28 @@ static CONST_TABLE(u2_t, LORA_RXDONE_FIXUP)[] = {
     [SF11] = us2osticks(13641), // ( 447 ticks)
     [SF12] = us2osticks(31189), // (1022 ticks)
 };
+
+
+// called by hal to check if we got one IRQ
+// This trick directly read the Lora module IRQ register
+// and thus avoid any IRQ line used to controler
+u1_t radio_has_irq (void) {
+    u1_t flags ;
+    if( (readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
+        flags = readReg(LORARegIrqFlags);
+        if( flags & ( IRQ_LORA_TXDONE_MASK | IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK ) ) 
+            return 1;
+    } else { // FSK modem
+        flags = readReg(FSKRegIrqFlags2);
+        if ( flags & ( IRQ_FSK2_PACKETSENT_MASK | IRQ_FSK2_PAYLOADREADY_MASK) ) 
+            return 1;
+        flags = readReg(FSKRegIrqFlags1);
+        if ( flags & IRQ_FSK1_TIMEOUT_MASK ) 
+            return 1;
+    }
+
+    return 0;
+}
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
