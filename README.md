@@ -137,6 +137,20 @@ library what pin you used through the pin mapping (see below).
 [SPI]: https://www.arduino.cc/en/Reference/SPI
 
 ### DIO pins
+
+Since now, a software feature has been added to remove needing DIO connections. 
+Of course, you can continue to use DIO mapping has follow, but in case you're 
+restricted in GPIO available, you can avoid using any GPIO connection ;-)
+to activate this feature, you just need to declare 3 .dio to LMIC_UNUSED_PIN,
+in your sketch as detailled in Pin mapping section. 
+
+If you want to use hardware IRQ but not having 3 IO pins, another trick is
+to OR the 3 used DIO into one. This is possible because the stack check 
+all IRQs, even if only one is triggered. Doing this is quite easy, just 3
+1N4148 diodes and a pulldown resistor, see schematic example on [WeMos Lora 
+shield](https://github.com/hallard/WeMos-Lora)
+
+If you still have DIO connection, following is explaining how they work.
 The DIO (digitial I/O) pins on the transceiver board can be configured
 for various functions. The LMIC library uses them to get instant status
 information from the transceiver. For example, when a LoRa transmission
@@ -219,12 +233,42 @@ The names refer to the pins on the transceiver side, the numbers refer
 to the Arduino pin numbers (to use the analog pins, use constants like
 `A0`). For the DIO pins, the three numbers refer to DIO0, DIO1 and DIO2
 respectively. Any pins that are not needed should be specified as
-`LMIC_UNUSED_PIN`. The nss and dio0 pin is required, the others can
-potentially left out (depending on the environments and requirements,
-see the notes above for when a pin can or cannot be left out).
+`LMIC_UNUSED_PIN`. The nss is required the others can potentially left out
+(depending on the environments and requirements, see the notes above for when
+a pin can or cannot be left out).
 
 The name of this struct must always be `lmic_pins`, which is a special name
 recognized by the library.
+
+If you don't have any DIO pins connected to GPIO (new software feature)
+you just need to declare 3 .dio to LMIC_UNUSED_PIN, in your sketch 
+That's all, stack will do the job for you.
+
+#### WeMos Lora Shield 
+```arduino
+// Example with NO DIO pin connected
+// see hardware used https://github.com/hallard/WeMos-Lora
+const lmic_pinmap lmic_pins = {
+    .nss = 16,
+    .rxtx = LMIC_UNUSED_PIN,
+    .rst = LMIC_UNUSED_PIN,
+    .dio = {LMIC_UNUSED_PIN, LMIC_UNUSED_PIN, LMIC_UNUSED_PIN},
+};
+```
+
+If you used 3 diodes OR hardware trick like in this [schematic](https://github.com/hallard/WeMos-Lora),
+just indicate which GPIO is used on DIO0 definition as follow:
+
+```arduino
+// Example with 3 DIO OR'ed on one pin connected to GPIO14
+// see hardware used https://github.com/hallard/WeMos-Lora
+const lmic_pinmap lmic_pins = {
+    .nss = 16,
+    .rxtx = LMIC_UNUSED_PIN,
+    .rst = LMIC_UNUSED_PIN,
+    .dio = {15, LMIC_UNUSED_PIN, LMIC_UNUSED_PIN},
+};
+```
 
 #### LoRa Nexus by Ideetron
 This board uses the following pin mapping:

@@ -20,8 +20,11 @@
 static void hal_io_init () {
     // NSS and DIO0 are required, DIO1 is required for LoRa, DIO2 for FSK
     ASSERT(lmic_pins.nss != LMIC_UNUSED_PIN);
-    ASSERT(lmic_pins.dio[0] != LMIC_UNUSED_PIN);
-    ASSERT(lmic_pins.dio[1] != LMIC_UNUSED_PIN || lmic_pins.dio[2] != LMIC_UNUSED_PIN);
+
+    // No more needed, if dio pins are declared as unused, then LIMC will check
+    // interrputs directly into Lora module register, avoiding needed GPIO line to IRQ
+    //ASSERT(lmic_pins.dio[0] != LMIC_UNUSED_PIN);
+    //ASSERT(lmic_pins.dio[1] != LMIC_UNUSED_PIN || lmic_pins.dio[2] != LMIC_UNUSED_PIN);
 
     pinMode(lmic_pins.nss, OUTPUT);
     if (lmic_pins.rxtx != LMIC_UNUSED_PIN)
@@ -61,16 +64,23 @@ static void hal_io_check() {
     uint8_t i;
     for (i = 0; i < NUM_DIO; ++i) {
         if (lmic_pins.dio[i] == LMIC_UNUSED_PIN)
-            continue;
+        {
+            // Check IRQ flags in radio module
+            if ( radio_has_irq() ) 
+                radio_irq_handler(0);
 
-        if (dio_states[i] != digitalRead(lmic_pins.dio[i])) {
-            dio_states[i] = !dio_states[i];
-            if (dio_states[i])
-                radio_irq_handler(i);
+            // We've soft checked IRQ reading Radio register no need to continue
+            // Setting this will exit us from for loop
+            i = NUM_DIO;
+        } else {
+            if (dio_states[i] != digitalRead(lmic_pins.dio[i])) {
+                dio_states[i] = !dio_states[i];
+                if (dio_states[i])
+                    radio_irq_handler(i);
+            }
         }
     }
 }
-
 // -----------------------------------------------------------------------------
 // SPI
 
