@@ -145,10 +145,10 @@ to activate this feature, you just need to declare 3 .dio to LMIC_UNUSED_PIN,
 in your sketch as detailled in Pin mapping section. 
 
 If you want to use hardware IRQ but not having 3 IO pins, another trick is
-to OR the 3 used DIO into one. This is possible because the stack check 
-all IRQs, even if only one is triggered. Doing this is quite easy, just 3
-1N4148 diodes and a pulldown resistor, see schematic example on [WeMos Lora 
-shield](https://github.com/hallard/WeMos-Lora)
+to OR DIO0/DOI1/DIO2 into one. This is possible because the stack check 
+all IRQs, even if only one is triggered. Doing this is quite easy, just add 3
+1N4148 diodes to each output and a pulldown resistor, see schematic example
+on [WeMos Lora shield](https://github.com/hallard/WeMos-Lora).
 
 If you still have DIO connection, following is explaining how they work.
 The DIO (digitial I/O) pins on the transceiver board can be configured
@@ -244,10 +244,9 @@ If you don't have any DIO pins connected to GPIO (new software feature)
 you just need to declare 3 .dio to LMIC_UNUSED_PIN, in your sketch 
 That's all, stack will do the job for you.
 
-#### WeMos Lora Shield 
+#### [WeMos Lora Shield](https://github.com/hallard/WeMos-Lora)
 ```arduino
 // Example with NO DIO pin connected
-// see hardware used https://github.com/hallard/WeMos-Lora
 const lmic_pinmap lmic_pins = {
     .nss = 16,
     .rxtx = LMIC_UNUSED_PIN,
@@ -261,7 +260,6 @@ just indicate which GPIO is used on DIO0 definition as follow:
 
 ```arduino
 // Example with 3 DIO OR'ed on one pin connected to GPIO14
-// see hardware used https://github.com/hallard/WeMos-Lora
 const lmic_pinmap lmic_pins = {
     .nss = 16,
     .rxtx = LMIC_UNUSED_PIN,
