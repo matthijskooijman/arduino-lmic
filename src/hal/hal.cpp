@@ -16,9 +16,11 @@
 
 // -----------------------------------------------------------------------------
 // I/O
+// default we do not use IRQ line and DIO output
+static bool check_dio = 0;
 
 static void hal_io_init () {
-    // NSS and DIO0 are required, DIO1 is required for LoRa, DIO2 for FSK
+    // NSS is required
     ASSERT(lmic_pins.nss != LMIC_UNUSED_PIN);
 
     // No more needed, if dio pins are declared as unused, then LIMC will check
@@ -32,11 +34,13 @@ static void hal_io_init () {
     if (lmic_pins.rst != LMIC_UNUSED_PIN)
         pinMode(lmic_pins.rst, OUTPUT);
 
-    pinMode(lmic_pins.dio[0], INPUT);
-    if (lmic_pins.dio[1] != LMIC_UNUSED_PIN)
-        pinMode(lmic_pins.dio[1], INPUT);
-    if (lmic_pins.dio[2] != LMIC_UNUSED_PIN)
-        pinMode(lmic_pins.dio[2], INPUT);
+    // if using DIO lines, DIO0 is always required, DIO1 is required for LoRa, DIO2 for FSK
+    for (uint8_t i = 0; i < NUM_DIO; ++i) {
+        if (lmic_pins.dio[i] != LMIC_UNUSED_PIN) {
+            check_dio = 1; // we need to use DIO line check
+            pinMode(lmic_pins.dio[i], INPUT);
+        }
+    }
 }
 
 // val == 1  => tx 1
@@ -61,24 +65,21 @@ void hal_pin_rst (u1_t val) {
 static bool dio_states[NUM_DIO] = {0};
 
 static void hal_io_check() {
-    uint8_t i;
-    for (i = 0; i < NUM_DIO; ++i) {
-        if (lmic_pins.dio[i] == LMIC_UNUSED_PIN)
-        {
-            // Check IRQ flags in radio module
-            if ( radio_has_irq() ) 
-                radio_irq_handler(0);
-
-            // We've soft checked IRQ reading Radio register no need to continue
-            // Setting this will exit us from for loop
-            i = NUM_DIO;
-        } else {
+    // We have DIO line connected?
+    if (check_dio == 1) {
+        uint8_t i;
+        for (i = 0; i < NUM_DIO; ++i) {
             if (dio_states[i] != digitalRead(lmic_pins.dio[i])) {
                 dio_states[i] = !dio_states[i];
-                if (dio_states[i])
+                if (dio_states[i]) {
                     radio_irq_handler(i);
+                }
             }
         }
+    } else {
+        // Check IRQ flags in radio module
+        if ( radio_has_irq() ) 
+            radio_irq_handler(0);
     }
 }
 // -----------------------------------------------------------------------------
