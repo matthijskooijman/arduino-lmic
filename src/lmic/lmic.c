@@ -27,8 +27,6 @@
 #define BCN_INTV_osticks       sec2osticks(BCN_INTV_sec)
 #define TXRX_GUARD_osticks     ms2osticks(TXRX_GUARD_ms)
 #define JOIN_GUARD_osticks     ms2osticks(JOIN_GUARD_ms)
-#define DELAY_DNW1_osticks     sec2osticks(DELAY_DNW1)
-#define DELAY_DNW2_osticks     sec2osticks(DELAY_DNW2)
 #define DELAY_JACC1_osticks    sec2osticks(DELAY_JACC1)
 #define DELAY_JACC2_osticks    sec2osticks(DELAY_JACC2)
 #define DELAY_EXTDNW2_osticks  sec2osticks(DELAY_EXTDNW2)
@@ -681,7 +679,7 @@ static void setBcnRxParams (void) {
 
 #if !defined(DISABLE_JOIN)
 static void initJoinLoop (void) {
-    LMIC.txChnl = os_getRndU1() % 6;
+    LMIC.txChnl = os_getRndU1() % 3;
     LMIC.adrTxPow = 14;
     setDrJoin(DRCHG_SET, DR_SF7);
     initDefaultChannels(1);
@@ -695,7 +693,7 @@ static ostime_t nextJoinState (void) {
 
     // Try 869.x and then 864.x with same DR
     // If both fail try next lower datarate
-    if( ++LMIC.txChnl == 6 )
+    if( ++LMIC.txChnl == 3 )
         LMIC.txChnl = 0;
     if( (++LMIC.txCnt & 1) == 0 ) {
         // Lower DR every 2nd try (having tried 868.x and 864.x with the same DR)
@@ -768,25 +766,22 @@ void LMIC_enableChannel (u1_t channel) {
 }
 
 void  LMIC_enableSubBand (u1_t band) {
-  ASSERT(band > 0);
-  ASSERT(band <= 8);
-  u1_t start = (band-1) * 8;
+  ASSERT(band < 8);
+  u1_t start = band * 8;
   u1_t end = start + 8;
   for (int channel=start; channel < end; ++channel )
       LMIC_enableChannel(channel);
 }
 void  LMIC_disableSubBand (u1_t band) {
-  ASSERT(band > 0);
-  ASSERT(band <= 8);
-  u1_t start = (band-1) * 8;
+  ASSERT(band < 8);
+  u1_t start = band * 8;
   u1_t end = start + 8;
   for (int channel=start; channel < end; ++channel )
       LMIC_disableChannel(channel);
 }
 void  LMIC_selectSubBand (u1_t band) {
-  ASSERT(band > 0);
-  ASSERT(band <= 8);
-  for (int b=1; b<=8; ++b) {
+  ASSERT(band < 8);
+  for (int b=0; b<8; ++b) {
     if (band==b)
       LMIC_enableSubBand(b);
     else
@@ -1024,6 +1019,7 @@ static bit_t decodeFrame (void) {
     u1_t hdr    = d[0];
     u1_t ftype  = hdr & HDR_FTYPE;
     int  dlen   = LMIC.dataLen;
+    const char *window = (LMIC.txrxFlags & TXRX_DNW1) ? "RX1" : ((LMIC.txrxFlags & TXRX_DNW2) ? "RX2" : "Other");
     if( dlen < OFF_DAT_OPTS+4 ||
         (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
         (ftype != HDR_FTYPE_DADN  &&  ftype != HDR_FTYPE_DCDN) ) {
@@ -1033,6 +1029,9 @@ static bit_t decodeFrame (void) {
                             e_.info   = dlen < 4 ? 0 : os_rlsbf4(&d[dlen-4]),
                             e_.info2  = hdr + (dlen<<8)));
       norx:
+#if LMIC_DEBUG_LEVEL > 0
+        printf("%lu: Invalid downlink, window=%s\n", os_getTime(), window);
+#endif
         LMIC.dataLen = 0;
         return 0;
     }
@@ -1313,6 +1312,9 @@ static bit_t decodeFrame (void) {
         LMIC.dataBeg = poff;
         LMIC.dataLen = pend-poff;
     }
+#if LMIC_DEBUG_LEVEL > 0
+    printf("%lu: Received downlink, window=%s, port=%d, ack=%d\n", os_getTime(), window, port, ackup);
+#endif
     return 1;
 }
 
@@ -1330,9 +1332,36 @@ static void setupRx2 (void) {
 }
 
 
-static void schedRx2 (ostime_t delay, osjobcb_t func) {
-    // Add 1.5 symbols we need 5 out of 8. Try to sync 1.5 symbols into the preamble.
-    LMIC.rxtime = LMIC.txend + delay + (PAMBL_SYMS-MINRX_SYMS)*dr2hsym(LMIC.dn2Dr);
+static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
+    ostime_t hsym = dr2hsym(dr);
+
+    LMIC.rxsyms = MINRX_SYMS;
+
+    // If a clock error is specified, compensate for it by extending the
+    // receive window
+    if (LMIC.clockError != 0) {
+        // Calculate how much the clock will drift maximally after delay has
+        // passed. This indicates the amount of time we can be early
+        // _or_ late.
+        ostime_t drift = (int64_t)delay * LMIC.clockError / MAX_CLOCK_ERROR;
+
+        // Increase the receive window by twice the maximum drift (to
+        // compensate for a slow or a fast clock).
+        // decrease the rxtime to compensate for. Note that hsym is a
+        // *half* symbol time, so the factor 2 is hidden. First check if
+        // this would overflow (which can happen if the drift is very
+        // high, or the symbol time is low at high datarates).
+        if ((255 - LMIC.rxsyms) * hsym < drift)
+            LMIC.rxsyms = 255;
+        else
+            LMIC.rxsyms += drift / hsym;
+
+    }
+
+    // Center the receive window on the center of the expected preamble
+    // (again note that hsym is half a sumbol time, so no /2 needed)
+    LMIC.rxtime = LMIC.txend + delay + PAMBL_SYMS * hsym - LMIC.rxsyms * hsym;
+
     os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
 }
 
@@ -1364,14 +1393,13 @@ static void txDone (ostime_t delay, osjobcb_t func) {
     if( /* TX datarate */LMIC.rxsyms == DR_FSK ) {
         LMIC.rxtime = LMIC.txend + delay - PRERX_FSK*us2osticksRound(160);
         LMIC.rxsyms = RXLEN_FSK;
+        os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
     }
     else
 #endif
     {
-        LMIC.rxtime = LMIC.txend + delay + (PAMBL_SYMS-MINRX_SYMS)*dr2hsym(LMIC.dndr);
-        LMIC.rxsyms = MINRX_SYMS;
+        schedRx12(delay, func, LMIC.dndr);
     }
-    os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
 }
 
 
@@ -1451,8 +1479,12 @@ static bit_t processJoinAccept (void) {
         dlen = OFF_CFLIST;
         for( u1_t chidx=3; chidx<8; chidx++, dlen+=3 ) {
             u4_t freq = convFreq(&LMIC.frame[dlen]);
-            if( freq )
+            if( freq ) {
                 LMIC_setupChannel(chidx, freq, 0, -1);
+#if LMIC_DEBUG_LEVEL > 1
+                printf("%lu: Setup channel, idx=%d, freq=%lu\n", os_getTime(), chidx, (unsigned long)freq);
+#endif
+            }
         }
     }
 
@@ -1479,7 +1511,11 @@ static bit_t processJoinAccept (void) {
         LMIC.datarate = lowerDR(LMIC.datarate, LMIC.rejoinCnt);
     }
     LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_REJOIN|OP_TXRXPEND|OP_PINGINI) | OP_NEXTCHNL;
+    LMIC.txCnt = 0;
     stateJustJoined();
+    LMIC.dn2Dr = LMIC.frame[OFF_JA_DLSET] & 0x0F;
+    LMIC.rxDelay = LMIC.frame[OFF_JA_RXDLY];
+    if (LMIC.rxDelay == 0) LMIC.rxDelay = 1;
     reportEvent(EV_JOINED);
     return 1;
 }
@@ -1500,7 +1536,7 @@ static void setupRx2Jacc (xref2osjob_t osjob) {
 
 static void processRx1Jacc (xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 || !processJoinAccept() )
-        schedRx2(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc));
+        schedRx12(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc), LMIC.dn2Dr);
 }
 
 
@@ -1546,7 +1582,7 @@ static void setupRx2DnData (xref2osjob_t osjob) {
 
 static void processRx1DnData (xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 || !processDnData() )
-        schedRx2(DELAY_DNW2_osticks, FUNC_ADDR(setupRx2DnData));
+        schedRx12(sec2osticks(LMIC.rxDelay +(int)DELAY_EXTDNW2), FUNC_ADDR(setupRx2DnData), LMIC.dn2Dr);
 }
 
 
@@ -1556,7 +1592,7 @@ static void setupRx1DnData (xref2osjob_t osjob) {
 
 
 static void updataDone (xref2osjob_t osjob) {
-    txDone(DELAY_DNW1_osticks, FUNC_ADDR(setupRx1DnData));
+    txDone(sec2osticks(LMIC.rxDelay), FUNC_ADDR(setupRx1DnData));
 }
 
 // ========================================
@@ -1802,7 +1838,7 @@ bit_t LMIC_startJoining (void) {
         // Cancel scanning
         LMIC.opmode &= ~(OP_SCAN|OP_REJOIN|OP_LINKDEAD|OP_NEXTCHNL);
         // Setup state
-        LMIC.rejoinCnt = LMIC.txCnt = LMIC.pendTxConf = 0;
+        LMIC.rejoinCnt = LMIC.txCnt = 0;
         initJoinLoop();
         LMIC.opmode |= OP_JOINING;
         // reportEvent will call engineUpdate which then starts sending JOIN REQUESTS
@@ -1982,6 +2018,9 @@ static void startRxPing (xref2osjob_t osjob) {
 
 // Decide what to do next for the MAC layer of a device
 static void engineUpdate (void) {
+#if LMIC_DEBUG_LEVEL > 0
+    printf("%lu: engineUpdate, opmode=0x%x\n", os_getTime(), LMIC.opmode);
+#endif
     // Check for ongoing state: scan or TX/RX transaction
     if( (LMIC.opmode & (OP_SCAN|OP_TXRXPEND|OP_SHUTDOWN)) != 0 )
         return;
@@ -2172,6 +2211,7 @@ void LMIC_reset (void) {
     LMIC.adrEnabled   =  FCT_ADREN;
     LMIC.dn2Dr        =  DR_DNW2;   // we need this for 2nd DN window of join accept
     LMIC.dn2Freq      =  FREQ_DNW2; // ditto
+    LMIC.rxDelay      =  DELAY_DNW1;
 #if !defined(DISABLE_PING)
     LMIC.ping.freq    =  FREQ_PING; // defaults for ping
     LMIC.ping.dr      =  DR_PING;   // ditto
@@ -2291,4 +2331,11 @@ void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t
 void LMIC_setLinkCheckMode (bit_t enabled) {
     LMIC.adrChanged = 0;
     LMIC.adrAckReq = enabled ? LINK_CHECK_INIT : LINK_CHECK_OFF;
+}
+
+// Sets the max clock error to compensate for (defaults to 0, which
+// allows for +/- 640 at SF7BW250). MAX_CLOCK_ERROR represents +/-100%,
+// so e.g. for a +/-1% error you would pass MAX_CLOCK_ERROR * 1 / 100.
+void LMIC_setClockError(u2_t error) {
+    LMIC.clockError = error;
 }
