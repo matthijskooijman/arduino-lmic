@@ -38,12 +38,12 @@ What certainly works:
  - Encryption and message integrity checking.
  - Receiving downlink packets in the RX2 window.
  - Custom frequencies and datarate settings.
+ - Over-the-air activation (OTAA / joining).
 
 What has not been tested:
  - Receiving downlink packets in the RX1 window.
  - Receiving and processing MAC commands.
  - Class B operation.
- - Over-the-air activation (OTAA / joining).
 
 If you try one of these untested features and it works, be sure to let
 us know (creating a github issue is probably the best way for that).
@@ -82,7 +82,7 @@ This library is intended to be used inside the Arduino environment. It
 should be architecture-independent, so it should run on "normal" AVR
 arduinos, but also on the ARM-based ones, and some success has been seen
 running on the ESP8266 board as well. It was tested on the Arduino Uno,
-Pinoccio Scout, Teensy LC and 3.x, ESP8266.
+Pinoccio Scout, Teensy LC and 3.x, ESP8266, Arduino 101.
 
 This library an be quite heavy, especially if the fairly small ATmega
 328p (such as in the Arduino Uno) is used. In the default configuration,
@@ -131,7 +131,7 @@ slave side (the transceiver), this must be connect to the pin
 (typically) labeled *NSS*. On the SPI master (Arduino) side, this pin
 can connect to any I/O pin. Most Arduinos also have a pin labeled "SS",
 but this is only relevant when the Arduino works as an SPI slave, which
-is not the case here. Whatever pin you pick, you need to tell thlibrary what pin you used through the pin mapping (see below).
+is not the case here. Whatever pin you pick, you need to tell the
 library what pin you used through the pin mapping (see below).
 
 [SPI]: https://www.arduino.cc/en/Reference/SPI
@@ -226,20 +226,36 @@ see the notes above for when a pin can or cannot be left out).
 The name of this struct must always be `lmic_pins`, which is a special name
 recognized by the library.
 
+#### LoRa Nexus by Ideetron
+This board uses the following pin mapping:
+
+    const lmic_pinmap lmic_pins = {
+        .nss = 10,
+        .rxtx = LMIC_UNUSED_PIN,
+        .rst = LMIC_UNUSED_PIN, // hardwired to AtMega RESET
+        .dio = {4, 5, 7},
+    };
+
 Examples
 --------
-This library currently provides two examples:
+This library currently provides three examples:
 
- - `ttn.ino` shows a basic transmission of a "Hello, world!" message
+ - `ttn-abp.ino` shows a basic transmission of a "Hello, world!" message
    using the LoRaWAN protocol. It contains some frequency settings and
    encryption keys intended for use with The Things Network, but these
    also correspond to the default settings of most gateways, so it
    should work with other networks and gateways as well. This example
-   uses "personalization" (preconfiguring a device address and
-   encryption keys), and does not employ over-the-air activation.
+   uses activation-by-personalization (ABP, preconfiguring a device
+   address and encryption keys), and does not employ over-the-air
+   activation.
 
    Reception of packets (in response to transmission, using the RX1 and
    RX2 receive windows is also supported).
+
+ - `ttn-otaa.ino` also sends a "Hello, world!" message, but uses over
+   the air activation (OTAA) to first join a network to establish a
+   session and security keys. This was tested with The Things Network,
+   but should also work (perhaps with some changes) for other networks.
 
  - `raw.ino` shows how to access the radio on a somewhat low level,
    and allows to send raw (non-LoRaWAN) packets between nodes directly.
@@ -276,12 +292,13 @@ meaning that a inacurracy of plus or minus 2.5 symbol times should be
 acceptable.
 
 At the fastest LoRa setting supported by the tranceiver (SF5BW500) a
-single preamble symbol takes 128μs, so the receive window timing should
-be accurate within 320 μs. This is certainly within a crystal's
-accuracy, but using the internal oscillator is probably not feasible
-(which is 1% - 10% accurate, depending on calibration). This accuracy
-should also be feasible with the polling approach used, provided that
-the LMIC loop is run often enough.
+single preamble symbol takes 64μs, so the receive window timing should
+be accurate within 160μs (for LoRaWAN this is SF7BW250, needing accuracy
+within 1280μs). This is certainly within a crystal's accuracy, but using
+the internal oscillator is probably not feasible (which is 1% - 10%
+accurate, depending on calibration). This accuracy should also be
+feasible with the polling approach used, provided that the LMIC loop is
+run often enough.
 
 It would be good to properly review this code at some point, since it
 seems that in some places some offsets and corrections are applied that
@@ -322,17 +339,27 @@ a bit vague on the RC oscillator's accuracy and how to use it exactly
 (some registers seem to be FSK-mode only), so this needs some
 experiments.
 
-Downlink packets
-----------------
-Testing downlink packets is easy using the iot.semtech.com interface.
-However, note that it seems downlink packets from there are sent using
-the RX2 window and SF9BW125 settings, but LMIC defaults to SF12BW125 for
-the RX2 window (as indicated by the LoRaWAN specification). If downlink
-reception is not working, try changing the `DR_DNW2` parameter in
-`lorabase.h`.
+Downlink datarate
+-----------------
+Note that the datarate used for downlink packets in the RX2 window
+defaults to SF12BW125 according to the specification, but some networks
+use different values (iot.semtech.com and The Things Network both use
+SF9BW). When using personalized activate (ABP), it is your
+responsibility to set the right settings, e.g. by adding this to your
+sketch (after calling `LMIC_setSession`). `ttn-abp.ino` already does
+this.
+
+     LMIC.dn2Dr = DR_SF9;
+
+When using OTAA, the network communicates the RX2 settings in the
+join accept message, but the LMIC library does not currently process
+these settings. Until that is solved (see issue #20), you should
+manually set the RX2 rate, *after* joining (see the handling of
+`EV_JOINED` in the `ttn-otaa.ino` for an example.
 
 License
 -------
-The source files in this repository are made available under the Eclipse
-Public License v1.0, except for the examples which use a more liberal
-license. Refer to each individual source file for more details.
+Most source files in this repository are made available under the
+Eclipse Public License v1.0. The examples which use a more liberal
+license. Some of the AES code is available under the LGPL. Refer to each
+individual source file for more details.

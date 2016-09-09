@@ -143,6 +143,10 @@ enum _ev_t { EV_SCAN_TIMEOUT=1, EV_BEACON_FOUND,
              EV_RXCOMPLETE, EV_LINK_DEAD, EV_LINK_ALIVE };
 typedef enum _ev_t ev_t;
 
+enum {
+        // This value represents 100% error in LMIC.clockError
+        MAX_CLOCK_ERROR = 65536,
+};
 
 struct lmic_t {
     // Radio settings TX/RX (also accessed by HAL)
@@ -181,9 +185,14 @@ struct lmic_t {
     u1_t        datarate;     // current data rate
     u1_t        errcr;        // error coding rate (used for TX only)
     u1_t        rejoinCnt;    // adjustment for rejoin datarate
+#if !defined(DISABLE_BEACONS)
     s2_t        drift;        // last measured drift
     s2_t        lastDriftDiff;
     s2_t        maxDriftDiff;
+#endif
+
+    u2_t        clockError; // Inaccuracy in the clock. CLOCK_ERROR_MAX
+                            // represents +/-100% error
 
     u1_t        pendTxPort;
     u1_t        pendTxConf;   // confirmed data
@@ -201,6 +210,8 @@ struct lmic_t {
     s1_t        adrAckReq;    // counter until we reset data rate (0=off)
     u1_t        adrChanged;
 
+    u1_t        rxDelay;      // Rx delay after TX
+    
     u1_t        margin;
     bit_t       ladrAns;      // link adr adapt answer pending
     bit_t       devsAns;      // device status answer pending
@@ -257,6 +268,12 @@ bit_t LMIC_setupBand (u1_t bandidx, s1_t txpow, u2_t txcap);
 #endif
 bit_t LMIC_setupChannel (u1_t channel, u4_t freq, u2_t drmap, s1_t band);
 void  LMIC_disableChannel (u1_t channel);
+#if defined(CFG_us915)
+void  LMIC_enableChannel (u1_t channel);
+void  LMIC_enableSubBand (u1_t band);
+void  LMIC_disableSubBand (u1_t band);
+void  LMIC_selectSubBand (u1_t band);
+#endif
 
 void  LMIC_setDrTxpow   (dr_t dr, s1_t txpow);  // set default/start DR/txpow
 void  LMIC_setAdrMode   (bit_t enabled);        // set ADR mode (if mobile turn off)
@@ -287,6 +304,7 @@ void  LMIC_tryRejoin     (void);
 
 void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t artKey);
 void LMIC_setLinkCheckMode (bit_t enabled);
+void LMIC_setClockError(u2_t error);
 
 // Declare onEvent() function, to make sure any definition will have the
 // C conventions, even when in a C++ file.

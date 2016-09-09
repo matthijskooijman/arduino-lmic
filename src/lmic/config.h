@@ -20,6 +20,13 @@
 #define US_PER_OSTICK (1 << US_PER_OSTICK_EXPONENT)
 #define OSTICKS_PER_SEC (1000000 / US_PER_OSTICK)
 
+// Set this to 1 to enable some basic debug output (using printf) about
+// RF settings used during transmission and reception. Set to 2 to
+// enable more verbose output. Make sure that printf is actually
+// configured (e.g. on AVR it is not by default), otherwise using it can
+// cause crashing.
+#define LMIC_DEBUG_LEVEL 0
+
 // Enable this to allow using printf() to print to the given serial port
 // (or any other Print object). This can be easy for debugging. The
 // current implementation only works on AVR, though.
@@ -61,4 +68,20 @@
 // and/or when talking to the radio directly (e.g. like in the "raw"
 // example).
 //#define DISABLE_INVERT_IQ_ON_RX
+
+// This allows choosing between multiple included AES implementations.
+// Make sure exactly one of these is uncommented.
+//
+// This selects the original AES implementation included LMIC. This
+// implementation is optimized for speed on 32-bit processors using
+// fairly big lookup tables, but it takes up big amounts of flash on the
+// AVR architecture.
+// #define USE_ORIGINAL_AES
+//
+// This selects the AES implementation written by Ideetroon for their
+// own LoRaWAN library. It also uses lookup tables, but smaller
+// byte-oriented ones, making it use a lot less flash space (but it is
+// also about twice as slow as the original).
+#define USE_IDEETRON_AES
+
 #endif // _lmic_config_h_

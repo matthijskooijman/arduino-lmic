@@ -388,7 +388,7 @@ static void configLoraModem () {
 
 static void configChannel () {
     // set frequency: FQ = (FRF * 32 Mhz) / (2 ^ 19)
-    u8_t frf = ((u8_t)LMIC.freq << 19) / 32000000;
+    uint64_t frf = ((uint64_t)LMIC.freq << 19) / 32000000;
     writeReg(RegFrfMsb, (u1_t)(frf>>16));
     writeReg(RegFrfMid, (u1_t)(frf>> 8));
     writeReg(RegFrfLsb, (u1_t)(frf>> 0));
@@ -504,6 +504,18 @@ static void txlora () {
 
     // now we actually start the transmission
     opmode(OPMODE_TX);
+
+#if LMIC_DEBUG_LEVEL > 0
+    u1_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
+    u1_t bw = getBw(LMIC.rps);
+    u1_t cr = getCr(LMIC.rps);
+    printf("%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
+           os_getTime(), LMIC.freq, LMIC.dataLen, sf,
+           bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
+           cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)),
+           getIh(LMIC.rps)
+   );
+#endif
 }
 
 // start transmitter (buf=LMIC.frame, len=LMIC.dataLen)
@@ -573,6 +585,24 @@ static void rxlora (u1_t rxmode) {
     } else { // continous rx (scan or rssi)
         opmode(OPMODE_RX);
     }
+
+#if LMIC_DEBUG_LEVEL > 0
+    if (rxmode == RXMODE_RSSI) {
+        printf("RXMODE_RSSI\n");
+    } else {
+        u1_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
+        u1_t bw = getBw(LMIC.rps);
+        u1_t cr = getCr(LMIC.rps);
+        printf("%lu: %s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
+               os_getTime(),
+               rxmode == RXMODE_SINGLE ? "RXMODE_SINGLE" : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
+               LMIC.freq, sf,
+               bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
+               cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)),
+               getIh(LMIC.rps)
+       );
+    }
+#endif
 }
 
 static void rxfsk (u1_t rxmode) {
