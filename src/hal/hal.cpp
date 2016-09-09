@@ -17,7 +17,7 @@
 // -----------------------------------------------------------------------------
 // I/O
 
-void hal_interrupt_init(); // Fwd declaration
+static void hal_interrupt_init(); // Fwd declaration
 
 static void hal_io_init () {
     // NSS and DIO0 are required, DIO1 is required for LoRa, DIO2 for FSK
