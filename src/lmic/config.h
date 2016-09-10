@@ -3,27 +3,48 @@
 
 // In the original LMIC code, these config values were defined on the
 // gcc commandline. Since Arduino does not allow easily modifying the
-// compiler commandline, use this file instead.
+// compiler commandline, use this file to load project defaults and then fall back.
+// Note that you should not edit this file, because then your changes will
+// be applied to a globally-distributed file. Instead, create an 
+// lmic_project_config.h file.
 
+// if you want to override this, put a lora_project_config.h in your sketch directory.
+// otherwise the lmic_project_config.h from this directory will be used.
+#include "../../project_config/lmic_project_config.h"
+
+#if ! (defined(CFG_eu868) || defined(CFG_us915))
+# warning Target RF configuration not defined, assuming CFG_eu868
 #define CFG_eu868 1
-//#define CFG_us915 1
+#elif defined(CFG_eu868) && defined(CFG_us915)
+# error You can define at most one of CFG_eu868 and CFG_us915
+#endif
+
 // This is the SX1272/SX1273 radio, which is also used on the HopeRF
 // RFM92 boards.
 //#define CFG_sx1272_radio 1
 // This is the SX1276/SX1277/SX1278/SX1279 radio, which is also used on
 // the HopeRF RFM95 boards.
+#if ! (defined(CFG_sx1272_radio) || defined(CFG_sx1276_radio))
+# warning Target radio not defined, assuming CFG_sx1276_radio
 #define CFG_sx1276_radio 1
+#elif defined(CFG_sx1272_radio) && defined(CFG_sx1276_radio)
+# error You can define at most one of CFG_sx1272_radio and CF_sx1276_radio
+#endif
 
 // 16 μs per tick
 // LMIC requires ticks to be 15.5μs - 100 μs long
+#ifndef US_PER_OSTICK_EXPONENT
 #define US_PER_OSTICK_EXPONENT 4
+#endif
 #define US_PER_OSTICK (1 << US_PER_OSTICK_EXPONENT)
 #define OSTICKS_PER_SEC (1000000 / US_PER_OSTICK)
 
 // Change the SPI clock speed if you encounter errors
 // communicating with the radio.
 // The standard range is 125kHz-8MHz, but some boards can go faster.
+#ifndef LMIC_SPI_FREQ
 #define LMIC_SPI_FREQ 1E6
+#endif
 
 // Set this to 1 to enable some basic debug output (using printf) about
 // RF settings used during transmission and reception. Set to 2 to
@@ -41,20 +62,25 @@
 // Otherwise, the library polls digital input lines for changes.
 //#define LMIC_USE_INTERRUPTS
 
-// Any runtime assertion failures are printed to this serial port (or
-// any other Print object). If this is unset, any failures just silently
-// halt execution.
+// If DISABLE_LMIC_FAILURE_TO is defined, runtime assertion failures
+// silently halt execution. Otherwise, LMIC_FAILURE_TO should be defined
+// as the name of an object derived from Print, which will be used for
+// displaying runtime assertion failures. If you say nothing in your
+// lmic_project_config.h, runtime assertion failures are displayed 
+// using the Serial object.
+#if ! defined(DISABLE_LMIC_FAILURE_TO) && ! defined(LMIC_FAILURE_TO)
 #define LMIC_FAILURE_TO Serial
+#endif
 
-// Uncomment this to disable all code related to joining
+// define this in lmic_project_config.h to disable all code related to joining
 //#define DISABLE_JOIN
-// Uncomment this to disable all code related to ping
+// define this in lmic_project_config.h to disable all code related to ping
 //#define DISABLE_PING
-// Uncomment this to disable all code related to beacon tracking.
+// define this in lmic_project_config.h to disable all code related to beacon tracking.
 // Requires ping to be disabled too
 //#define DISABLE_BEACONS
 
-// Uncomment these to disable the corresponding MAC commands.
+// define these in lmic_project_config.h to disable the corresponding MAC commands.
 // Class A
 //#define DISABLE_MCMD_DCAP_REQ // duty cycle cap
 //#define DISABLE_MCMD_DN2P_SET // 2nd DN window param
@@ -66,12 +92,12 @@
 // In LoRaWAN, a gateway applies I/Q inversion on TX, and nodes do the
 // same on RX. This ensures that gateways can talk to nodes and vice
 // versa, but gateways will not hear other gateways and nodes will not
-// hear other nodes. By uncommenting this macro, this inversion is
-// disabled and this node can hear other nodes. If two nodes both have
-// this macro set, they can talk to each other (but they can no longer
-// hear gateways). This should probably only be used when debugging
-// and/or when talking to the radio directly (e.g. like in the "raw"
-// example).
+// hear other nodes. By defining this macro in lmic_project_config.h, 
+// this inversion is disabled and this node can hear other nodes. If 
+// two nodes both have this macro set, they can talk to each other 
+// (but they can no longer hear gateways). This should probably only 
+// be used when debugging and/or when talking to the radio directly 
+// (e.g. like in the "raw" example).
 //#define DISABLE_INVERT_IQ_ON_RX
 
 // This allows choosing between multiple included AES implementations.
