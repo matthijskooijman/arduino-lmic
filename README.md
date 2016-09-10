@@ -50,15 +50,101 @@ us know (creating a github issue is probably the best way for that).
 
 Configuration
 -------------
-A number of features can be configured or disabled by editing the
-`config.h` file in the library folder. Unfortunately the Arduino
-environment does not offer any way to do this (compile-time)
-configuration from the sketch, so be careful to recheck your
-configuration when you switch between sketches or update the library.
+A number of features can be enabled or disabled at compile time.
+This is done by adding the desired settings to the file
+`project_settings/lmic_project_config.h`. The `project_settings`
+directory is the only directory that contains files that you
+should edit to match your project; we organize things this way
+so that your local changes are more clearly separated from
+the distribution files. The Arduino environment doesn't give
+us a better way to do this.
 
-At the very least, you should set the right type of transceiver (SX1272
-vs SX1276) in config.h, most other values should be fine at their
-defaults.
+The following configuration variables are available.
+
+### Selecting the radio frequency
+
+You should define one of the following variables. If you don't,
+the library assumes eu868. The library changes configuration pretty substantially
+between eu868 and us915. Some of the differences are listed below.
+
+#### `#define CFG_eu868 1` 
+Configure the library for EU868 operation. Adds the API `LMIC_setupBand()`, and
+the constants `MAX_CHANNELS`, `MAX_BANDS`, `LIMIT_CHANNELS`, `BAND_MILLI`,
+`BAND_CENTI`, `BAND_DECI`, and `BAND_AUX`.
+
+#### `#define CFG_us915 1`
+Configure the library for US915 operation.  Adds the APIs `LMIC_enableChannel()`,
+`LMIC_enableSubBand()`, `LMIC_disableSubBand()`, and `LMIC_selectSubBand()`. Adds the 
+constants `MAX_XCHANNELS` and `MAX_TXPOW_125kHz`.
+
+### Selecting the target radio transceiver
+
+You should define one of the following variables. If you don't, the library assumes
+sx1276. There is a runtime check to make sure the actual transceiver matches the library
+configuration.
+
+#### `#define CFG_sx1272_radio 1`
+Configures the library for use with an sx1272 transceiver.
+
+#### `#define CFG_sx1276_radio 1`
+Configures the library for use with an sx1276 transceiver.
+
+### Controlling use of interrupts
+#### `#define LMIC_USE_INTERRUPTS`
+If defined, configures the library to use interrupts for detecting events from the transceiver. If left undefined, the library will poll for events from the transceiver.
+
+### Disabling PING 
+#### `#define DISABLE_PING`
+If defined, removes all code needed for PING.  Removes the APIs `LMIC_setPingable()` and `LMIC_stopPingable()`. 
+Class A devices don't support PING, so defining `DISABLE_PING` is often a good idea.
+
+By default, PING support is included in the library.
+
+### Disabling Beacons
+#### `#define DISABLE_BEACONS`
+If defined, removes all code needed for handling beacons. Removes the APIs `LMIC_enableTracking()` and `LMIC_disableTracking()`.
+Class A devices don't support beacons, so defining `DISABLE_BEACONS` might be a good idea.
+
+
+### Rarely changed variables ###
+The remaining variables are rarely used, but we list them here for completeness.
+
+#### Changing debug output 
+##### `#define LMIC_PRINTF_TO SerialLikeObject`
+This variable should be set to the name of a `Serial`-like object, used for printing messages. If not defined, `Serial` 
+is assumed.
+
+#### Defining the OS Tick Frequency
+##### `#define US_PER_OSTICK_EXPONENT number`
+This variable should be set to the base-2 logarithm of the number of microseconds per OS tick. The default is 4, 
+which indicates that each tick corresponds to 16 microseconds (because 16 == 2^4).
+
+#### Setting the SPI-bus frequency
+##### `#define LMIC_SPI_FREQ floatNumber`
+This variable sets to the frequency for the SPI bus connection to the transceiver. The default is `1E6`, meaning 1 MHz.
+
+####  Changing handling of runtime assertion failures
+The variables `LMIC_FAILURE_TO` and `DISABLE_LMIC_FAILURE_TO`
+control the handling of runtime assertion failures. By default, assertion messages are displayed using
+the `Serial` object. You can define LMIC_FAILURE_TO to be the name of some other `Print`-like obect. You can 
+also define `DISABLE_LMIC_FAILURE_TO` to any value, in which case assert failures will silently halt execution.
+
+#### Disabling JOIN
+##### `#define DISABLE_JOIN`
+If defined, removes code needed for OTAA activation. Removes the APIs `LMIC_startJoining()` and `LMIC_tryRejoin()`. 
+
+#### Disabling Class A MAC commands 
+`DISABLE_MCMD_DCAP_REQ`, `DISABLE_MCMD_DN2P_SET`, and `DISABLE_MCMD_SNCH_REQ` respectively disable code for various Class A MAC 
+commands.
+
+#### Disabling Class B MAC commands
+`DISABLE_MCMD_PING_SET` disables the PING_SET MAC commands. It's implied by `DISABLE_PING`.
+
+`DISABLE_MCMD_BCNI_ANS` disables the next-beacon start command. I'ts implied by `DISABLE_BEACON'
+
+#### Special purpose
+`#define DISABLE_INVERT_IQ_ON_RX` disables the inverted Q-I polarity on RX. If this is defined, end-devices will be able 
+to receive messages from each other, but will not be able to hear the gateway.
 
 Supported hardware
 ------------------
