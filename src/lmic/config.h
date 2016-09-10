@@ -61,7 +61,7 @@
 //#define DISABLE_MCMD_SNCH_REQ // set new channel
 // Class B
 //#define DISABLE_MCMD_PING_SET // set ping freq, automatically disabled by DISABLE_PING
-//#define DISABLE_MCMD_BCNI_ANS // next beacon start, automatical disabled by DISABLE_BEACON
+//#define DISABLE_MCMD_BCNI_ANS // next beacon start, automatically disabled by DISABLE_BEACON
 
 // In LoRaWAN, a gateway applies I/Q inversion on TX, and nodes do the
 // same on RX. This ensures that gateways can talk to nodes and vice
