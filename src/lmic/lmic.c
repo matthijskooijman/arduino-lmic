@@ -2292,3 +2292,11 @@ void LMIC_setLinkCheckMode (bit_t enabled) {
     LMIC.adrChanged = 0;
     LMIC.adrAckReq = enabled ? LINK_CHECK_INIT : LINK_CHECK_OFF;
 }
+
+// \brief return the current uplink sequence number.
+// This simple getter returns the uplink sequence number maintained by the LMIC engine.
+// It's useful in debugging, as it allows you to correlate a debug trace event with
+// a specific packet sent over the air.
+u4_t LMIC_getSeqnoUp(void) {
+    return LMIC.seqnoUp;
+}

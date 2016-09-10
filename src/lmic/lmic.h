@@ -294,6 +294,8 @@ void  LMIC_tryRejoin     (void);
 void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t artKey);
 void LMIC_setLinkCheckMode (bit_t enabled);
 
+u4_t LMIC_getSeqnoUp	(void);
+
 // Declare onEvent() function, to make sure any definition will have the
 // C conventions, even when in a C++ file.
 DECL_ON_LMIC_EVENT;
