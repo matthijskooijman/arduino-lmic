@@ -2339,3 +2339,11 @@ void LMIC_setLinkCheckMode (bit_t enabled) {
 void LMIC_setClockError(u2_t error) {
     LMIC.clockError = error;
 }
+
+// \brief return the current uplink sequence number.
+// This simple getter returns the uplink sequence number maintained by the LMIC engine.
+// It's useful in debugging, as it allows you to correlate a debug trace event with
+// a specific packet sent over the air.
+u4_t LMIC_getSeqnoUp(void) {
+    return LMIC.seqnoUp;
+}
