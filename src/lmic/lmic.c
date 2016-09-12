@@ -880,14 +880,26 @@ static void initJoinLoop (void) {
 static ostime_t nextJoinState (void) {
     // Try the following:
     //   SF7/8/9/10  on a random channel 0..63
-    //   SF8C        on a random channel 64..71
+    //			(honoring enable mask)
+    //   SF8C     on a random 500 kHz channel 64..71
+    //			(always determined by
+    //			 previously selected 
+    //			 125 kHz channel)
     //
     u1_t failed = 0;
     if( LMIC.datarate != DR_SF8C ) {
+        // assume that 500 kHz equiv of last 125 kHz channel 
+	// is also enabled, and use it next.
         LMIC.txChnl = 64+(LMIC.txChnl&7);
         setDrJoin(DRCHG_SET, DR_SF8C);
     } else {
-        LMIC.txChnl = os_getRndU1() & 0x3F;
+        u1_t chnl;
+
+	// honor enabled-channel list while joining.
+        do {
+           LMIC.txChnl = chnl = os_getRndU1() & 0x3F;
+	   } while ((LMIC.channelMap[(chnl >> 4)] & (1<<(chnl & 0xF))) == 0);
+
         s1_t dr = DR_SF7 - ++LMIC.txCnt;
         if( dr < DR_SF10 ) {
             dr = DR_SF10;
