@@ -187,7 +187,7 @@ This library is intended to be used inside the Arduino environment. It
 should be architecture-independent, so it should run on "normal" AVR
 arduinos, but also on the ARM-based ones, and some success has been seen
 running on the ESP8266 board as well. It was tested on the Arduino Uno,
-Pinoccio Scout, Teensy LC and 3.x, ESP8266, Arduino 101.
+Pinoccio Scout, Teensy LC and 3.x, ESP8266, Arduino 101, Adafruit Feather M0 LoRa 900.
 
 This library an be quite heavy, especially if the fairly small ATmega
 328p (such as in the Arduino Uno) is used. In the default configuration,
