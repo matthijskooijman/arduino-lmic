@@ -902,7 +902,7 @@ static ostime_t nextJoinState (void) {
     if( LMIC.datarate != DR_SF8C ) {
         // assume that 500 kHz equiv of last 125 kHz channel 
 	// is also enabled, and use it next.
-        LMIC.txChnl = 64+(LMIC.txChnl&7);
+        LMIC.txChnl = 64+(LMIC.txChnl>>3);
         setDrJoin(DRCHG_SET, DR_SF8C);
     } else {
         u1_t chnl;
