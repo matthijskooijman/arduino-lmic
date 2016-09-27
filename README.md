@@ -114,6 +114,25 @@ The remaining variables are rarely used, but we list them here for completeness.
 This variable should be set to the name of a `Serial`-like object, used for printing messages. If not defined, `Serial` 
 is assumed.
 
+#### Getting debug from the RF library
+##### `#define LMIC_DEBUG_LEVEL number /* 0, 1, or 2 */`
+This variable determines the amount of debug output to be produced by the library. The default is `0`.  
+
+If `LMIC_DEBUG_LEVEL` is zero, no output is produced. If `1`, limited output is produced. If `2`, more extensive
+output is produced.  If non-zero, printf() is used, and the Arduino environment must be configured to support it,
+otherwise the sketch will crash at runtime.
+
+#### Selecting the AES library 
+The library comes with two AES implementations. The original implementation is better on 
+ARM processors becasue it's faster, but it's larger. For smaller AVR8 processors, a 
+second library ("IDEETRON") is provided that has a smaller code footprint.
+You may define one of the following variables to choose the AES implementation. If you don't,
+the library uses the IDEETRON version.
+##### `#define USE_ORIGINAL_AES`
+If defined, the original AES implementation is used.
+##### `#define USE_IDEETRON_AES`
+If defined, the IDEETRON AES implementation is used.
+
 #### Defining the OS Tick Frequency
 ##### `#define US_PER_OSTICK_EXPONENT number`
 This variable should be set to the base-2 logarithm of the number of microseconds per OS tick. The default is 4, 
@@ -168,7 +187,7 @@ This library is intended to be used inside the Arduino environment. It
 should be architecture-independent, so it should run on "normal" AVR
 arduinos, but also on the ARM-based ones, and some success has been seen
 running on the ESP8266 board as well. It was tested on the Arduino Uno,
-Pinoccio Scout, Teensy LC and 3.x, ESP8266, Arduino 101.
+Pinoccio Scout, Teensy LC and 3.x, ESP8266, Arduino 101, Adafruit Feather M0 LoRa 900.
 
 This library an be quite heavy, especially if the fairly small ATmega
 328p (such as in the Arduino Uno) is used. In the default configuration,

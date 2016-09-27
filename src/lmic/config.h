@@ -51,7 +51,9 @@
 // enable more verbose output. Make sure that printf is actually
 // configured (e.g. on AVR it is not by default), otherwise using it can
 // cause crashing.
+#ifndef LMIC_DEBUG_LEVEL
 #define LMIC_DEBUG_LEVEL 0
+#endif
 
 // Enable this to allow using printf() to print to the given serial port
 // (or any other Print object). This can be easy for debugging. The
@@ -113,6 +115,13 @@
 // own LoRaWAN library. It also uses lookup tables, but smaller
 // byte-oriented ones, making it use a lot less flash space (but it is
 // also about twice as slow as the original).
-#define USE_IDEETRON_AES
+// #define USE_IDEETRON_AES
 
+#if ! (defined(USE_ORIGINAL_AES) || defined(USE_IDEETRON_AES))
+# define USE_IDEETRON_AES
+#endif
+
+#if defined(USE_ORIGINAL_AES) && defined(USE_IDEETRON_AES)
+# error "You may define at most one of USE_ORIGINAL_AES and USE_IDEETRON_AES"
+#endif
 #endif // _lmic_config_h_
