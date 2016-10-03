@@ -9,13 +9,21 @@
  *
  * This example sends a valid LoRaWAN packet with payload "Hello,
  * world!", using frequency and encryption settings matching those of
- * the (early prototype version of) The Things Network.
+ * the The Things Network.
  *
- * Note: LoRaWAN per sub-band duty-cycle limitation is enforced (1% in g1,
- *  0.1% in g2).
+ * This uses ABP (Activation-by-personalisation), where a DevAddr and
+ * Session keys are preconfigured (unlike OTAA, where a DevEUI and
+ * application key is configured, while the DevAddr and session keys are
+ * assigned/generated in the over-the-air-activation procedure).
  *
- * Change DEVADDR to a unique address!
- * See http://thethingsnetwork.org/wiki/AddressSpace
+ * Note: LoRaWAN per sub-band duty-cycle limitation is enforced (1% in
+ * g1, 0.1% in g2), but not the TTN fair usage policy (which is probably
+ * violated by this sketch when left running for longer)!
+ *
+ * To use this sketch, first register your application and device with
+ * the things network, to set or generate a DevAddr, NwkSKey and
+ * AppSKey. Each device should have their own unique values for these
+ * fields.
  *
  * Do not forget to define the radio type correctly in config.h.
  *
@@ -24,28 +32,23 @@
  // References:
  // [feather] adafruit-feather-m0-radio-with-lora-module.pdf
 
-//#if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
-//  // Required for Serial on Zero based boards
-//  #define Serial SERIAL_PORT_USBVIRTUAL
-//#endif
-
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
 
 // LoRaWAN NwkSKey, network session key
-// This is the default Semtech key, which is used by the prototype TTN
-// network initially.
+// This is the default Semtech key, which is used by the early prototype TTN
+// network.
 static const PROGMEM u1_t NWKSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C };
 
 // LoRaWAN AppSKey, application session key
-// This is the default Semtech key, which is used by the prototype TTN
-// network initially.
+// This is the default Semtech key, which is used by the early prototype TTN
+// network.
 static const u1_t PROGMEM APPSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C };
 
 // LoRaWAN end-device address (DevAddr)
 // See http://thethingsnetwork.org/wiki/AddressSpace
-static const u4_t DEVADDR = 0x958C84AF ; // <-- Change this address for every node!  //GENERATED
+static const u4_t DEVADDR = 0x03FF0001 ; // <-- Change this address for every node!
 
 // These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless
@@ -54,12 +57,12 @@ void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
-static uint8_t mydata[] = "Hello there friend!";
+static uint8_t mydata[] = "Hello, world!";
 static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const unsigned TX_INTERVAL = 5;
+const unsigned TX_INTERVAL = 60;
 
 // Pin mapping
 // Adapted for Feather M0 per p.10 of [feather]
@@ -103,14 +106,14 @@ void onEvent (ev_t ev) {
         case EV_REJOIN_FAILED:
             Serial.println(F("EV_REJOIN_FAILED"));
             break;
-            break;
         case EV_TXCOMPLETE:
             Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
-            if(LMIC.dataLen) {
-                // data received in rx slot after tx
-                Serial.print(F("Data Received: "));
-                Serial.write(LMIC.frame+LMIC.dataBeg, LMIC.dataLen);
-                Serial.println();
+            if (LMIC.txrxFlags & TXRX_ACK)
+              Serial.println(F("Received ack"));
+            if (LMIC.dataLen) {
+              Serial.println(F("Received "));
+              Serial.println(LMIC.dataLen);
+              Serial.println(F(" bytes of payload"));
             }
             // Schedule next transmission
             os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
@@ -180,7 +183,7 @@ void setup() {
     memcpy_P(nwkskey, NWKSKEY, sizeof(NWKSKEY));
     LMIC_setSession (0x1, DEVADDR, nwkskey, appskey);
     #else
-    // If not running an AVR with PROGMEM, just use the arrays directly 
+    // If not running an AVR with PROGMEM, just use the arrays directly
     LMIC_setSession (0x1, DEVADDR, NWKSKEY, APPSKEY);
     #endif
 
@@ -193,7 +196,6 @@ void setup() {
     // your network here (unless your network autoconfigures them).
     // Setting up channels should happen after LMIC_setSession, as that
     // configures the minimal channel set.
-    // NA-US channels 0-71 are configured automatically
     LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
     LMIC_setupChannel(1, 868300000, DR_RANGE_MAP(DR_SF12, DR_SF7B), BAND_CENTI);      // g-band
     LMIC_setupChannel(2, 868500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
@@ -207,16 +209,22 @@ void setup() {
     // devices' ping slots. LMIC does not have an easy way to define set this
     // frequency and support for class B is spotty and untested, so this
     // frequency is not configured here.
+    #elif defined(CFG_us915)
+    // NA-US channels 0-71 are configured automatically
+    // but only one group of 8 should (a subband) should be active
+    // TTN recommends the second sub band, 1 in a zero based count.
+    // https://github.com/TheThingsNetwork/gateway-conf/blob/master/US-global_conf.json
+    LMIC_selectSubBand(1);
     #endif
 
     // Disable link check validation
     LMIC_setLinkCheckMode(0);
 
-    // Set data rate and transmit power (note: txpow seems to be ignored by the library)
-    LMIC_setDrTxpow(DR_SF7,14);
+    // TTN uses SF9 for its RX2 window.
+    LMIC.dn2Dr = DR_SF9;
 
-    // Select SubBand
-    LMIC_selectSubBand(7);
+    // Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
+    LMIC_setDrTxpow(DR_SF7,14);
 
     // Start job
     do_send(&sendjob);

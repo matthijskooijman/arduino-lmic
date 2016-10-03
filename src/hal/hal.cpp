@@ -17,6 +17,8 @@
 // -----------------------------------------------------------------------------
 // I/O
 
+static void hal_interrupt_init(); // Fwd declaration
+
 static void hal_io_init () {
     // NSS and DIO0 are required, DIO1 is required for LoRa, DIO2 for FSK
     ASSERT(lmic_pins.nss != LMIC_UNUSED_PIN);
@@ -29,11 +31,7 @@ static void hal_io_init () {
     if (lmic_pins.rst != LMIC_UNUSED_PIN)
         pinMode(lmic_pins.rst, OUTPUT);
 
-    pinMode(lmic_pins.dio[0], INPUT);
-    if (lmic_pins.dio[1] != LMIC_UNUSED_PIN)
-        pinMode(lmic_pins.dio[1], INPUT);
-    if (lmic_pins.dio[2] != LMIC_UNUSED_PIN)
-        pinMode(lmic_pins.dio[2], INPUT);
+    hal_interrupt_init();
 }
 
 // val == 1  => tx 1
@@ -55,8 +53,16 @@ void hal_pin_rst (u1_t val) {
     }
 }
 
-static bool dio_states[NUM_DIO] = {0};
+#if !defined(LMIC_USE_INTERRUPTS)
+static void hal_interrupt_init() {
+    pinMode(lmic_pins.dio[0], INPUT);
+    if (lmic_pins.dio[1] != LMIC_UNUSED_PIN)
+        pinMode(lmic_pins.dio[1], INPUT);
+    if (lmic_pins.dio[2] != LMIC_UNUSED_PIN)
+        pinMode(lmic_pins.dio[2], INPUT);
+}
 
+static bool dio_states[NUM_DIO] = {0};
 static void hal_io_check() {
     uint8_t i;
     for (i = 0; i < NUM_DIO; ++i) {
@@ -70,6 +76,46 @@ static void hal_io_check() {
         }
     }
 }
+
+#else
+// Interrupt handlers
+static bool interrupt_flags[NUM_DIO] = {0};
+
+static void hal_isrPin0() {
+    interrupt_flags[0] = true;
+}
+static void hal_isrPin1() {
+    interrupt_flags[1] = true;
+}
+static void hal_isrPin2() {
+    interrupt_flags[2] = true;
+}
+
+typedef void (*isr_t)();
+static isr_t interrupt_fns[NUM_DIO] = {hal_isrPin0, hal_isrPin1, hal_isrPin2};
+
+static void hal_interrupt_init() {
+  for (uint8_t i = 0; i < NUM_DIO; ++i) {
+      if (lmic_pins.dio[i] == LMIC_UNUSED_PIN)
+          continue;
+
+      attachInterrupt(digitalPinToInterrupt(lmic_pins.dio[i]), interrupt_fns[i], RISING);
+  }
+}
+
+static void hal_io_check() {
+    uint8_t i;
+    for (i = 0; i < NUM_DIO; ++i) {
+        if (lmic_pins.dio[i] == LMIC_UNUSED_PIN)
+            continue;
+
+        if (interrupt_flags[i]) {
+            interrupt_flags[i] = false;
+            radio_irq_handler(i);
+        }
+    }
+}
+#endif // LMIC_USE_INTERRUPTS
 
 // -----------------------------------------------------------------------------
 // SPI
