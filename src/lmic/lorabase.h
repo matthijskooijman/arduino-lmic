@@ -58,7 +58,59 @@ enum { BCN_RESERVE_us    = 2120000 };
 enum { BCN_GUARD_us      = 3000000 };
 enum { BCN_SLOT_SPAN_us  =   30000 };
 
-#if defined(CFG_eu868) // ==============================================
+#if defined(CFG_kotahi) // ==============================================
+enum _dr_kotahi_t {
+	DR_SF12=0,
+	DR_SF11,
+	DR_SF10,
+	DR_SF9,
+	DR_SF8,
+	DR_SF7,
+	DR_SF7B,
+	DR_NONE
+};
+enum { DR_DFLTMIN = DR_SF7 };
+enum { DR_PAGE = DR_PAGE_EU868 };
+
+enum { KOTAHI_F1 = 865000000,      // g   SF7-12/125
+       KOTAHI_F2 = 865200000,      // g   SF7-12/125
+       KOTAHI_F3 = 865400000,      // g   SF7-12/125
+       KOTAHI_F4 = 866200000,      // g   SF7-12/125
+       KOTAHI_F5 = 866400000,      // g   SF7-12/125
+       KOTAHI_F6 = 866600000,      // g   SF7-12/125
+       KOTAHI_F7 = 866800000,      // g   SF7-12/125
+       KOTAHI_F8 = 867000000,      // g   SF7-12/125
+       KOTAHI_F9 = 865600000,      // g   SF7/250
+       KOTAHI_DN = 867200000,      // g   Downlink
+};
+
+enum { KOTAHI_FREQ_MIN = 863000000,
+       KOTAHI_FREQ_MAX = 870000000 };
+
+enum { CHNL_PING         = 9 };
+enum { FREQ_PING         = KOTAHI_DN };  // default ping freq
+enum { DR_PING           = SF9 };       // default ping DR
+enum { CHNL_DNW2         = 9 };
+enum { FREQ_DNW2         = KOTAHI_DN };
+enum { DR_DNW2           = DR_SF9 };
+enum { CHNL_BCN          = 9 };
+enum { FREQ_BCN          = KOTAHI_DN };
+enum { DR_BCN            = DR_SF9 };
+enum { AIRTIME_BCN       = 144384 };  // micros
+
+enum {
+    // Beacon frame format EU SF9
+    OFF_BCN_NETID    = 0,
+    OFF_BCN_TIME     = 3,
+    OFF_BCN_CRC1     = 7,
+    OFF_BCN_INFO     = 8,
+    OFF_BCN_LAT      = 9,
+    OFF_BCN_LON      = 12,
+    OFF_BCN_CRC2     = 15,
+    LEN_BCN          = 17
+};
+
+#elif defined(CFG_eu868) // ==============================================
 
 enum _dr_eu868_t { DR_SF12=0, DR_SF11, DR_SF10, DR_SF9, DR_SF8, DR_SF7, DR_SF7B, DR_FSK, DR_NONE };
 enum { DR_DFLTMIN = DR_SF7 };
@@ -295,7 +347,22 @@ enum {
     MCMD_LADR_POW_MASK   = 0x0F,
     MCMD_LADR_DR_SHIFT   = 4,
     MCMD_LADR_POW_SHIFT  = 0,
-#if defined(CFG_eu868)
+  #if defined(CFG_kotahi)
+      MCMD_LADR_SF12      = DR_SF12<<4,
+      MCMD_LADR_SF11      = DR_SF11<<4,
+      MCMD_LADR_SF10      = DR_SF10<<4,
+      MCMD_LADR_SF9       = DR_SF9 <<4,
+      MCMD_LADR_SF8       = DR_SF8 <<4,
+      MCMD_LADR_SF7       = DR_SF7 <<4,
+      MCMD_LADR_SF7B      = DR_SF7B<<4,
+
+      MCMD_LADR_20dBm     = 0,
+      MCMD_LADR_14dBm     = 1,
+      MCMD_LADR_11dBm     = 2,
+      MCMD_LADR_8dBm      = 3,
+      MCMD_LADR_5dBm      = 4,
+      MCMD_LADR_2dBm      = 5,
+    #elif defined(CFG_eu868)
     MCMD_LADR_SF12      = DR_SF12<<4,
     MCMD_LADR_SF11      = DR_SF11<<4,
     MCMD_LADR_SF10      = DR_SF10<<4,

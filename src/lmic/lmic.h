@@ -43,7 +43,11 @@ enum { JOIN_GUARD_ms      =  9000 };  // msecs - don't start Join Req/Acc transa
 enum { TXRX_BCNEXT_secs   =     2 };  // secs - earliest start after beacon time
 enum { RETRY_PERIOD_secs  =     3 };  // secs - random period for retrying a confirmed send
 
-#if defined(CFG_eu868) // EU868 spectrum ====================================================
+#if defined(CFG_kotahi) // KotahiNet NZ spectrum ====================================================
+
+enum { MAX_CHANNELS = 9 };      //!< Max supported channels
+
+#elif defined(CFG_eu868) // EU868 spectrum ====================================================
 
 enum { MAX_CHANNELS = 16 };      //!< Max supported channels
 enum { MAX_BANDS    =  4 };
@@ -159,11 +163,16 @@ struct lmic_t {
     u1_t        rxsyms;
     u1_t        dndr;
     s1_t        txpow;     // dBm
+    s1_t        txpow_limit;    // dBm maximum permitted
 
     osjob_t     osjob;
 
     // Channel scheduling
-#if defined(CFG_eu868)
+#if defined(CFG_kotahi)
+    u4_t        channelFreq[MAX_CHANNELS];
+    u2_t        channelDrMap[MAX_CHANNELS];
+    u2_t        channelMap;
+#elif defined(CFG_eu868)
     band_t      bands[MAX_BANDS];
     u4_t        channelFreq[MAX_CHANNELS];
     u2_t        channelDrMap[MAX_CHANNELS];
@@ -211,7 +220,7 @@ struct lmic_t {
     u1_t        adrChanged;
 
     u1_t        rxDelay;      // Rx delay after TX
-    
+
     u1_t        margin;
     bit_t       ladrAns;      // link adr adapt answer pending
     bit_t       devsAns;      // device status answer pending

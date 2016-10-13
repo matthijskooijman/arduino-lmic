@@ -34,10 +34,12 @@
 #define BCN_GUARD_osticks      ms2osticks(BCN_GUARD_ms)
 #define BCN_WINDOW_osticks     ms2osticks(BCN_WINDOW_ms)
 #define AIRTIME_BCN_osticks    us2osticks(AIRTIME_BCN)
+#if defined(CFG_kotahi)
+#define DNW2_SAFETY_ZONE       ms2osticks(750)
+#endif
 #if defined(CFG_eu868)
 #define DNW2_SAFETY_ZONE       ms2osticks(3000)
-#endif
-#if defined(CFG_us915)
+#elif defined(CFG_us915)
 #define DNW2_SAFETY_ZONE       ms2osticks(750)
 #endif
 
@@ -211,7 +213,29 @@ static void aes_sessKeys (u2_t devnonce, xref2cu1_t artnonce, xref2u1_t nwkkey, 
 // ================================================================================
 // BEG LORA
 
-#if defined(CFG_eu868) // ========================================
+#if defined(CFG_kotahi) // ========================================
+
+#define maxFrameLen(dr) ((dr)<=DR_SF9 ? maxFrameLens[(dr)] : 0xFF)
+CONST_TABLE(u1_t, maxFrameLens) [] = { 64,64,64,123 };
+
+CONST_TABLE(u1_t, _DR2RPS_CRC)[] = {
+    ILLEGAL_RPS,
+    (u1_t)MAKERPS(SF12, BW125, CR_4_5, 0, 0),
+    (u1_t)MAKERPS(SF11, BW125, CR_4_5, 0, 0),
+    (u1_t)MAKERPS(SF10, BW125, CR_4_5, 0, 0),
+    (u1_t)MAKERPS(SF9,  BW125, CR_4_5, 0, 0),
+    (u1_t)MAKERPS(SF8,  BW125, CR_4_5, 0, 0),
+    (u1_t)MAKERPS(SF7,  BW125, CR_4_5, 0, 0),
+    (u1_t)MAKERPS(SF7,  BW250, CR_4_5, 0, 0),
+    ILLEGAL_RPS
+};
+
+static const s1_t TXPOWLEVELS[] = {
+    20, 14, 11, 8, 5, 2, 0,0, 0,0,0,0, 0,0,0,0
+};
+#define pow2dBm(mcmd_ladr_p1) (TXPOWLEVELS[(mcmd_ladr_p1&MCMD_LADR_POW_MASK)>>MCMD_LADR_POW_SHIFT])
+
+#elif defined(CFG_eu868) // ========================================
 
 #define maxFrameLen(dr) ((dr)<=DR_SF9 ? TABLE_GET_U1(maxFrameLens, (dr)) : 0xFF)
 CONST_TABLE(u1_t, maxFrameLens) [] = { 64,64,64,123 };
@@ -366,7 +390,16 @@ static CONST_TABLE(u1_t, DRADJUST)[2+TXCONF_ATTEMPTS] = {
 // Times for half symbol per DR
 // Per DR table to minimize rounding errors
 static CONST_TABLE(ostime_t, DR2HSYM_osticks)[] = {
-#if defined(CFG_eu868)
+#if defined(CFG_kotahi)
+#define dr2hsym(dr) (TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)))
+    us2osticksRound(128<<7),  // DR_SF12
+    us2osticksRound(128<<6),  // DR_SF11
+    us2osticksRound(128<<5),  // DR_SF10
+    us2osticksRound(128<<4),  // DR_SF9
+    us2osticksRound(128<<3),  // DR_SF8
+    us2osticksRound(128<<2),  // DR_SF7
+    us2osticksRound(128<<1)   // DR_SF7B
+#elif defined(CFG_eu868)
 #define dr2hsym(dr) (TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)))
     us2osticksRound(128<<7),  // DR_SF12
     us2osticksRound(128<<6),  // DR_SF11
@@ -501,8 +534,12 @@ static void setDrTxpow (u1_t reason, u1_t dr, s1_t pow) {
                         e_.prevdr    = LMIC.datarate|DR_PAGE,
                         e_.prevtxpow = LMIC.adrTxPow));
 
-    if( pow != KEEP_TXPOW )
-        LMIC.adrTxPow = pow;
+    if( pow != KEEP_TXPOW ) {
+      LMIC.adrTxPow = pow;
+      if (pow < LMIC.txpow_limit) {
+        LMIC.txpow = pow;
+      }
+    }
     if( LMIC.datarate != dr ) {
         LMIC.datarate = dr;
         DO_DEVDB(LMIC.datarate,datarate);
@@ -529,7 +566,166 @@ void LMIC_setPingable (u1_t intvExp) {
 
 #endif // !DISABLE_PING
 
-#if defined(CFG_eu868)
+
+#if defined(CFG_kotahi)
+// ================================================================================
+//
+// BEG: Kotahi related stuff
+//
+static CONST_TABLE(u4_t, iniChannelFreq)[9] = {
+    KOTAHI_F1,
+    KOTAHI_F2,
+    KOTAHI_F3,
+    KOTAHI_F4,
+    KOTAHI_F5,
+    KOTAHI_F6,
+    KOTAHI_F7,
+    KOTAHI_F8,
+    KOTAHI_F9
+};
+
+static void initDefaultChannels(bit_t join) {
+	// Clear the current channels
+    os_clearMem(&LMIC.channelFreq, sizeof(LMIC.channelFreq));
+    os_clearMem(&LMIC.channelDrMap, sizeof(LMIC.channelDrMap));
+
+    // Add all 8 channels
+    u1_t su = join ? 0 : 9;
+    for( u1_t fu=0; fu < 9; fu++, su++ ) {
+    	// Set frequency
+        LMIC.channelFreq[fu]  = TABLE_GET_U4(iniChannelFreq, su);
+        // Set spreading factors
+        LMIC.channelDrMap[fu] = DR_RANGE_MAP(DR_SF12, DR_SF7);
+        // Enable the channel
+        LMIC.channelMap |= 1<<fu;
+    }
+
+    // Channel 9 only allows SF7
+	LMIC.channelDrMap[8] = DR_RANGE_MAP(DR_SF7B, DR_SF7B);
+	LMIC.datarate = DR_SF7;
+
+  LMIC.txpow_limit = 30;
+  LMIC.txpow = LMIC.txpow_limit;
+  LMIC.adrTxPow = LMIC.txpow_limit;
+}
+
+bit_t LMIC_setupChannel (u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
+    if( chidx >= MAX_CHANNELS ) {
+    	// Too many channels
+        return 0;
+    }
+
+	// Set frequency
+    LMIC.channelFreq[chidx] = freq;
+	// Set spreading factors
+    LMIC.channelDrMap[chidx] = drmap==0 ? DR_RANGE_MAP(DR_SF12, DR_SF7) : drmap;
+	// Enable the channel
+    LMIC.channelMap |= 1<<chidx;  // enabled right away
+    return 1;
+}
+
+static u4_t convFreq (xref2u1_t ptr) {
+    u4_t freq = (os_rlsbf4(ptr-1) >> 8) * 100;
+    if( freq < KOTAHI_FREQ_MIN || freq > KOTAHI_FREQ_MAX )
+        freq = 0;
+    return freq;
+}
+
+static u1_t mapChannels (u1_t chpage, u2_t chmap) {
+    // Bad page, disable all channel, enable non-existent
+    if( chpage != 0 || chmap==0 || (chmap & ~LMIC.channelMap) != 0 )
+        return 0;  // illegal input
+    for( u1_t chnl=0; chnl<MAX_CHANNELS; chnl++ ) {
+        if( (chmap & (1<<chnl)) != 0 && LMIC.channelFreq[chnl] == 0 )
+            chmap &= ~(1<<chnl); // ignore - channel is not defined
+    }
+    LMIC.channelMap = chmap;
+    return 1;
+}
+
+
+static void updateTx (ostime_t txbeg) {
+    // Update frequency
+    LMIC.freq  = LMIC.channelFreq[LMIC.txChnl];
+
+    LMIC.txpow_limit = 25;
+
+    // Update global duty cycle stats
+    ostime_t airtime = calcAirTime(LMIC.rps, LMIC.dataLen);
+    if( LMIC.globalDutyRate != 0 ) {
+        LMIC.globalDutyAvail = txbeg + (airtime<<LMIC.globalDutyRate);
+    }
+}
+
+// No duty cycling for Kotahi in NZ
+#define nextTx(now) (_nextTx(),(now))
+static void _nextTx (void) {
+    if( LMIC.datarate == DR_SF7B ) {
+    	// Only one channel at this spreading factor
+    	LMIC.txChnl = 8;
+    } else {
+    	// Choose a random channel for the next TX
+		LMIC.txChnl = os_getRndU1() & 0x7;
+    }
+}
+
+#define setRx1Params() /*LMIC.freq/rps remain unchanged*/
+
+#if !defined(DISABLE_BEACONS)
+
+static void setBcnRxParams (void) {
+    LMIC.dataLen = 0;
+    LMIC.freq = LMIC.channelFreq[LMIC.bcnChnl] & ~(u4_t)3;
+    LMIC.rps  = setIh(setNocrc(dndr2rps((dr_t)DR_BCN),1),LEN_BCN);
+}
+#endif
+
+#if !defined(DISABLE_JOIN)
+
+static void initJoinLoop (void) {
+    LMIC.txChnl = os_getRndU1() % 6;
+    LMIC.adrTxPow = 14;
+    setDrJoin(DRCHG_SET, DR_SF7);
+    initDefaultChannels(1);
+    ASSERT((LMIC.opmode & OP_NEXTCHNL)==0);
+    LMIC.txend = os_getTime();
+}
+
+
+static ostime_t nextJoinState (void) {
+    u1_t failed = 0;
+
+    // Try random channel
+	LMIC.txChnl = os_getRndU1() & 0x7;
+
+    if( (++LMIC.txCnt & 1) == 0 ) {
+        // Lower DR every 2nd try (having tried 868.x and 864.x with the same DR)
+        if( LMIC.datarate == DR_SF12 )
+            failed = 1; // we have tried all DR - signal EV_JOIN_FAILED
+        else
+            setDrJoin(DRCHG_NOJACC, decDR((dr_t)LMIC.datarate));
+    }
+
+    // Clear NEXTCHNL because join state engine controls channel hopping
+    LMIC.opmode &= ~OP_NEXTCHNL;
+    // Move txend to randomize synchronized concurrent joins.
+    // Duty cycle is based on txend.
+    ostime_t time = os_getTime();
+    LMIC.txend = time +
+        (isTESTMODE()
+         // Avoid collision with JOIN ACCEPT @ SF12 being sent by GW (but we missed it)
+         ? DNW2_SAFETY_ZONE
+         // Otherwise: randomize join (street lamp case):
+         // SF12:255, SF11:127, .., SF7:8secs
+         : DNW2_SAFETY_ZONE+rndDelay(255>>LMIC.datarate));
+    // 1 - triggers EV_JOIN_FAILED event
+    return failed;
+}
+#endif
+//
+// END: Kotahi related stuff
+//
+#elif defined(CFG_eu868)
 // ================================================================================
 //
 // BEG: EU868 related stuff
@@ -632,7 +828,8 @@ static void updateTx (ostime_t txbeg) {
     // Update channel/global duty cycle stats
     xref2band_t band = &LMIC.bands[freq & 0x3];
     LMIC.freq  = freq & ~(u4_t)3;
-    LMIC.txpow = band->txpow;
+    // LMIC.txpow = band->txpow;
+    LMIC.txpow_limit = band->txpow;
     band->avail = txbeg + airtime * band->txcap;
     if( LMIC.globalDutyRate != 0 )
         LMIC.globalDutyAvail = txbeg + (airtime<<LMIC.globalDutyRate);
@@ -981,13 +1178,13 @@ static int decodeBeacon (void) {
     ASSERT(LMIC.dataLen == LEN_BCN); // implicit header RX guarantees this
     xref2u1_t d = LMIC.frame;
     if(
-#if CFG_eu868
+#if CFG_eu868 || CFG_kotahi
         d[OFF_BCN_CRC1] != (u1_t)os_crc16(d,OFF_BCN_CRC1)
 #elif CFG_us915
         os_rlsbf2(&d[OFF_BCN_CRC1]) != os_crc16(d,OFF_BCN_CRC1)
 #endif
         )
-        return 0;   // first (common) part fails CRC check
+          return 0;   // first (common) part fails CRC check
     // First set of fields is ok
     u4_t bcnnetid = os_rlsbf4(&d[OFF_BCN_NETID]) & 0xFFFFFF;
     if( bcnnetid != LMIC.netid )
@@ -1648,8 +1845,9 @@ static void buildDataFrame (void) {
     }
 #endif // !DISABLE_BEACONS
     if( LMIC.adrChanged ) {
-        if( LMIC.adrAckReq < 0 )
+        if( LMIC.adrAckReq != LINK_CHECK_OFF ) {
             LMIC.adrAckReq = 0;
+        }
         LMIC.adrChanged = 0;
     }
 #if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
