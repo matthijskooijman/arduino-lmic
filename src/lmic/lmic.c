@@ -1,13 +1,29 @@
-/*******************************************************************************
- * Copyright (c) 2014-2015 IBM Corporation.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+/*
+ * Copyright (c) 2014-2016 IBM Corporation.
+ * All rights reserved.
  *
- * Contributors:
- *    IBM Zurich Research Lab - initial API, implementation and documentation
- *******************************************************************************/
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *  * Neither the name of the <organization> nor the
+ *    names of its contributors may be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 //! \file
 #include "lmic.h"
@@ -547,9 +563,9 @@ static void initDefaultChannels (bit_t join) {
     os_clearMem(&LMIC.channelDrMap, sizeof(LMIC.channelDrMap));
     os_clearMem(&LMIC.bands, sizeof(LMIC.bands));
 
-    LMIC.channelMap = 0x07;
-    u1_t su = join ? 0 : 3;
-    for( u1_t fu=0; fu<3; fu++,su++ ) {
+    LMIC.channelMap = (1 << NUM_DEFAULT_CHANNELS) - 1;
+    u1_t su = join ? 0 : NUM_DEFAULT_CHANNELS;
+    for( u1_t fu=0; fu<NUM_DEFAULT_CHANNELS; fu++,su++ ) {
         LMIC.channelFreq[fu]  = TABLE_GET_U4(iniChannelFreq, su);
         LMIC.channelDrMap[fu] = DR_RANGE_MAP(DR_SF12,DR_SF7);
     }
@@ -570,7 +586,8 @@ static void initDefaultChannels (bit_t join) {
 
 bit_t LMIC_setupBand (u1_t bandidx, s1_t txpow, u2_t txcap) {
     if( bandidx > BAND_AUX ) return 0;
-    band_t* b = &LMIC.bands[bandidx];
+    //band_t* b = &LMIC.bands[bandidx];
+    xref2band_t b = &LMIC.bands[bandidx];
     b->txpow = txpow;
     b->txcap = txcap;
     b->avail = os_getTime();
@@ -679,7 +696,11 @@ static void setBcnRxParams (void) {
 
 #if !defined(DISABLE_JOIN)
 static void initJoinLoop (void) {
-    LMIC.txChnl = os_getRndU1() % 3;
+#if CFG_TxContinuousMode
+    LMIC.txChnl = 0
+#else
+    LMIC.txChnl = os_getRndU1() % NUM_DEFAULT_CHANNELS;
+#endif
     LMIC.adrTxPow = 14;
     setDrJoin(DRCHG_SET, DR_SF7);
     initDefaultChannels(1);
@@ -693,7 +714,7 @@ static ostime_t nextJoinState (void) {
 
     // Try 869.x and then 864.x with same DR
     // If both fail try next lower datarate
-    if( ++LMIC.txChnl == 3 )
+    if( ++LMIC.txChnl == NUM_DEFAULT_CHANNELS )
         LMIC.txChnl = 0;
     if( (++LMIC.txCnt & 1) == 0 ) {
         // Lower DR every 2nd try (having tried 868.x and 864.x with the same DR)
@@ -1591,7 +1612,7 @@ static void processRx2DnData (xref2osjob_t osjob) {
         // Since DNW2 uses SF12 by default we wait 3 secs.
         os_setTimedCallback(&LMIC.osjob,
                             (os_getTime() + DNW2_SAFETY_ZONE + rndDelay(2)),
-                            processRx2DnDataDelay);
+                            FUNC_ADDR(processRx2DnDataDelay));
         return;
     }
     processDnData();
@@ -1816,6 +1837,31 @@ void LMIC_disableTracking (void) {
     engineUpdate();
 }
 #endif // !DISABLE_BEACONS
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // ================================================================================
@@ -2141,6 +2187,7 @@ static void engineUpdate (void) {
             LMIC.dndr   = txdr;  // carry TX datarate (can be != LMIC.datarate) over to txDone/setupRx1
             LMIC.opmode = (LMIC.opmode & ~(OP_POLL|OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
             updateTx(txbeg);
+            reportEvent(EV_TXSTART);
             os_radio(RADIO_TX);
             return;
         }
