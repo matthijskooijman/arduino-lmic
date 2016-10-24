@@ -464,7 +464,13 @@ manually set the RX2 rate, *after* joining (see the handling of
 
 License
 -------
-Most source files in this repository are made available under the
-Eclipse Public License v1.0. The examples which use a more liberal
+The upstream files from IBM v1.6 are based on the Berkeley license,
+and the merge which synchronized this repository therefore migrated
+the core files to the Berkeley license. However, modifications made
+in the Arduino branch were done under the Eclipse license, so the
+overall license of this repository is still Eclipse Public License
+v1.0. The examples which use a more liberal
 license. Some of the AES code is available under the LGPL. Refer to each
-individual source file for more details.
+individual source file for more details, but bear in mind that until
+the upstream developers look into this issue, it is safest to assume
+the Eclipse license applies.
