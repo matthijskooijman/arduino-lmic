@@ -1107,9 +1107,6 @@ static bit_t decodeFrame (void) {
         LMIC.dnConf = (ftype == HDR_FTYPE_DCDN ? FCT_ACK : 0);
     }
 
-    if( LMIC.dnConf || (fct & FCT_MORE) )
-        LMIC.opmode |= OP_POLL;
-
     // We heard from network
     LMIC.adrChanged = LMIC.rejoinCnt = 0;
     if( LMIC.adrAckReq != LINK_CHECK_OFF )
