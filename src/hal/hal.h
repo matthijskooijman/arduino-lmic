@@ -22,7 +22,8 @@ struct lmic_pinmap {
 // Use this for any unused pins.
 const u1_t LMIC_UNUSED_PIN = 0xff;
 
-// Declared here, to be defined an initialized by the application
+// Declared here, to be defined and initialized by the application
+// use os_init_ex() if you want not to use a const table.
 extern const lmic_pinmap lmic_pins;
 
 #endif // _hal_hal_h_

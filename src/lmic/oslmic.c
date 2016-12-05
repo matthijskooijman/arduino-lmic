@@ -27,17 +27,27 @@
 
 #include "lmic.h"
 
+extern const struct lmic_pinmap lmic_pins;
+
 // RUNTIME STATE
 static struct {
     osjob_t* scheduledjobs;
     osjob_t* runnablejobs;
 } OS;
 
-void os_init () {
+int os_init_ex (const void *pintable) {
     memset(&OS, 0x00, sizeof(OS));
-    hal_init();
-    radio_init();
+    hal_init_ex(pintable);
+    if (! radio_init())
+        return 0;
     LMIC_init();
+    return 1;
+}
+
+void os_init() {
+    if (os_init_ex((const void *)&lmic_pins))
+        return;
+    ASSERT(0);
 }
 
 ostime_t os_getTime () {

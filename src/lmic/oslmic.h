@@ -96,9 +96,10 @@ u1_t radio_rand1 (void);
 #define DEFINE_LMIC  struct lmic_t LMIC
 #define DECLARE_LMIC extern struct lmic_t LMIC
 
-void radio_init (void);
+int radio_init (void);
 void radio_irq_handler (u1_t dio);
 void os_init (void);
+int os_init_ex (const void *pPinMap);
 void os_runloop (void);
 void os_runloop_once (void);
 
