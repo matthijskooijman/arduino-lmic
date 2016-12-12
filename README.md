@@ -357,6 +357,10 @@ these settings. Until that is solved (see issue #20), you should
 manually set the RX2 rate, *after* joining (see the handling of
 `EV_JOINED` in the `ttn-otaa.ino` for an example.
 
+Wiki
+-----------
+Please take a look at the Wiki, to be sure howto connect your SX127X to your arduino.
+
 License
 -------
 Most source files in this repository are made available under the
