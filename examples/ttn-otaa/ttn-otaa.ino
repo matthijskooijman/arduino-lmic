@@ -87,7 +87,29 @@ void onEvent (ev_t ev) {
             break;
         case EV_JOINED:
             Serial.println(F("EV_JOINED"));
+            {
+              u4_t netid = 0;
+              devaddr_t devaddr = 0;
+              u1_t nwkKey[16];
+              u1_t artKey[16];
+              LMIC_getSessionKeys(&netid, &devaddr, nwkKey, artKey);
+              Serial.print("netid: ");
+              Serial.println(netid, DEC);
+              Serial.print("devaddr: ");
+              Serial.println(devaddr, HEX);
+              Serial.print("artKey: ");
+              for (int i=0; i<sizeof(artKey); ++i) {
+                Serial.print(artKey[i], HEX);
+              }
+              Serial.println("");
+              Serial.print("nwkKey: ");
+              for (int i=0; i<sizeof(nwkKey); ++i) {
+                Serial.print(nwkKey[i], HEX);
+              }
+              Serial.println("");
 
+              LMIC_setSeqnoUp(140);
+            }
             // Disable link check validation (automatically enabled
             // during join, but not supported by TTN at this time).
             LMIC_setLinkCheckMode(0);
