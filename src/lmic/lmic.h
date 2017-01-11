@@ -1,13 +1,29 @@
-/*******************************************************************************
- * Copyright (c) 2014-2015 IBM Corporation.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+/*
+ * Copyright (c) 2014-2016 IBM Corporation.
+ * All rights reserved.
  *
- * Contributors:
- *    IBM Zurich Research Lab - initial API, implementation and documentation
- *******************************************************************************/
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *  * Neither the name of the <organization> nor the
+ *    names of its contributors may be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 //! @file
 //! @brief LMIC API
@@ -24,8 +40,11 @@ extern "C"{
 
 // LMIC version
 #define LMIC_VERSION_MAJOR 1
-#define LMIC_VERSION_MINOR 5
-#define LMIC_VERSION_BUILD 1431528305
+#define LMIC_VERSION_MINOR 6
+#define LMIC_VERSION_BUILD 1468577746
+
+//! Only For Antenna Tuning Tests !
+//#define CFG_TxContinuousMode 1
 
 enum { MAX_FRAME_LEN      =  64 };   //!< Library cap on max frame length
 enum { TXCONF_ATTEMPTS    =   8 };   //!< Transmit attempts for confirmed frames
@@ -140,7 +159,8 @@ enum _ev_t { EV_SCAN_TIMEOUT=1, EV_BEACON_FOUND,
              EV_BEACON_MISSED, EV_BEACON_TRACKED, EV_JOINING,
              EV_JOINED, EV_RFU1, EV_JOIN_FAILED, EV_REJOIN_FAILED,
              EV_TXCOMPLETE, EV_LOST_TSYNC, EV_RESET,
-             EV_RXCOMPLETE, EV_LINK_DEAD, EV_LINK_ALIVE };
+             EV_RXCOMPLETE, EV_LINK_DEAD, EV_LINK_ALIVE, EV_SCAN_FOUND,
+             EV_TXSTART };
 typedef enum _ev_t ev_t;
 
 enum {
@@ -255,6 +275,8 @@ struct lmic_t {
     ostime_t    bcnRxtime;
     bcninfo_t   bcninfo;      // Last received beacon info
 #endif
+
+    u1_t        noRXIQinversion;
 };
 //! \var struct lmic_t LMIC
 //! The state of LMIC MAC layer is encapsulated in this variable.
@@ -313,6 +335,8 @@ void LMIC_getSessionKeys (u4_t *netid, devaddr_t *devaddr, xref2u1_t nwkKey, xre
 // Declare onEvent() function, to make sure any definition will have the
 // C conventions, even when in a C++ file.
 DECL_ON_LMIC_EVENT;
+
+
 
 // Special APIs - for development or testing
 // !!!See implementation for caveats!!!
