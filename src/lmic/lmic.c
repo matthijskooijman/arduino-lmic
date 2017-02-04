@@ -252,6 +252,10 @@ static CONST_TABLE(s1_t, TXPOWLEVELS)[] = {
 
 #elif defined(CFG_us915) // ========================================
 
+#define IS_CHANNEL_125khz(c) (c<64)
+#define IS_CHANNEL_500khz(c) (c>=64 && c<72)
+#define ENABLED_CHANNEL(chnl) ((LMIC.channelMap[(chnl >> 4)] & (1<<(chnl & 0x0F))) != 0)
+
 #define maxFrameLen(dr) ((dr)<=DR_SF11CR ? TABLE_GET_U1(maxFrameLens, (dr)) : 0xFF)
 CONST_TABLE(u1_t, maxFrameLens) [] = { 24,66,142,255,255,255,255,255,  66,142 };
 
@@ -757,6 +761,8 @@ static void initDefaultChannels (void) {
     for( u1_t i=0; i<4; i++ )
         LMIC.channelMap[i] = 0xFFFF;
     LMIC.channelMap[4] = 0x00FF;
+    LMIC.activeChannels125khz = 64;
+    LMIC.activeChannels500khz = 8;
 }
 
 static u4_t convFreq (xref2u1_t ptr) {
@@ -777,13 +783,27 @@ bit_t LMIC_setupChannel (u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
 }
 
 void LMIC_disableChannel (u1_t channel) {
-    if( channel < 72+MAX_XCHANNELS )
-        LMIC.channelMap[channel>>4] &= ~(1<<(channel&0xF));
+    if( channel < 72+MAX_XCHANNELS ) {
+      if (ENABLED_CHANNEL(channel)) {
+        if (IS_CHANNEL_125khz(channel))
+          LMIC.activeChannels125khz--;
+        else if (IS_CHANNEL_500khz(channel))
+          LMIC.activeChannels500khz--;
+      }
+      LMIC.channelMap[channel>>4] &= ~(1<<(channel&0xF));
+    }
 }
 
 void LMIC_enableChannel (u1_t channel) {
-    if( channel < 72+MAX_XCHANNELS )
-        LMIC.channelMap[channel>>4] |= (1<<(channel&0xF));
+    if( channel < 72+MAX_XCHANNELS ) {
+      if (!ENABLED_CHANNEL(channel)) {
+        if (IS_CHANNEL_125khz(channel))
+          LMIC.activeChannels125khz++;
+        else if (IS_CHANNEL_500khz(channel))
+          LMIC.activeChannels500khz++;
+      }
+      LMIC.channelMap[channel>>4] |= (1<<(channel&0xF));
+    }
 }
 
 void  LMIC_enableSubBand (u1_t band) {
@@ -827,11 +847,25 @@ static u1_t mapChannels (u1_t chpage, u2_t chmap) {
         u2_t en125 = chpage == MCMD_LADR_CHP_125ON ? 0xFFFF : 0x0000;
         for( u1_t u=0; u<4; u++ )
             LMIC.channelMap[u] = en125;
-        LMIC.channelMap[64/16] = chmap;
+        LMIC.channelMap[64/16] = chmap & 0x00FF;
+        if (en125==0) {
+          LMIC.activeChannels125khz = 0;
+          LMIC.activeChannels500khz = 0;
+        }
+        else {
+          LMIC.activeChannels125khz = 64;
+          LMIC.activeChannels500khz = 8;
+        }
     } else {
         if( chpage >= (72+MAX_XCHANNELS+15)/16 )
             return 0;
-        LMIC.channelMap[chpage] = chmap;
+        // Use enable/disable channel to keep activeChannel counts in sync.
+        for ( uint base = chpage<<4, chnl = chpage<<4; chnl<(base + 16); ++chnl, chmap >>= 1) {
+            if (chmap & 0x0001)
+              LMIC_enableChannel(chnl);
+            else
+              LMIC_disableChannel(chnl);
+        }
     }
     return 1;
 }
@@ -858,29 +892,36 @@ static void updateTx (ostime_t txbeg) {
     }
 }
 
+static void setNextChannel(uint start, uint end, uint count) {
+  ASSERT(count>0);
+  ASSERT(start<end);
+  ASSERT(count<=(end-start));
+  // We used to pick a random channel once and then just increment. That is not per spec.
+  // Now we use a new random number each time, because they are not very expensive.
+  // Regarding the algo below, we cannot pick a number and scan until we hit an enabled channel.
+  // That would result in the first enabled channel following a set of disabled ones
+  // being used more frequently than the other enabled channels.
+  uint nth = os_getRndU1() % count;
+  for( u1_t chnl=start; chnl<end; chnl++ ) {
+      // Scan for nth enabled channel
+      if( ENABLED_CHANNEL(chnl) && (nth--)==0) {
+          LMIC.txChnl = chnl;
+          return;
+      }
+  }
+  // No feasible channel found! Keep old one.
+}
+
 // US does not have duty cycling - return now as earliest TX time
 #define nextTx(now) (_nextTx(),(now))
 static void _nextTx (void) {
-    if( LMIC.chRnd==0 )
-        LMIC.chRnd = os_getRndU1() & 0x3F;
     if( LMIC.datarate >= DR_SF8C ) { // 500kHz
-        u1_t map = LMIC.channelMap[64/16]&0xFF;
-        for( u1_t i=0; i<8; i++ ) {
-            if( (map & (1<<(++LMIC.chRnd & 7))) != 0 ) {
-                LMIC.txChnl = 64 + (LMIC.chRnd & 7);
-                return;
-            }
-        }
+        ASSERT(LMIC.activeChannels500khz>0);
+        setNextChannel(64, 64+8, LMIC.activeChannels500khz);
     } else { // 125kHz
-        for( u1_t i=0; i<64; i++ ) {
-            u1_t chnl = ++LMIC.chRnd & 0x3F;
-            if( (LMIC.channelMap[(chnl >> 4)] & (1<<(chnl & 0xF))) != 0 ) {
-                LMIC.txChnl = chnl;
-                return;
-            }
-        }
+        ASSERT(LMIC.activeChannels125khz>0);
+        setNextChannel(0, 64, LMIC.activeChannels125khz);
     }
-    // No feasible channel  found! Keep old one.
 }
 
 #if !defined(DISABLE_BEACONS)
@@ -902,7 +943,6 @@ static void setBcnRxParams (void) {
 
 #if !defined(DISABLE_JOIN)
 static void initJoinLoop (void) {
-    LMIC.chRnd = 0;
     LMIC.txChnl = 0;
     LMIC.adrTxPow = 20;
     ASSERT((LMIC.opmode & OP_NEXTCHNL)==0);
@@ -926,12 +966,7 @@ static ostime_t nextJoinState (void) {
         LMIC.txChnl = 64+(LMIC.txChnl>>3);
         setDrJoin(DRCHG_SET, DR_SF8C);
     } else {
-        u1_t chnl;
-
-        // honor enabled-channel list while joining.
-        do {
-           LMIC.txChnl = chnl = os_getRndU1() & 0x3F;
-        } while ((LMIC.channelMap[(chnl >> 4)] & (1<<(chnl & 0xF))) == 0);
+        setNextChannel(0, 64, LMIC.activeChannels125khz);
 
         s1_t dr = DR_SF7 - ++LMIC.txCnt;
         if( dr < DR_SF10 ) {
