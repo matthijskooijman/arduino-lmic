@@ -192,7 +192,8 @@ struct lmic_t {
     u4_t        xchFreq[MAX_XCHANNELS];    // extra channel frequencies (if device is behind a repeater)
     u2_t        xchDrMap[MAX_XCHANNELS];   // extra channel datarate ranges  ---XXX: ditto
     u2_t        channelMap[(72+MAX_XCHANNELS+15)/16];  // enabled bits
-    u2_t        chRnd;        // channel randomizer
+    u2_t        activeChannels125khz;
+    u2_t        activeChannels500khz;
 #endif
     u1_t        txChnl;          // channel for next TX
     u1_t        globalDutyRate;  // max rate: 1/2^k
@@ -231,7 +232,7 @@ struct lmic_t {
     u1_t        adrChanged;
 
     u1_t        rxDelay;      // Rx delay after TX
-    
+
     u1_t        margin;
     bit_t       ladrAns;      // link adr adapt answer pending
     bit_t       devsAns;      // device status answer pending
