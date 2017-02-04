@@ -775,9 +775,8 @@ static u4_t convFreq (xref2u1_t ptr) {
 bit_t LMIC_setupChannel (u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
     if( chidx < 72 || chidx >= 72+MAX_XCHANNELS )
         return 0; // channels 0..71 are hardwired
-    chidx -= 72;
-    LMIC.xchFreq[chidx] = freq;
-    LMIC.xchDrMap[chidx] = drmap==0 ? DR_RANGE_MAP(DR_SF10,DR_SF8C) : drmap;
+    LMIC.xchFreq[chidx-72] = freq;
+    LMIC.xchDrMap[chidx-72] = drmap==0 ? DR_RANGE_MAP(DR_SF10,DR_SF8C) : drmap;
     LMIC.channelMap[chidx>>4] |= (1<<(chidx&0xF));
     return 1;
 }
