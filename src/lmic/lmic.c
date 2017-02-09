@@ -1465,23 +1465,21 @@ static void jreqDone (xref2osjob_t osjob) {
 // Fwd decl.
 static bit_t processDnData(void);
 
-static void processRx2DnDataDelay (xref2osjob_t osjob) {
-    LMIC_API_PARAMETER(osjob);
-
-    processDnData();
-}
-
 static void processRx2DnData (xref2osjob_t osjob) {
     LMIC_API_PARAMETER(osjob);
 
     if( LMIC.dataLen == 0 ) {
         initTxrxFlags(__func__, 0);  // nothing in 1st/2nd DN slot
-        // Delay callback processing to avoid up TX while gateway is txing our missed frame!
-        // Since DNW2 uses SF12 by default we wait 3 secs.
-        os_setTimedCallback(&LMIC.osjob,
-                            (os_getTime() + DNW2_SAFETY_ZONE + LMICcore_rndDelay(2)),
-                            FUNC_ADDR(processRx2DnDataDelay));
-        return;
+        LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
+        // It could be that the gateway *is* sending a reply, but we
+        // just didn't pick it up. To avoid TX'ing again while the
+        // gateay is not listening anyway, delay the next transmission
+        // until DNW2_SAFETY_ZONE from now, and add up to 2 seconds of
+        // extra randomization.
+        // BUG(tmm@mcci.com) this delay is not needed for some
+        // regions, e.g. US915 and AU915, which have non-overlapping
+        // uplink and downlink.
+        txDelay(os_getTime() + DNW2_SAFETY_ZONE, 2);
     }
     processDnData();
 }
