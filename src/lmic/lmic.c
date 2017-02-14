@@ -900,10 +900,22 @@ static void setNextChannel(uint start, uint end, uint count) {
   // Regarding the algo below, we cannot pick a number and scan until we hit an enabled channel.
   // That would result in the first enabled channel following a set of disabled ones
   // being used more frequently than the other enabled channels.
+
+  // Last used channel is in range. It is not a candidate, per spec.
+  uint lastTxChan = LMIC.txChnl;
+  if (start<=lastTxChan && lastTxChan<end &&
+      // Adjust count only if still enabled. Otherwise, no chance of selection.
+      ENABLED_CHANNEL(lastTxChan)) {
+    --count;
+    if (count==0) {
+      return; // Only one active channel, so keep using it.
+    }
+  }
+
   uint nth = os_getRndU1() % count;
   for( u1_t chnl=start; chnl<end; chnl++ ) {
-      // Scan for nth enabled channel
-      if( ENABLED_CHANNEL(chnl) && (nth--)==0) {
+      // Scan for nth enabled channel that is not the last channel used
+      if( chnl!=lastTxChan && ENABLED_CHANNEL(chnl) && (nth--)==0) {
           LMIC.txChnl = chnl;
           return;
       }
