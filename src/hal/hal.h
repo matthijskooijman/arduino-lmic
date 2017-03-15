@@ -12,12 +12,25 @@
 
 static const int NUM_DIO = 3;
 
-struct lmic_pinmap {
-    u1_t nss;
-    u1_t rxtx;
-    u1_t rst;
-    u1_t dio[NUM_DIO];
-};
+#if defined(ESP32) || defined(NRF51)
+  #define LMIC_SPI_PINS_IN_MAPPING
+  struct lmic_pinmap {
+      u1_t mosi;
+      u1_t miso;
+      u1_t sck;
+      u1_t nss;
+      u1_t rxtx;
+      u1_t rst;
+      u1_t dio[NUM_DIO];
+  };
+#else
+  struct lmic_pinmap {
+      u1_t nss;
+      u1_t rxtx;
+      u1_t rst;
+      u1_t dio[NUM_DIO];
+  };
+#endif
 
 // Use this for any unused pins.
 const u1_t LMIC_UNUSED_PIN = 0xff;

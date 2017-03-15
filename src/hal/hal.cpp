@@ -22,6 +22,12 @@ static void hal_io_init () {
     ASSERT(lmic_pins.nss != LMIC_UNUSED_PIN);
     ASSERT(lmic_pins.dio[0] != LMIC_UNUSED_PIN);
     ASSERT(lmic_pins.dio[1] != LMIC_UNUSED_PIN || lmic_pins.dio[2] != LMIC_UNUSED_PIN);
+    
+    #ifdef LMIC_SPI_PINS_IN_MAPPING
+    ASSERT(lmic_pins.mosi != LMIC_UNUSED_PIN
+        || lmic_pins.miso != LMIC_UNUSED_PIN
+        || lmic_pins.sck != LMIC_UNUSED_PIN);
+    #endif
 
     pinMode(lmic_pins.nss, OUTPUT);
     if (lmic_pins.rxtx != LMIC_UNUSED_PIN)
@@ -76,8 +82,20 @@ static void hal_io_check() {
 
 static const SPISettings settings(10E6, MSBFIRST, SPI_MODE0);
 
+/*
+ * Initialize SPI, allowing override of default SPI pins on certain boards.
+ */
 static void hal_spi_init () {
-    SPI.begin();
+  #if defined(ESP32)
+    // On the ESP32 the default is _use_hw_ss(false), 
+    // so we can set the last parameter to anything.
+    SPI.begin(lmic_pins.sck, lmic_pins.miso, lmic_pins.mosi, 0x00);
+  #elif defined(NRF51)
+    SPI.begin(lmic_pins.sck, lmic_pins.mosi, lmic_pins.miso);
+  #else
+    //unknown board, or board without SPI pin select ability
+    SPI.begin(); 
+  #endif
 }
 
 void hal_pin_nss (u1_t val) {
