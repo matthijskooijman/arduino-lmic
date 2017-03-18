@@ -31,13 +31,19 @@
 # error You can define at most one of CFG_sx1272_radio and CF_sx1276_radio
 #endif
 
-// 16 μs per tick
 // LMIC requires ticks to be 15.5μs - 100 μs long
-#ifndef US_PER_OSTICK_EXPONENT
-#define US_PER_OSTICK_EXPONENT 4
+#ifndef OSTICKS_PER_SEC
+// 16 μs per tick
+# ifndef US_PER_OSTICK_EXPONENT
+#   define US_PER_OSTICK_EXPONENT 4
+# endif
+# define US_PER_OSTICK (1 << US_PER_OSTICK_EXPONENT)
+# define OSTICKS_PER_SEC (1000000 / US_PER_OSTICK)
+#endif /* OSTICKS_PER_SEC */
+
+#if ! (10000 <= OSTICKS_PER_SEC && OSTICKS_PER_SEC < 64516)
+# error LMIC requires ticks to be 15.5 us to 100 us long
 #endif
-#define US_PER_OSTICK (1 << US_PER_OSTICK_EXPONENT)
-#define OSTICKS_PER_SEC (1000000 / US_PER_OSTICK)
 
 // Change the SPI clock speed if you encounter errors
 // communicating with the radio.
