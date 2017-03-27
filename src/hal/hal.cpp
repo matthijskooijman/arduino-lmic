@@ -27,6 +27,12 @@ static void hal_io_init () {
     ASSERT(plmic_pins->dio[0] != LMIC_UNUSED_PIN);
     ASSERT(plmic_pins->dio[1] != LMIC_UNUSED_PIN || plmic_pins->dio[2] != LMIC_UNUSED_PIN);
 
+//    Serial.print("nss: "); Serial.println(plmic_pins->nss);
+//    Serial.print("rst: "); Serial.println(plmic_pins->rst);
+//    Serial.print("dio[0]: "); Serial.println(plmic_pins->dio[0]);
+//    Serial.print("dio[1]: "); Serial.println(plmic_pins->dio[1]);
+//    Serial.print("dio[2]: "); Serial.println(plmic_pins->dio[2]);
+
     pinMode(plmic_pins->nss, OUTPUT);
     if (plmic_pins->rxtx != LMIC_UNUSED_PIN)
         pinMode(plmic_pins->rxtx, OUTPUT);
