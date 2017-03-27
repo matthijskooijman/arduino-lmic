@@ -37,3 +37,4 @@ Release
 *.vcxproj
 *.vcxproj.filters
 __vm
+.vs
