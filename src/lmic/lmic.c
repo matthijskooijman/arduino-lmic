@@ -954,18 +954,36 @@ static void setBcnRxParams (void) {
 
 #if !defined(DISABLE_JOIN)
 static void initJoinLoop (void) {
+    // set an initial condition so that setNextChannel()'s preconds are met
     LMIC.txChnl = 0;
+
+    // then chose a new channel.  This gives us a random first channel for
+    // the join. Minor nit: if channel 0 is enabled, it will never be used
+    // as the first join channel.  The join logic uses the current txChnl,
+    // then changes after the rx window expires; so we need to set a valid
+    // starting point.
+    setNextChannel(0, 64, LMIC.activeChannels125khz);
+
+    // initialize the adrTxPower.
     LMIC.adrTxPow = 20;
     ASSERT((LMIC.opmode & OP_NEXTCHNL)==0);
+
+    // make sure LMIC.txend is valid.
     LMIC.txend = os_getTime();
-    setDrJoin(DRCHG_SET, DR_SF7);
+
+    // make sure the datarate is set to DR0 per LoRaWAN regional reqts V1.0.2,
+    // section 2.2.2
+    setDrJoin(DRCHG_SET, DR_SF10);
+
+    // TODO(tmm@mcci.com) need to implement the transmit randomization and
+    // duty cycle restrictions from LoRaWAN V1.0.2 section 7.
 }
 
 static ostime_t nextJoinState (void) {
     // Try the following:
-    //   SF7/8/9/10  on a random channel 0..63
+    //   DR0 (SF10)  on a random channel 0..63
     //      (honoring enable mask)
-    //   SF8C     on a random 500 kHz channel 64..71
+    //   DR4 (SF8C)  on a random 500 kHz channel 64..71
     //      (always determined by
     //       previously selected
     //       125 kHz channel)
@@ -979,14 +997,18 @@ static ostime_t nextJoinState (void) {
     } else {
         setNextChannel(0, 64, LMIC.activeChannels125khz);
 
-        s1_t dr = DR_SF7 - ++LMIC.txCnt;
-        if( dr < DR_SF10 ) {
-            dr = DR_SF10;
+        s1_t dr = DR_SF10;
+        if( (++LMIC.txCnt & 0x7) == 0) {
             failed = 1; // All DR exhausted - signal failed
         }
         setDrJoin(DRCHG_SET, dr);
     }
     LMIC.opmode &= ~OP_NEXTCHNL;
+
+    // TODO(tmm@mcci.com): change delay to (0:1) secs + a known t0, but randomized;
+    // starting adding a bias after 1 hour, 25 hours, etc.; and limit the duty
+    // cycle on power up. For testability, add a way to set the join start time
+    // externally (a test API) so we can check this feature.
     LMIC.txend = os_getTime() +
         (isTESTMODE()
          // Avoid collision with JOIN ACCEPT being sent by GW (but we missed it - GW is still busy)
