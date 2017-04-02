@@ -34,6 +34,26 @@
 #include "oslmic.h"
 #include "lorabase.h"
 
+#if LMIC_DEBUG_LEVEL > 0
+# if defined(LMIC_DEBUG_INCLUDE)
+#   define LMIC_STRINGIFY_(x) #x
+#   define LMIC_STRINGIFY(x) LMIC_STRINGIFY_(x)
+#   include LMIC_STRINGIFY(LMIC_DEBUG_INCLUDE)
+# endif
+// if LMIC_DEBUG_PRINTF is now defined, just it. This lets you do anything
+// you like with a sufficiently crazy header file.
+# ifndef LMIC_DEBUG_PRINTF
+//  otherwise, check whether someone configured something to be used
+#   ifdef LMIC_DEBUG_PRINTF_FN
+#     define LMIC_DEBUG_PRINTF(f, ...) LMIC_DEBUG_PRINTF_FN(f, ## __VA_ARGS__)
+#   else // ndef LMIC_DEBUG_PRINTF_FN
+//    if there's other info, just use printf. In a pure Arduino environment,
+//    that's what will happen.
+#     define LMIC_DEBUG_PRINTF(f, ...) printf(f, ## __VA_ARGS__)
+#   endif // ndef LMIC_DEBUG_PRINTF_FN
+# endif // ndef LMIC_DEBUG_PRINTF
+#endif // LMIC_DEBUG_LEVEL > 0
+
 #ifdef __cplusplus
 extern "C"{
 #endif

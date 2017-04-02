@@ -532,7 +532,7 @@ static void txlora () {
     u1_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
     u1_t bw = getBw(LMIC.rps);
     u1_t cr = getCr(LMIC.rps);
-    printf("%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
+    LMIC_DEBUG_PRINTF("%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
            os_getTime(), LMIC.freq, LMIC.dataLen, sf,
            bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
            cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)),
@@ -611,18 +611,22 @@ static void rxlora (u1_t rxmode) {
     if (rxmode == RXMODE_SINGLE) { // single rx
         hal_waitUntil(LMIC.rxtime); // busy wait until exact rx time
         opmode(OPMODE_RX_SINGLE);
+#if LMIC_DEBUG_LEVEL > 0
+	ostime_t now = os_getTime();
+	LMIC_DEBUG_PRINTF("start single rx: now-rxtime: %lu\n", now - LMIC.rxtime);
+#endif
     } else { // continous rx (scan or rssi)
         opmode(OPMODE_RX);
     }
 
 #if LMIC_DEBUG_LEVEL > 0
     if (rxmode == RXMODE_RSSI) {
-        printf("RXMODE_RSSI\n");
+        LMIC_DEBUG_PRINTF("RXMODE_RSSI\n");
     } else {
         u1_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
         u1_t bw = getBw(LMIC.rps);
         u1_t cr = getCr(LMIC.rps);
-        printf("%lu: %s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
+        LMIC_DEBUG_PRINTF("%lu: %s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
                os_getTime(),
                rxmode == RXMODE_SINGLE ? "RXMODE_SINGLE" : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
                LMIC.freq, sf,
@@ -805,6 +809,9 @@ void radio_irq_handler (u1_t dio) {
     return;
 #else /* ! CFG_TxContinuousMode */
     ostime_t now = os_getTime();
+#if LMIC_DEBUG_LEVEL > 0
+    ostime_t const entry = now;
+#endif
     if( (readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
         u1_t flags = readReg(LORARegIrqFlags);
         if( flags & IRQ_LORA_TXDONE_MASK ) {
@@ -829,6 +836,10 @@ void radio_irq_handler (u1_t dio) {
         } else if( flags & IRQ_LORA_RXTOUT_MASK ) {
             // indicate timeout
             LMIC.dataLen = 0;
+#if LMIC_DEBUG_LEVEL > 0
+	    ostime_t now2 = os_getTime();
+	    LMIC_DEBUG_PRINTF("rxtimeout: entry: %lu rxtime: %lu entry-rxtime: %lu now-entry: %lu rxtime-txend: %lu\n", entry, LMIC.rxtime, entry - LMIC.rxtime, now2 - entry, LMIC.rxtime-LMIC.txend);
+#endif
         }
         // mask all radio IRQs
         writeReg(LORARegIrqFlagsMask, 0xFF);
