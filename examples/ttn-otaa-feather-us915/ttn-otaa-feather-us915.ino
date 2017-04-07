@@ -33,10 +33,11 @@
 #include <hal/hal.h>
 #include <SPI.h>
 
+
 #ifdef COMPILE_REGRESSION_TEST
 # define FILLMEIN 0
 #else
-# error "You must replace the values marked FILLMEIN with reall values from theTTN control panel!"
+# error "You must replace the values marked FILLMEIN with real values from the TTN control panel!"
 #endif
 
 // This EUI must be in little-endian format, so least-significant-byte
