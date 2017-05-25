@@ -84,7 +84,7 @@
 // silently halt execution. Otherwise, LMIC_FAILURE_TO should be defined
 // as the name of an object derived from Print, which will be used for
 // displaying runtime assertion failures. If you say nothing in your
-// lmic_project_config.h, runtime assertion failures are displayed 
+// lmic_project_config.h, runtime assertion failures are displayed
 // using the Serial object.
 #if ! defined(DISABLE_LMIC_FAILURE_TO) && ! defined(LMIC_FAILURE_TO)
 #define LMIC_FAILURE_TO Serial
@@ -110,11 +110,11 @@
 // In LoRaWAN, a gateway applies I/Q inversion on TX, and nodes do the
 // same on RX. This ensures that gateways can talk to nodes and vice
 // versa, but gateways will not hear other gateways and nodes will not
-// hear other nodes. By defining this macro in lmic_project_config.h, 
-// this inversion is disabled and this node can hear other nodes. If 
-// two nodes both have this macro set, they can talk to each other 
-// (but they can no longer hear gateways). This should probably only 
-// be used when debugging and/or when talking to the radio directly 
+// hear other nodes. By defining this macro in lmic_project_config.h,
+// this inversion is disabled and this node can hear other nodes. If
+// two nodes both have this macro set, they can talk to each other
+// (but they can no longer hear gateways). This should probably only
+// be used when debugging and/or when talking to the radio directly
 // (e.g. like in the "raw" example).
 //#define DISABLE_INVERT_IQ_ON_RX
 
