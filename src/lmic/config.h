@@ -5,12 +5,22 @@
 // gcc commandline. Since Arduino does not allow easily modifying the
 // compiler commandline, use this file to load project defaults and then fall back.
 // Note that you should not edit this file, because then your changes will
-// be applied to a globally-distributed file. Instead, create an 
+// be applied to a globally-distributed file. Instead, create an
 // lmic_project_config.h file.
 
-// if you want to override this, put a lora_project_config.h in your sketch directory.
-// otherwise the lmic_project_config.h from this directory will be used.
-#include "../../project_config/lmic_project_config.h"
+// We need to be able to compile with different options without editing source.
+// When building with a more advanced environment, set the following variable:
+// ARDUINO_LMIC_PROJECT_CONFIG_H=my_project_config.h
+//
+// otherwise the lmic_project_config.h from the ../../project_config directory will be used.
+#ifndef ARDUINO_LMIC_PROJECT_CONFIG_H
+# define ARDUINO_LMIC_PROJECT_CONFIG_H ../../project_config/lmic_project_config.h
+#endif
+
+#define CFG_TEXT_1(x)	CFG_TEXT_2(x)
+#define CFG_TEXT_2(x)	#x
+
+#include CFG_TEXT_1(ARDUINO_LMIC_PROJECT_CONFIG_H)
 
 #if ! (defined(CFG_eu868) || defined(CFG_us915))
 # warning Target RF configuration not defined, assuming CFG_eu868
