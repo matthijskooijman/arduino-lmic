@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  *
- * This the HAL to run LMIC on top of the Arduino environment.
+ * This is the HAL to run LMIC on top of the Arduino environment.
  *******************************************************************************/
 
 #include <Arduino.h>
