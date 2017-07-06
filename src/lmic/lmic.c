@@ -626,7 +626,7 @@ void LMIC_disableChannel (u1_t channel) {
     LMIC.channelMap &= ~(1<<channel);
 }
 
-static u4_t convFreq (xref2u1_t ptr) {
+static u4_t convFreq (xref2cu1_t ptr) {
     u4_t freq = (os_rlsbf4(ptr-1) >> 8) * 100;
     if( freq < EU868_FREQ_MIN || freq > EU868_FREQ_MAX )
         freq = 0;
@@ -1126,116 +1126,12 @@ static int decodeBeacon (void) {
 }
 #endif // !DISABLE_BEACONS
 
-
-static bit_t decodeFrame (void) {
-    xref2u1_t d = LMIC.frame;
-    u1_t hdr    = d[0];
-    u1_t ftype  = hdr & HDR_FTYPE;
-    int  dlen   = LMIC.dataLen;
-#if LMIC_DEBUG_LEVEL > 0
-    const char *window = (LMIC.txrxFlags & TXRX_DNW1) ? "RX1" : ((LMIC.txrxFlags & TXRX_DNW2) ? "RX2" : "Other");
-#endif
-
-    if( dlen < OFF_DAT_OPTS+4 ||
-        (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
-        (ftype != HDR_FTYPE_DADN  &&  ftype != HDR_FTYPE_DCDN) ) {
-        // Basic sanity checks failed
-        EV(specCond, WARN, (e_.reason = EV::specCond_t::UNEXPECTED_FRAME,
-                            e_.eui    = MAIN::CDEV->getEui(),
-                            e_.info   = dlen < 4 ? 0 : os_rlsbf4(&d[dlen-4]),
-                            e_.info2  = hdr + (dlen<<8)));
-      norx:
-#if LMIC_DEBUG_LEVEL > 0
-        LMIC_DEBUG_PRINTF("%lu: Invalid downlink, window=%s\n", os_getTime(), window);
-#endif
-        LMIC.dataLen = 0;
-        return 0;
-    }
-    // Validate exact frame length
-    // Note: device address was already read+evaluated in order to arrive here.
-    int  fct   = d[OFF_DAT_FCT];
-    u4_t addr  = os_rlsbf4(&d[OFF_DAT_ADDR]);
-    u4_t seqno = os_rlsbf2(&d[OFF_DAT_SEQNO]);
-    int  olen  = fct & FCT_OPTLEN;
-    int  ackup = (fct & FCT_ACK) != 0 ? 1 : 0;   // ACK last up frame
-    int  poff  = OFF_DAT_OPTS+olen;
-    int  pend  = dlen-4;  // MIC
-
-    if( addr != LMIC.devaddr ) {
-        EV(specCond, WARN, (e_.reason = EV::specCond_t::ALIEN_ADDRESS,
-                            e_.eui    = MAIN::CDEV->getEui(),
-                            e_.info   = addr,
-                            e_.info2  = LMIC.devaddr));
-        goto norx;
-    }
-    if( poff > pend ) {
-        EV(specCond, ERR, (e_.reason = EV::specCond_t::CORRUPTED_FRAME,
-                           e_.eui    = MAIN::CDEV->getEui(),
-                           e_.info   = 0x1000000 + (poff-pend) + (fct<<8) + (dlen<<16)));
-        goto norx;
-    }
-
-    int port = -1;
-    int replayConf = 0;
-
-    if( pend > poff )
-        port = d[poff++];
-
-    seqno = LMIC.seqnoDn + (u2_t)(seqno - LMIC.seqnoDn);
-
-    if( !aes_verifyMic(LMIC.nwkKey, LMIC.devaddr, seqno, /*dn*/1, d, pend) ) {
-        EV(spe3Cond, ERR, (e_.reason = EV::spe3Cond_t::CORRUPTED_MIC,
-                           e_.eui1   = MAIN::CDEV->getEui(),
-                           e_.info1  = Base::lsbf4(&d[pend]),
-                           e_.info2  = seqno,
-                           e_.info3  = LMIC.devaddr));
-        goto norx;
-    }
-    if( seqno < LMIC.seqnoDn ) {
-        if( (s4_t)seqno > (s4_t)LMIC.seqnoDn ) {
-            EV(specCond, INFO, (e_.reason = EV::specCond_t::DNSEQNO_ROLL_OVER,
-                                e_.eui    = MAIN::CDEV->getEui(),
-                                e_.info   = LMIC.seqnoDn,
-                                e_.info2  = seqno));
-            goto norx;
-        }
-        if( seqno != LMIC.seqnoDn-1 || !LMIC.dnConf || ftype != HDR_FTYPE_DCDN ) {
-            EV(specCond, INFO, (e_.reason = EV::specCond_t::DNSEQNO_OBSOLETE,
-                                e_.eui    = MAIN::CDEV->getEui(),
-                                e_.info   = LMIC.seqnoDn,
-                                e_.info2  = seqno));
-            goto norx;
-        }
-        // Replay of previous sequence number allowed only if
-        // previous frame and repeated both requested confirmation
-        replayConf = 1;
-    }
-    else {
-        if( seqno > LMIC.seqnoDn ) {
-            EV(specCond, INFO, (e_.reason = EV::specCond_t::DNSEQNO_SKIP,
-                                e_.eui    = MAIN::CDEV->getEui(),
-                                e_.info   = LMIC.seqnoDn,
-                                e_.info2  = seqno));
-        }
-        LMIC.seqnoDn = seqno+1;  // next number to be expected
-        DO_DEVDB(LMIC.seqnoDn,seqnoDn);
-        // DN frame requested confirmation - provide ACK once with next UP frame
-        LMIC.dnConf = (ftype == HDR_FTYPE_DCDN ? FCT_ACK : 0);
-    }
-
-    if( LMIC.dnConf || (fct & FCT_MORE) )
-        LMIC.opmode |= OP_POLL;
-
-    // We heard from network
-    LMIC.adrChanged = LMIC.rejoinCnt = 0;
-    if( LMIC.adrAckReq != LINK_CHECK_OFF )
-        LMIC.adrAckReq = LINK_CHECK_INIT;
-
-    // Process OPTS
-    int m = LMIC.rssi - RSSI_OFF - getSensitivity(LMIC.rps);
-    LMIC.margin = m < 0 ? 0 : m > 254 ? 254 : m;
-
-    xref2u1_t opts = &d[OFF_DAT_OPTS];
+// scan mac commands starting at opts[] for olen, return count of bytes consumed.
+static int
+scan_mac_cmds(
+    const uint8_t *opts,
+    int olen
+    ) {
     int oidx = 0;
     while( oidx < olen ) {
         switch( opts[oidx] ) {
@@ -1366,14 +1262,133 @@ static bit_t decodeFrame (void) {
 #endif // !DISABLE_MCMD_BCNI_ANS && !DISABLE_BEACONS
             oidx += 4;
             continue;
-        }
-        }
+        } /* end case */
+        } /* end switch */
+        /* unrecognized mac commands fall out of switch to here */
         EV(specCond, ERR, (e_.reason = EV::specCond_t::BAD_MAC_CMD,
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = Base::lsbf4(&d[pend]),
                            e_.info2  = Base::msbf4(&opts[oidx])));
+        /* stop processing options */
         break;
+    } /* end while */
+    return oidx;
+}
+
+static bit_t decodeFrame (void) {
+    xref2u1_t d = LMIC.frame;
+    u1_t hdr    = d[0];
+    u1_t ftype  = hdr & HDR_FTYPE;
+    int  dlen   = LMIC.dataLen;
+#if LMIC_DEBUG_LEVEL > 0
+    const char *window = (LMIC.txrxFlags & TXRX_DNW1) ? "RX1" : ((LMIC.txrxFlags & TXRX_DNW2) ? "RX2" : "Other");
+#endif
+
+    if( dlen < OFF_DAT_OPTS+4 ||
+        (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
+        (ftype != HDR_FTYPE_DADN  &&  ftype != HDR_FTYPE_DCDN) ) {
+        // Basic sanity checks failed
+        EV(specCond, WARN, (e_.reason = EV::specCond_t::UNEXPECTED_FRAME,
+                            e_.eui    = MAIN::CDEV->getEui(),
+                            e_.info   = dlen < 4 ? 0 : os_rlsbf4(&d[dlen-4]),
+                            e_.info2  = hdr + (dlen<<8)));
+      norx:
+#if LMIC_DEBUG_LEVEL > 0
+        LMIC_DEBUG_PRINTF("%lu: Invalid downlink, window=%s\n", os_getTime(), window);
+#endif
+        LMIC.dataLen = 0;
+        return 0;
     }
+    // Validate exact frame length
+    // Note: device address was already read+evaluated in order to arrive here.
+    int  fct   = d[OFF_DAT_FCT];
+    u4_t addr  = os_rlsbf4(&d[OFF_DAT_ADDR]);
+    u4_t seqno = os_rlsbf2(&d[OFF_DAT_SEQNO]);
+    int  olen  = fct & FCT_OPTLEN;
+    int  ackup = (fct & FCT_ACK) != 0 ? 1 : 0;   // ACK last up frame
+    int  poff  = OFF_DAT_OPTS+olen;
+    int  pend  = dlen-4;  // MIC
+
+    if( addr != LMIC.devaddr ) {
+        EV(specCond, WARN, (e_.reason = EV::specCond_t::ALIEN_ADDRESS,
+                            e_.eui    = MAIN::CDEV->getEui(),
+                            e_.info   = addr,
+                            e_.info2  = LMIC.devaddr));
+        goto norx;
+    }
+    if( poff > pend ) {
+        EV(specCond, ERR, (e_.reason = EV::specCond_t::CORRUPTED_FRAME,
+                           e_.eui    = MAIN::CDEV->getEui(),
+                           e_.info   = 0x1000000 + (poff-pend) + (fct<<8) + (dlen<<16)));
+        goto norx;
+    }
+
+    int port = -1;
+    int replayConf = 0;
+
+    if( pend > poff )
+        port = d[poff++];
+
+    seqno = LMIC.seqnoDn + (u2_t)(seqno - LMIC.seqnoDn);
+
+    if( !aes_verifyMic(LMIC.nwkKey, LMIC.devaddr, seqno, /*dn*/1, d, pend) ) {
+        EV(spe3Cond, ERR, (e_.reason = EV::spe3Cond_t::CORRUPTED_MIC,
+                           e_.eui1   = MAIN::CDEV->getEui(),
+                           e_.info1  = Base::lsbf4(&d[pend]),
+                           e_.info2  = seqno,
+                           e_.info3  = LMIC.devaddr));
+        goto norx;
+    }
+    if( seqno < LMIC.seqnoDn ) {
+        if( (s4_t)seqno > (s4_t)LMIC.seqnoDn ) {
+            EV(specCond, INFO, (e_.reason = EV::specCond_t::DNSEQNO_ROLL_OVER,
+                                e_.eui    = MAIN::CDEV->getEui(),
+                                e_.info   = LMIC.seqnoDn,
+                                e_.info2  = seqno));
+            goto norx;
+        }
+        if( seqno != LMIC.seqnoDn-1 || !LMIC.dnConf || ftype != HDR_FTYPE_DCDN ) {
+            EV(specCond, INFO, (e_.reason = EV::specCond_t::DNSEQNO_OBSOLETE,
+                                e_.eui    = MAIN::CDEV->getEui(),
+                                e_.info   = LMIC.seqnoDn,
+                                e_.info2  = seqno));
+            goto norx;
+        }
+        // Replay of previous sequence number allowed only if
+        // previous frame and repeated both requested confirmation
+        replayConf = 1;
+    }
+    else {
+        if( seqno > LMIC.seqnoDn ) {
+            EV(specCond, INFO, (e_.reason = EV::specCond_t::DNSEQNO_SKIP,
+                                e_.eui    = MAIN::CDEV->getEui(),
+                                e_.info   = LMIC.seqnoDn,
+                                e_.info2  = seqno));
+        }
+        LMIC.seqnoDn = seqno+1;  // next number to be expected
+        DO_DEVDB(LMIC.seqnoDn,seqnoDn);
+        // DN frame requested confirmation - provide ACK once with next UP frame
+        LMIC.dnConf = (ftype == HDR_FTYPE_DCDN ? FCT_ACK : 0);
+    }
+
+    if( LMIC.dnConf || (fct & FCT_MORE) )
+        LMIC.opmode |= OP_POLL;
+
+    // We heard from network
+    LMIC.adrChanged = LMIC.rejoinCnt = 0;
+    if( LMIC.adrAckReq != LINK_CHECK_OFF )
+        LMIC.adrAckReq = LINK_CHECK_INIT;
+
+    // Process OPTS
+    int m = LMIC.rssi - RSSI_OFF - getSensitivity(LMIC.rps);
+    LMIC.margin = m < 0 ? 0 : m > 254 ? 254 : m;
+
+#if LMIC_DEBUG_LEVEL > 0
+    LMIC_DEBUG_PRINTF("%lu: process options (olen=%#x)\n", os_getTime(), olen);
+#endif
+
+    xref2u1_t opts = &d[OFF_DAT_OPTS];
+    int oidx = scan_mac_cmds(opts, olen);
     if( oidx != olen ) {
         EV(specCond, ERR, (e_.reason = EV::specCond_t::CORRUPTED_FRAME,
                            e_.eui    = MAIN::CDEV->getEui(),
@@ -1383,9 +1398,25 @@ static bit_t decodeFrame (void) {
     if( !replayConf ) {
         // Handle payload only if not a replay
         // Decrypt payload - if any
-        if( port >= 0  &&  pend-poff > 0 )
+        if( port >= 0  &&  pend-poff > 0 ) {
             aes_cipher(port <= 0 ? LMIC.nwkKey : LMIC.artKey, LMIC.devaddr, seqno, /*dn*/1, d+poff, pend-poff);
-
+            if (port == 0) {
+                // this is a mac command. scan the options.
+#if LMIC_DEBUG_LEVEL > 0
+                LMIC_DEBUG_PRINTF("%lu: process mac commands for port 0 (olen=%#x)\n", os_getTime(), pend-poff);
+#endif
+                int optendindex = scan_mac_cmds(d+poff, pend-poff);
+                if (optendindex != pend-poff) {
+#if LMIC_DEBUG_LEVEL > 0
+                    LMIC_DEBUG_PRINTF(
+                        "%lu: error processing mac commands for port 0 "
+                        "(len=%#x, optendindex=%#x)\n",
+                        os_getTime(), pend-poff, optendindex
+                        );
+#endif
+                }
+            }
+        } // end decrypt payload
         EV(dfinfo, DEBUG, (e_.deveui  = MAIN::CDEV->getEui(),
                            e_.devaddr = LMIC.devaddr,
                            e_.seqno   = seqno,
@@ -1419,7 +1450,7 @@ static bit_t decodeFrame (void) {
     if( LMIC.txCnt != 0 ) // we requested an ACK
         LMIC.txrxFlags |= ackup ? TXRX_ACK : TXRX_NACK;
 
-    if( port < 0 ) {
+    if( port <= 0 ) {
         LMIC.txrxFlags |= TXRX_NOPORT;
         LMIC.dataBeg = poff;
         LMIC.dataLen = 0;
