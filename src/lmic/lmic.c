@@ -50,6 +50,10 @@
 #define BCN_GUARD_osticks      ms2osticks(BCN_GUARD_ms)
 #define BCN_WINDOW_osticks     ms2osticks(BCN_WINDOW_ms)
 #define AIRTIME_BCN_osticks    us2osticks(AIRTIME_BCN)
+
+// TODO(tmm@mcci.com): this should come from the lmic.h or lorabase.h file; and
+// it's probably affected by the fix to this issue:
+// https://github.com/mcci-catena/arduino-lmic/issues/2
 #if defined(CFG_eu868)
 #define DNW2_SAFETY_ZONE       ms2osticks(3000)
 #endif
@@ -227,6 +231,7 @@ static void aes_sessKeys (u2_t devnonce, xref2cu1_t artnonce, xref2u1_t nwkkey, 
 // ================================================================================
 // BEG LORA
 
+// TODO(tmm@mcci.com): move to a separate file either external ref or #include
 #if defined(CFG_eu868) // ========================================
 
 #define maxFrameLen(dr) ((dr)<=DR_SF9 ? TABLE_GET_U1(maxFrameLens, (dr)) : 0xFF)
@@ -250,6 +255,7 @@ static CONST_TABLE(s1_t, TXPOWLEVELS)[] = {
 };
 #define pow2dBm(mcmd_ladr_p1) (TABLE_GET_S1(TXPOWLEVELS, (mcmd_ladr_p1&MCMD_LADR_POW_MASK)>>MCMD_LADR_POW_SHIFT))
 
+// TODO(tmm@mcci.com): move to a separate file either external ref or #include
 #elif defined(CFG_us915) // ========================================
 
 #define IS_CHANNEL_125khz(c) (c<64)
@@ -385,6 +391,8 @@ static CONST_TABLE(u1_t, DRADJUST)[2+TXCONF_ATTEMPTS] = {
 //
 // Times for half symbol per DR
 // Per DR table to minimize rounding errors
+// TODO(tmm@mcci.com): move to a separate file either external ref or #include;
+// and split into one table per bandplan.
 static CONST_TABLE(ostime_t, DR2HSYM_osticks)[] = {
 #if defined(CFG_eu868)
 #define dr2hsym(dr) (TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)))
@@ -549,6 +557,7 @@ void LMIC_setPingable (u1_t intvExp) {
 
 #endif // !DISABLE_PING
 
+// TODO(tmm@mcci.com): move to a separate file (external ref or #include)
 #if defined(CFG_eu868)
 // ================================================================================
 //
@@ -558,7 +567,7 @@ enum { NUM_DEFAULT_CHANNELS=3 };
 static CONST_TABLE(u4_t, iniChannelFreq)[6] = {
     // Join frequencies and duty cycle limit (0.1%)
     EU868_F1|BAND_MILLI, EU868_F2|BAND_MILLI, EU868_F3|BAND_MILLI,
-    // Default operational frequencies
+    // Default operational frequencies and duty cycle limit (1%)
     EU868_F1|BAND_CENTI, EU868_F2|BAND_CENTI, EU868_F3|BAND_CENTI,
 };
 
@@ -571,7 +580,8 @@ static void initDefaultChannels (bit_t join) {
     u1_t su = join ? 0 : NUM_DEFAULT_CHANNELS;
     for( u1_t fu=0; fu<NUM_DEFAULT_CHANNELS; fu++,su++ ) {
         LMIC.channelFreq[fu]  = TABLE_GET_U4(iniChannelFreq, su);
-        LMIC.channelDrMap[fu] = DR_RANGE_MAP(DR_SF12,DR_SF7);
+        // TODO(tmm@mcci.com): don't use EU DR directly, use something from the LMIC context or a static const
+        LMIC.channelDrMap[fu] = DR_RANGE_MAP(EU868_DR_SF12,EU868_DR_SF7);
     }
 
     LMIC.bands[BAND_MILLI].txcap    = 1000;  // 0.1%
@@ -615,7 +625,8 @@ bit_t LMIC_setupChannel (u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
         freq = (freq&~3) | band;
     }
     LMIC.channelFreq [chidx] = freq;
-    LMIC.channelDrMap[chidx] = drmap==0 ? DR_RANGE_MAP(DR_SF12,DR_SF7) : drmap;
+    // TODO(tmm@mcci.com): don't use US SF directly, use something from the LMIC context or a static const
+    LMIC.channelDrMap[chidx] = drmap==0 ? DR_RANGE_MAP(EU868_DR_SF12,EU868_DR_SF7) : drmap;
     LMIC.channelMap |= 1<<chidx;  // enabled right away
     return 1;
 }
@@ -696,6 +707,7 @@ static void setBcnRxParams (void) {
 }
 #endif // !DISABLE_BEACONS
 
+// TODO(tmm@mcci.com): parameterize as an inline or post-condition
 #define setRx1Params() /*LMIC.freq/rps remain unchanged*/
 
 #if !defined(DISABLE_JOIN)
@@ -706,7 +718,9 @@ static void initJoinLoop (void) {
     LMIC.txChnl = os_getRndU1() % NUM_DEFAULT_CHANNELS;
 #endif
     LMIC.adrTxPow = 14;
-    setDrJoin(DRCHG_SET, DR_SF7);
+    // TODO(tmm@mcci.com) don't use EU directly, use a table. That
+    // will allow upport for EU-style bandplans with similar code.
+    setDrJoin(DRCHG_SET, EU868_DR_SF7);
     initDefaultChannels(1);
     ASSERT((LMIC.opmode & OP_NEXTCHNL)==0);
     LMIC.txend = LMIC.bands[BAND_MILLI].avail + rndDelay(8);
@@ -722,7 +736,8 @@ static ostime_t nextJoinState (void) {
         LMIC.txChnl = 0;
     if( (++LMIC.txCnt & 1) == 0 ) {
         // Lower DR every 2nd try (having tried 868.x and 864.x with the same DR)
-        if( LMIC.datarate == DR_SF12 )
+        // TODO(tmm@mcci.com): use a static const for sharing code
+        if( LMIC.datarate == EU868_DR_SF12 )
             failed = 1; // we have tried all DR - signal EV_JOIN_FAILED
         else
             setDrJoin(DRCHG_NOJACC, decDR((dr_t)LMIC.datarate));
@@ -751,6 +766,7 @@ static ostime_t nextJoinState (void) {
 //
 // ================================================================================
 #elif defined(CFG_us915)
+// TODO(tmm@mcci.com): move to a separate file either external ref or #include
 // ================================================================================
 //
 // BEG: US915 related stuff
@@ -776,7 +792,8 @@ bit_t LMIC_setupChannel (u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
     if( chidx < 72 || chidx >= 72+MAX_XCHANNELS )
         return 0; // channels 0..71 are hardwired
     LMIC.xchFreq[chidx-72] = freq;
-    LMIC.xchDrMap[chidx-72] = drmap==0 ? DR_RANGE_MAP(DR_SF10,DR_SF8C) : drmap;
+    // TODO(tmm@mcci.com): don't use US SF directly, use something from the LMIC context or a static const
+    LMIC.xchDrMap[chidx-72] = drmap==0 ? DR_RANGE_MAP(US915_DR_SF10,US915_DR_SF8C) : drmap;
     LMIC.channelMap[chidx>>4] |= (1<<(chidx&0xF));
     return 1;
 }
@@ -926,7 +943,8 @@ static void setNextChannel(uint start, uint end, uint count) {
 // US does not have duty cycling - return now as earliest TX time
 #define nextTx(now) (_nextTx(),(now))
 static void _nextTx (void) {
-    if( LMIC.datarate >= DR_SF8C ) { // 500kHz
+    // TODO(tmm@mcci.com): use a static const for US-like
+    if( LMIC.datarate >= US915_DR_SF8C ) { // 500kHz
         ASSERT(LMIC.activeChannels500khz>0);
         setNextChannel(64, 64+8, LMIC.activeChannels500khz);
     } else { // 125kHz
@@ -943,12 +961,13 @@ static void setBcnRxParams (void) {
 }
 #endif // !DISABLE_BEACONS
 
+// TODO(tmm@mcci.com): parmeterize for US-like
 #define setRx1Params() {                                                \
     LMIC.freq = US915_500kHz_DNFBASE + (LMIC.txChnl & 0x7) * US915_500kHz_DNFSTEP; \
-    if( /* TX datarate */LMIC.dndr < DR_SF8C )                          \
-        LMIC.dndr += DR_SF10CR - DR_SF10;                               \
-    else if( LMIC.dndr == DR_SF8C )                                     \
-        LMIC.dndr = DR_SF7CR;                                           \
+    if( /* TX datarate */LMIC.dndr < US915_DR_SF8C )                    \
+        LMIC.dndr += US915_DR_SF10CR - US915_DR_SF10;                   \
+    else if( LMIC.dndr == US915_DR_SF8C )                               \
+        LMIC.dndr = US915_DR_SF7CR;                                     \
     LMIC.rps = dndr2rps(LMIC.dndr);                                     \
 }
 
@@ -973,7 +992,8 @@ static void initJoinLoop (void) {
 
     // make sure the datarate is set to DR0 per LoRaWAN regional reqts V1.0.2,
     // section 2.2.2
-    setDrJoin(DRCHG_SET, DR_SF10);
+    // TODO(tmm@mcci.com): parameterize this for US-like
+    setDrJoin(DRCHG_SET, US915_DR_SF10);
 
     // TODO(tmm@mcci.com) need to implement the transmit randomization and
     // duty cycle restrictions from LoRaWAN V1.0.2 section 7.
@@ -989,15 +1009,18 @@ static ostime_t nextJoinState (void) {
     //       125 kHz channel)
     //
     u1_t failed = 0;
-    if( LMIC.datarate != DR_SF8C ) {
+    // TODO(tmm@mcci.com) parameterize for US-like
+    if( LMIC.datarate != US915_DR_SF8C ) {
         // assume that 500 kHz equiv of last 125 kHz channel
         // is also enabled, and use it next.
         LMIC.txChnl = 64+(LMIC.txChnl>>3);
-        setDrJoin(DRCHG_SET, DR_SF8C);
+        // TODO(tmm@mcci.com) parmeterize for US-like
+        setDrJoin(DRCHG_SET, US915_DR_SF8C);
     } else {
         setNextChannel(0, 64, LMIC.activeChannels125khz);
 
-        s1_t dr = DR_SF10;
+        // TODO(tmm@mcci.com) parameterize
+        s1_t dr = US915_DR_SF10;
         if( (++LMIC.txCnt & 0x7) == 0) {
             failed = 1; // All DR exhausted - signal failed
         }
@@ -1009,6 +1032,7 @@ static ostime_t nextJoinState (void) {
     // starting adding a bias after 1 hour, 25 hours, etc.; and limit the duty
     // cycle on power up. For testability, add a way to set the join start time
     // externally (a test API) so we can check this feature.
+    // See https://github.com/mcci-catena/arduino-lmic/issues/2
     LMIC.txend = os_getTime() +
         (isTESTMODE()
          // Avoid collision with JOIN ACCEPT being sent by GW (but we missed it - GW is still busy)
@@ -1094,6 +1118,8 @@ static int decodeBeacon (void) {
     ASSERT(LMIC.dataLen == LEN_BCN); // implicit header RX guarantees this
     xref2u1_t d = LMIC.frame;
     if(
+       // TODO(tmm@mcci.com) this looks bogus compared to current 1.02 regional
+       // spec. https://github.com/mcci-catena/arduino-lmic/issues/18
 #if defined(CFG_eu868)
         d[OFF_BCN_CRC1] != (u1_t)os_crc16(d,OFF_BCN_CRC1)
 #elif defined(CFG_us915)
@@ -1537,7 +1563,9 @@ static void txDone (ostime_t delay, osjobcb_t func) {
     // Setup receive - LMIC.rxtime is preloaded with 1.5 symbols offset to tune
     // into the middle of the 8 symbols preamble.
 #if defined(CFG_eu868)
-    if( /* TX datarate */LMIC.rxsyms == DR_FSK ) {
+    // TODO(tmm@mcci.com): don't use EU868, use static const for EU-style
+    // possibly condition on FSK being supported.
+    if( /* TX datarate */LMIC.rxsyms == EU868_DR_FSK ) {
         LMIC.rxtime = LMIC.txend + delay - PRERX_FSK*us2osticksRound(160);
         LMIC.rxsyms = RXLEN_FSK;
         os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
@@ -1616,11 +1644,15 @@ static bit_t processJoinAccept (void) {
     LMIC.devaddr = addr;
     LMIC.netid = os_rlsbf4(&LMIC.frame[OFF_JA_NETID]) & 0xFFFFFF;
 
+    // TODO(tmm@mcci.com) refactor this for eu-like and us-like
 #if defined(CFG_eu868)
     initDefaultChannels(0);
 #endif
     if( dlen > LEN_JA ) {
 #if defined(CFG_us915)
+        // TODO(tmm@mcci.com): this is wrong, we're supposed to continue
+        // the join per 2.2.5 of LoRaWAN regional 2.2.4
+        // https://github.com/mcci-catena/arduino-lmic/issues/19
         goto badframe;
 #endif
         dlen = OFF_CFLIST;
@@ -2163,6 +2195,8 @@ static void processBeacon (xref2osjob_t osjob) {
     LMIC.bcnRxsyms = LMIC.rxsyms;
   rev:
 #if defined(CFG_us915)
+    // TODO(tmm@mcci.com): define a macro in the low-level code, 
+    // LMIC_nextBeackonChannel(), which expands to the below or nothing.
     LMIC.bcnChnl = (LMIC.bcnChnl+1) & 7;
 #endif
 #if !defined(DISABLE_PING)
@@ -2391,6 +2425,8 @@ void LMIC_reset (void) {
     LMIC.ping.intvExp =  0xFF;
 #endif // !DISABLE_PING
 #if defined(CFG_us915)
+    // TODO(tmm@mcci.com): decide whehter we want to do this on every 
+    // reset or just restore the last sub-band selected by the user.
     initDefaultChannels();
 #endif
     DO_DEVDB(LMIC.devaddr,      devaddr);
@@ -2470,6 +2506,9 @@ void LMIC_tryRejoin (void) {
 //!     If NULL the caller has copied the key into `LMIC.nwkKey` before.
 //! \param artKey  the 16 byte application router session key used for message confidentiality.
 //!     If NULL the caller has copied the key into `LMIC.artKey` before.
+
+// TODO(tmm@mcci.com) we ought to also save the channels that were returned by the
+// join accept; right now this has to be done by the caller (or it doesn't get done).
 void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t artKey) {
     LMIC.netid = netid;
     LMIC.devaddr = devaddr;
@@ -2479,6 +2518,8 @@ void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t
         os_copyMem(LMIC.artKey, artKey, 16);
 
 #if defined(CFG_eu868)
+    // TODO(tmm@mcci.com) decide why this is different. Meanwhile, make a macro:
+    // LMICbandplan_initDefaultChannels().
     initDefaultChannels(0);
 #endif
 
