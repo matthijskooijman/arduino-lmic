@@ -61,21 +61,36 @@ us a better way to do this.
 
 The following configuration variables are available.
 
-### Selecting the radio frequency
+### Selecting the LoRaWAN Region Configuration
 
-You should define one of the following variables. If you don't,
-the library assumes eu868. The library changes configuration pretty substantially
-between eu868 and us915. Some of the differences are listed below.
+The library supports the following regions:
 
-#### `#define CFG_eu868 1` 
-Configure the library for EU868 operation. Adds the API `LMIC_setupBand()`, and
-the constants `MAX_CHANNELS`, `MAX_BANDS`, `LIMIT_CHANNELS`, `BAND_MILLI`,
+`-D` variable | CFG region name | CFG region value | LoRa Spec Reference| Frequency
+------------|-----------------|:----------------:|:-------------------:|--------
+`-D CFG_eu868` | `LMIC_REGION_eu868` | 1 | 2.1 | EU 863-870 MHz ISM
+`-D CFG_us915` | `LMIC_REGION_us915` | 2 | 2.2 | US 902-928 MHz ISM
+`-D CFG_au921` | `LMIC_REGION_au921` | 5 | 2.5 | Australia 915-928 MHz ISM
+`-D CFG_as923` | `LMIC_REGION_as923` | 7 | 2.7 | Asia 923 MHz ISM
+`-D CFG_in866` | `LMIC_REGION_in866` | 9 | 2.9 | India 865-867 MHz ISM
+
+You should define exactly one of `CFG_...` variables. If you don't,
+the library assumes `CFG_eu868`. The library changes configuration pretty substantially
+according to the region. Some of the differences are listed below.
+
+#### eu868 
+If the library is configured for EU868 operation, we make the following changes:
+- Add the API `LMIC_setupBand()`.
+- Add the constants `MAX_CHANNELS`, `MAX_BANDS`, `LIMIT_CHANNELS`, `BAND_MILLI`,
 `BAND_CENTI`, `BAND_DECI`, and `BAND_AUX`.
 
-#### `#define CFG_us915 1`
-Configure the library for US915 operation.  Adds the APIs `LMIC_enableChannel()`,
-`LMIC_enableSubBand()`, `LMIC_disableSubBand()`, and `LMIC_selectSubBand()`. Adds the 
+#### us915
+If the library is configured for US915 operation, we make the following changes:
+- Add the APIs `LMIC_enableChannel()`,
+`LMIC_enableSubBand()`, `LMIC_disableSubBand()`, and `LMIC_selectSubBand()`. 
+- Add the 
 constants `MAX_XCHANNELS` and `MAX_TXPOW_125kHz`.
+
+
 
 ### Selecting the target radio transceiver
 
