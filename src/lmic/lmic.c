@@ -1094,9 +1094,9 @@ static int decodeBeacon (void) {
     ASSERT(LMIC.dataLen == LEN_BCN); // implicit header RX guarantees this
     xref2u1_t d = LMIC.frame;
     if(
-#if CFG_eu868
+#if defined(CFG_eu868)
         d[OFF_BCN_CRC1] != (u1_t)os_crc16(d,OFF_BCN_CRC1)
-#elif CFG_us915
+#elif defined(CFG_us915)
         os_rlsbf2(&d[OFF_BCN_CRC1]) != os_crc16(d,OFF_BCN_CRC1)
 #endif
         )
@@ -2162,7 +2162,7 @@ static void processBeacon (xref2osjob_t osjob) {
     LMIC.bcnRxtime = LMIC.bcninfo.txtime + BCN_INTV_osticks - calcRxWindow(0,DR_BCN);
     LMIC.bcnRxsyms = LMIC.rxsyms;
   rev:
-#if CFG_us915
+#if defined(CFG_us915)
     LMIC.bcnChnl = (LMIC.bcnChnl+1) & 7;
 #endif
 #if !defined(DISABLE_PING)
