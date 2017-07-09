@@ -74,13 +74,46 @@ enum { BCN_RESERVE_us    = 2120000 };
 enum { BCN_GUARD_us      = 3000000 };
 enum { BCN_SLOT_SPAN_us  =   30000 };
 
-#if defined(CFG_eu868) // ==============================================
-
-enum _dr_eu868_t { DR_SF12=0, DR_SF11, DR_SF10, DR_SF9, DR_SF8, DR_SF7, DR_SF7B, DR_FSK, DR_NONE };
-enum { DR_DFLTMIN = DR_SF7 };
-enum { DR_PAGE = DR_PAGE_EU868 };
+// there are exactly 16 datarates
+enum _dr_code_t {
+        LORAWAN_DR0 = 0,
+        LORAWAN_DR1,
+        LORAWAN_DR2,
+        LORAWAN_DR3,
+        LORAWAN_DR4,
+        LORAWAN_DR5,
+        LORAWAN_DR6,
+        LORAWAN_DR7,
+        LORAWAN_DR8,
+        LORAWAN_DR9,
+        LORAWAN_DR10,
+        LORAWAN_DR11,
+        LORAWAN_DR12,
+        LORAWAN_DR13,
+        LORAWAN_DR14,
+        LORAWAN_DR15,
+        LORAWAN_DR_LENGTH       // 16, for sizing arrays.
+};
 
 // Default frequency plan for EU 868MHz ISM band
+// data rates
+// this is a little confusing: the integer values of these constants are the
+// DataRates from the LoRaWAN Regional Parmaeter spec. The names are just
+// convenient indications, so we can use them in the rare case that we need to
+// choose a DataRate by SF and configuration, not by DR code.
+
+enum _dr_eu868_t {
+        EU868_DR_SF12 = 0,
+        EU868_DR_SF11,
+        EU868_DR_SF10,
+        EU868_DR_SF9,
+        EU868_DR_SF8,
+        EU868_DR_SF7,
+        EU868_DR_SF7B,
+        EU868_DR_FSK,
+        EU868_DR_NONE
+};
+
 // Bands:
 //  g1 :   1%  14dBm
 //  g2 : 0.1%  14dBm
@@ -99,15 +132,107 @@ enum { EU868_F1 = 868100000,      // g1   SF7-12
 enum { EU868_FREQ_MIN = 863000000,
        EU868_FREQ_MAX = 870000000 };
 
+// Frequency plan for US 915MHz ISM band
+// data rates
+enum _dr_us915_t {
+        US915_DR_SF12 = 0,
+        US915_DR_SF11,
+        US915_DR_SF10,
+        US915_DR_SF9,
+        US915_DR_SF8,
+        US915_DR_SF7,
+        US915_DR_SF8C,
+        US915_DR_NONE,
+        // Devices "behind a router" (and upper half of DR list):
+        US915_DR_SF12CR = 8,
+        US915_DR_SF11CR,
+        US915_DR_SF10CR,
+        US915_DR_SF9CR,
+        US915_DR_SF8CR,
+        US915_DR_SF7CR
+};
+
+// Default frequency plan for US 915MHz
+enum {
+        US915_125kHz_UPFBASE = 902300000,
+        US915_125kHz_UPFSTEP = 200000,
+        US915_500kHz_UPFBASE = 903000000,
+        US915_500kHz_UPFSTEP = 1600000,
+        US915_500kHz_DNFBASE = 923300000,
+        US915_500kHz_DNFSTEP = 600000
+};
+enum {
+        US915_FREQ_MIN = 902000000,
+        US915_FREQ_MAX = 928000000
+};
+
+// Frequency plan for AU 921 MHz
+enum _dr_as921_t {
+        AU921_DR_SF12 = 0,
+        AU921_DR_SF11,
+        AU921_DR_SF10,
+        AU921_DR_SF9,
+        AU921_DR_SF8,
+        AU921_DR_SF7,
+        AU921_DR_SF8C,
+        AU921_DR_NONE,
+        // Devices behind a router:
+        AU921_DR_SF12CR = 8,
+        AU921_DR_SF11CR,
+        AU921_DR_SF10CR,
+        AU921_DR_SF9CR,
+        AU921_DR_SF8CR,
+        AU921_DR_SF7CR
+};
+
+// Default frequency plan for AU 921MHz
+enum {
+        AU921_125kHz_UPFBASE = 915200000,
+        AU921_125kHz_UPFSTEP = 200000,
+        AU921_500kHz_UPFBASE = 915900000,
+        AU921_500kHz_UPFSTEP = 1600000,
+        AU921_500kHz_DNFBASE = 923300000,
+        AU921_500kHz_DNFSTEP = 600000
+};
+enum {
+        AU921_FREQ_MIN = 915000000,
+        AU921_FREQ_MAX = 928000000
+};
+
+
+
+// post conditions from this block: symbols used by general code that is not
+// ostensiblly bandplan-specific.
+// DR_DFLTMIN must be defined as a suitable substititute value if we get a bogus DR
+// DR_PAGE is used only for a non-supported debug system, but should be defined.
+// CHNL_DNW2 is the channel to be used for RX2
+// FREQ_DNW2 is the frequency to be used for RX2
+// DR_DNW2 is the data-rate to be used for RX2
+//
+// The Class B stuff is untested and definitely wrong in parts for LoRaWAN 1.02
+// CHNL_PING is the channel to be used for pinging.
+// FREQ_PING is the default ping channel frequency
+// DR_PING is the data-rate to be used for pings.
+// CHNL_BCN is the channel to be used for the beacon (or perhaps the start chan)
+// FREQ_BCN is the frequency to be used for the beacon
+// DR_BCN is the datarate to be used for the beacon
+// AIRTIME_BCN is the airtime for the beacon
+
+#if defined(CFG_eu868) // ==============================================
+
+enum { DR_DFLTMIN = EU868_DR_SF7 };   // DR5
+// DR_PAGE is a debugging parameter
+enum { DR_PAGE = DR_PAGE_EU868 };
+
 enum { CHNL_PING         = 5 };
 enum { FREQ_PING         = EU868_F6 };  // default ping freq
-enum { DR_PING           = DR_SF9 };       // default ping DR
+enum { DR_PING           = EU868_DR_SF9 };       // default ping DR
 enum { CHNL_DNW2         = 5 };
 enum { FREQ_DNW2         = EU868_F6 };
-enum { DR_DNW2           = DR_SF12 };
+enum { DR_DNW2           = EU868_DR_SF12 };
 enum { CHNL_BCN          = 5 };
 enum { FREQ_BCN          = EU868_F6 };
-enum { DR_BCN            = DR_SF9 };
+enum { DR_BCN            = EU868_DR_SF9 };
 enum { AIRTIME_BCN       = 144384 };  // micros
 
 enum {
@@ -124,31 +249,20 @@ enum {
 
 #elif defined(CFG_us915)  // =========================================
 
-enum _dr_us915_t { DR_SF10=0, DR_SF9, DR_SF8, DR_SF7, DR_SF8C, DR_NONE,
-                   // Devices behind a router:
-                   DR_SF12CR=8, DR_SF11CR, DR_SF10CR, DR_SF9CR, DR_SF8CR, DR_SF7CR };
-enum { DR_DFLTMIN = DR_SF8C };
-enum { DR_PAGE = DR_PAGE_US915 };
+enum { DR_DFLTMIN = US915_DR_SF7 };  // DR5
 
-// Default frequency plan for US 915MHz
-enum { US915_125kHz_UPFBASE = 902300000,
-       US915_125kHz_UPFSTEP =    200000,
-       US915_500kHz_UPFBASE = 903000000,
-       US915_500kHz_UPFSTEP =   1600000,
-       US915_500kHz_DNFBASE = 923300000,
-       US915_500kHz_DNFSTEP =    600000
-};
-enum { US915_FREQ_MIN = 902000000,
-       US915_FREQ_MAX = 928000000 };
+// DR_PAGE is a debugging parameter; it must be defined but it has no use in arduino-lmic
+enum { DR_PAGE = DR_PAGE_US915 };
 
 enum { CHNL_PING         = 0 }; // used only for default init of state (follows beacon - rotating)
 enum { FREQ_PING         = US915_500kHz_DNFBASE + CHNL_PING*US915_500kHz_DNFSTEP };  // default ping freq
-enum { DR_PING           = DR_SF10CR };       // default ping DR
+enum { DR_PING           = US915_DR_SF10CR };       // default ping DR
 enum { CHNL_DNW2         = 0 };
 enum { FREQ_DNW2         = US915_500kHz_DNFBASE + CHNL_DNW2*US915_500kHz_DNFSTEP };
-enum { DR_DNW2           = DR_SF12CR };
+enum { DR_DNW2           = US915_DR_SF12CR };
 enum { CHNL_BCN          = 0 }; // used only for default init of state (rotating beacon scheme)
-enum { DR_BCN            = DR_SF10CR };
+enum { DR_BCN            = US915_DR_SF12CR };
+// TODO(tmm@mcci.com): check this, as beacon DR was SF10 in IBM code.
 enum { AIRTIME_BCN       = 72192 };  // micros
 
 enum {
@@ -162,6 +276,36 @@ enum {
     OFF_BCN_RFU1     = 16,
     OFF_BCN_CRC2     = 17,
     LEN_BCN          = 19
+};
+
+#elif defined(CFG_as921)  // =========================================
+
+enum { DR_DFLTMIN = DR_SF8C };  // DR4
+
+                                // DR_PAGE is a debugging parameter; it must be defined but it has no use in arduino-lmic
+enum { DR_PAGE = DR_PAGE_US915 };
+
+enum { CHNL_PING = 0 }; // used only for default init of state (follows beacon - rotating)
+enum { FREQ_PING = US915_500kHz_DNFBASE + CHNL_PING*US915_500kHz_DNFSTEP };  // default ping freq
+enum { DR_PING = DR_SF10CR };       // default ping DR
+enum { CHNL_DNW2 = 0 };
+enum { FREQ_DNW2 = US915_500kHz_DNFBASE + CHNL_DNW2*US915_500kHz_DNFSTEP };
+enum { DR_DNW2 = DR_SF12CR };
+enum { CHNL_BCN = 0 }; // used only for default init of state (rotating beacon scheme)
+enum { DR_BCN = DR_SF10CR };
+enum { AIRTIME_BCN = 72192 };  // micros ... TODO(tmm@mcci.com) check.
+
+enum {
+        // Beacon frame format AU DR10/SF10 500kHz
+        OFF_BCN_NETID = 0,
+        OFF_BCN_TIME = 3,
+        OFF_BCN_CRC1 = 7,
+        OFF_BCN_INFO = 9,
+        OFF_BCN_LAT = 10,
+        OFF_BCN_LON = 13,
+        OFF_BCN_RFU1 = 16,
+        OFF_BCN_CRC2 = 17,
+        LEN_BCN = 19
 };
 
 #endif // ===================================================
@@ -312,45 +456,45 @@ enum {
     MCMD_LADR_DR_SHIFT   = 4,
     MCMD_LADR_POW_SHIFT  = 0,
 #if defined(CFG_eu868)
-    MCMD_LADR_SF12      = DR_SF12<<4,
-    MCMD_LADR_SF11      = DR_SF11<<4,
-    MCMD_LADR_SF10      = DR_SF10<<4,
-    MCMD_LADR_SF9       = DR_SF9 <<4,
-    MCMD_LADR_SF8       = DR_SF8 <<4,
-    MCMD_LADR_SF7       = DR_SF7 <<4,
-    MCMD_LADR_SF7B      = DR_SF7B<<4,
-    MCMD_LADR_FSK       = DR_FSK <<4,
+    EU868_MCMD_LADR_SF12      = EU868_DR_SF12<<4,
+    EU868_MCMD_LADR_SF11      = EU868_DR_SF11<<4,
+    EU868_MCMD_LADR_SF10      = EU868_DR_SF10<<4,
+    EU868_MCMD_LADR_SF9       = EU868_DR_SF9 <<4,
+    EU868_MCMD_LADR_SF8       = EU868_DR_SF8 <<4,
+    EU868_MCMD_LADR_SF7       = EU868_DR_SF7 <<4,
+    EU868_MCMD_LADR_SF7B      = EU868_DR_SF7B<<4,
+    EU868_MCMD_LADR_FSK       = EU868_DR_FSK <<4,
 
-    MCMD_LADR_20dBm     = 0,
-    MCMD_LADR_14dBm     = 1,
-    MCMD_LADR_11dBm     = 2,
-    MCMD_LADR_8dBm      = 3,
-    MCMD_LADR_5dBm      = 4,
-    MCMD_LADR_2dBm      = 5,
+    EU868_MCMD_LADR_20dBm     = 0,
+    EU868_MCMD_LADR_14dBm     = 1,
+    EU868_MCMD_LADR_11dBm     = 2,
+    EU868_MCMD_LADR_8dBm      = 3,
+    EU868_MCMD_LADR_5dBm      = 4,
+    EU868_MCMD_LADR_2dBm      = 5,
 #elif defined(CFG_us915)
-    MCMD_LADR_SF10      = DR_SF10<<4,
-    MCMD_LADR_SF9       = DR_SF9 <<4,
-    MCMD_LADR_SF8       = DR_SF8 <<4,
-    MCMD_LADR_SF7       = DR_SF7 <<4,
-    MCMD_LADR_SF8C      = DR_SF8C<<4,
-    MCMD_LADR_SF12CR    = DR_SF12CR<<4,
-    MCMD_LADR_SF11CR    = DR_SF11CR<<4,
-    MCMD_LADR_SF10CR    = DR_SF10CR<<4,
-    MCMD_LADR_SF9CR     = DR_SF9CR<<4,
-    MCMD_LADR_SF8CR     = DR_SF8CR<<4,
-    MCMD_LADR_SF7CR     = DR_SF7CR<<4,
+    US915_MCMD_LADR_SF10      = US915_DR_SF10<<4,
+    US915_MCMD_LADR_SF9       = US915_DR_SF9 <<4,
+    US915_MCMD_LADR_SF8       = US915_DR_SF8 <<4,
+    US915_MCMD_LADR_SF7       = US915_DR_SF7 <<4,
+    US915_MCMD_LADR_SF8C      = US915_DR_SF8C<<4,
+    US915_MCMD_LADR_SF12CR    = US915_DR_SF12CR<<4,
+    US915_MCMD_LADR_SF11CR    = US915_DR_SF11CR<<4,
+    US915_MCMD_LADR_SF10CR    = US915_DR_SF10CR<<4,
+    US915_MCMD_LADR_SF9CR     = US915_DR_SF9CR<<4,
+    US915_MCMD_LADR_SF8CR     = US915_DR_SF8CR<<4,
+    US915_MCMD_LADR_SF7CR     = US915_DR_SF7CR<<4,
 
-    MCMD_LADR_30dBm     = 0,
-    MCMD_LADR_28dBm     = 1,
-    MCMD_LADR_26dBm     = 2,
-    MCMD_LADR_24dBm     = 3,
-    MCMD_LADR_22dBm     = 4,
-    MCMD_LADR_20dBm     = 5,
-    MCMD_LADR_18dBm     = 6,
-    MCMD_LADR_16dBm     = 7,
-    MCMD_LADR_14dBm     = 8,
-    MCMD_LADR_12dBm     = 9,
-    MCMD_LADR_10dBm     = 10
+    US915_MCMD_LADR_30dBm     = 0,
+    US915_MCMD_LADR_28dBm     = 1,
+    US915_MCMD_LADR_26dBm     = 2,
+    US915_MCMD_LADR_24dBm     = 3,
+    US915_MCMD_LADR_22dBm     = 4,
+    US915_MCMD_LADR_20dBm     = 5,
+    US915_MCMD_LADR_18dBm     = 6,
+    US915_MCMD_LADR_16dBm     = 7,
+    US915_MCMD_LADR_14dBm     = 8,
+    US915_MCMD_LADR_12dBm     = 9,
+    US915_MCMD_LADR_10dBm     = 10
 #endif
 };
 
