@@ -69,7 +69,8 @@ static void setNextChannel(uint start, uint end, uint count) {
 
 
 bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
-        // nothing
+        // nothing; just succeed.
+	return 1;
 }
 
 

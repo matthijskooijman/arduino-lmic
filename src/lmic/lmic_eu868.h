@@ -55,8 +55,8 @@ LMICeu868_isValidBeacon1(const uint8_t *d) {
 #undef LMICbandplan_isValidBeacon1
 #define LMICbandplan_isValidBeacon1(pFrame) LMICeu868_isValidBeacon1(pFrame)
 
-// check for FSK
-// provide a default for LMICbandplan_isFSK()
+// override default for LMICbandplan_isFSK()
+#undef LMICbandplan_isFSK
 #define LMICbandplan_isFSK()    (/* TX datarate */LMIC.rxsyms == EU868_DR_FSK)
 
 // txDone handling for FSK.
