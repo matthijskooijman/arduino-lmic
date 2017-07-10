@@ -78,7 +78,7 @@ ostime_t LMICus915_dr2hsym(uint8_t dr) {
 
 
 
-u4_t LMICus915_convFreq(xref2u1_t ptr) {
+u4_t LMICus915_convFreq(xref2cu1_t ptr) {
         u4_t freq = (os_rlsbf4(ptr - 1) >> 8) * 100;
         if (freq < US915_FREQ_MIN || freq > US915_FREQ_MAX)
                 freq = 0;

@@ -50,7 +50,7 @@ ostime_t LMICus915_dr2hsym(uint8_t dr);
 void LMICus915_setBcnRxParams(void);
 #define LMICbandplan_setBcnRxParams() LMICus915_setBcnRxParams()
 
-u4_t LMICus915_convFreq(xref2u1_t ptr);
+u4_t LMICus915_convFreq(xref2cu1_t ptr);
 #define LMICbandplan_convFreq(ptr)      LMICus915_convFreq(ptr)
 
 void LMICus915_setRx1Params(void);
