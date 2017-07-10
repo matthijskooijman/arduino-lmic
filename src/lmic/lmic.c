@@ -98,7 +98,7 @@ u1_t os_getBattLevel (void) {
 
 #if !defined(os_crc16)
 // New CRC-16 CCITT(XMODEM) checksum for beacons:
-u2_t os_crc16 (xref2u1_t data, uint len) {
+u2_t os_crc16 (xref2cu1_t data, uint len) {
     u2_t remainder = 0;
     u2_t polynomial = 0x1021;
     for( uint i = 0; i < len; i++ ) {
@@ -1018,7 +1018,7 @@ static bit_t processJoinAccept (void) {
     LMIC.devaddr = addr;
     LMIC.netid = os_rlsbf4(&LMIC.frame[OFF_JA_NETID]) & 0xFFFFFF;
 
-    // initDefaultChannels(0) for EU-like, nothing otherwis
+    // initDefaultChannels(0) for EU-like, nothing otherwise
     LMICbandplan_joinAcceptChannelClear();
 
     if (!LMICbandplan_hasJoinCFlist() && dlen > LEN_JA) {

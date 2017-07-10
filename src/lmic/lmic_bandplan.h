@@ -128,6 +128,10 @@
 # error "LMICbandplan_nextJoinState() not defined by bandplan"
 #endif
 
+#if !defined(LMICbandplan_initDefaultChannels)
+# error "LMICbandplan_initDefaultChannels() not defined by bandplan"
+#endif
+
 //
 // Things common to lmic.c code
 //

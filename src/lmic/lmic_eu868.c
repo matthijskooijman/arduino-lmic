@@ -89,7 +89,7 @@ static CONST_TABLE(u4_t, iniChannelFreq)[6] = {
         EU868_F1 | BAND_CENTI, EU868_F2 | BAND_CENTI, EU868_F3 | BAND_CENTI,
 };
 
-void LMICeulikeJ_initDefaultChannels(bit_t join) {
+void LMICeu868_initDefaultChannels(bit_t join) {
         os_clearMem(&LMIC.channelFreq, sizeof(LMIC.channelFreq));
         os_clearMem(&LMIC.channelDrMap, sizeof(LMIC.channelDrMap));
         os_clearMem(&LMIC.bands, sizeof(LMIC.bands));
