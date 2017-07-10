@@ -73,7 +73,8 @@ bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
 }
 
 
-void LMICuslike_initDefaultChannels(void) {
+void LMICuslike_initDefaultChannels(bit_t fJoin) {
+        // things work the same for join as normal.
         for (u1_t i = 0; i<4; i++)
                 LMIC.channelMap[i] = 0xFFFF;
         LMIC.channelMap[4] = 0x00FF;

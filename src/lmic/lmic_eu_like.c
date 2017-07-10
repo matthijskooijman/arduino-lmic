@@ -69,7 +69,7 @@ void LMICeulike_initJoinLoop(uint8_t nDefaultChannels) {
         // TODO(tmm@mcci.com) don't use EU directly, use a table. That
         // will allow upport for EU-style bandplans with similar code.
         LMICcore_setDrJoin(DRCHG_SET, LMICbandplan_getInitialDrJoin());
-        LMICeulikeJ_initDefaultChannels(1);
+        LMICbandplan_initDefaultChannels(/* put into join mode */ 1);
         ASSERT((LMIC.opmode & OP_NEXTCHNL) == 0);
         LMIC.txend = LMIC.bands[BAND_MILLI].avail + LMICcore_rndDelay(8);
 }

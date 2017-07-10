@@ -208,7 +208,7 @@ void os_wlsbf2 (xref2u1_t buf, u2_t value);
 #define os_getRndU2() ((u2_t)((os_getRndU1()<<8)|os_getRndU1()))
 #endif
 #ifndef os_crc16
-u2_t os_crc16 (xref2u1_t d, uint len);
+u2_t os_crc16 (xref2cu1_t d, uint len);
 #endif
 
 #endif // !HAS_os_calls
