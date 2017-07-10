@@ -83,7 +83,7 @@ enum { JOIN_GUARD_ms      =  9000 };  // msecs - don't start Join Req/Acc transa
 enum { TXRX_BCNEXT_secs   =     2 };  // secs - earliest start after beacon time
 enum { RETRY_PERIOD_secs  =     3 };  // secs - random period for retrying a confirmed send
 
-#if defined(CFG_eu868) // EU868 spectrum ====================================================
+#if CFG_LMIC_EU_like // EU868 spectrum ====================================================
 
 enum { MAX_CHANNELS = 16 };      //!< Max supported channels
 enum { MAX_BANDS    =  4 };
@@ -98,7 +98,7 @@ struct band_t {
 };
 TYPEDEF_xref2band_t; //!< \internal
 
-#elif defined(CFG_us915)  // US915 spectrum =================================================
+#elif CFG_LMIC_US_like  // US915 spectrum =================================================
 
 enum { MAX_XCHANNELS = 2 };      // extra channels in RAM, channels 0-71 are immutable
 enum { MAX_TXPOW_125kHz = 30 };
@@ -204,12 +204,12 @@ struct lmic_t {
     osjob_t     osjob;
 
     // Channel scheduling
-#if defined(CFG_eu868)
+#if CFG_LMIC_EU_like
     band_t      bands[MAX_BANDS];
     u4_t        channelFreq[MAX_CHANNELS];
     u2_t        channelDrMap[MAX_CHANNELS];
     u2_t        channelMap;
-#elif defined(CFG_us915)
+#elif CFG_LMIC_US_like
     u4_t        xchFreq[MAX_XCHANNELS];    // extra channel frequencies (if device is behind a repeater)
     u2_t        xchDrMap[MAX_XCHANNELS];   // extra channel datarate ranges  ---XXX: ditto
     u2_t        channelMap[(72+MAX_XCHANNELS+15)/16];  // enabled bits
@@ -306,18 +306,13 @@ DECLARE_LMIC; //!< \internal
 
 //! Construct a bit map of allowed datarates from drlo to drhi (both included).
 #define DR_RANGE_MAP(drlo,drhi) (((u2_t)0xFFFF<<(drlo)) & ((u2_t)0xFFFF>>(15-(drhi))))
-#if defined(CFG_eu868)
-enum { BAND_MILLI=0, BAND_CENTI=1, BAND_DECI=2, BAND_AUX=3 };
 bit_t LMIC_setupBand (u1_t bandidx, s1_t txpow, u2_t txcap);
-#endif
 bit_t LMIC_setupChannel (u1_t channel, u4_t freq, u2_t drmap, s1_t band);
 void  LMIC_disableChannel (u1_t channel);
-#if defined(CFG_us915)
-void  LMIC_enableChannel (u1_t channel);
-void  LMIC_enableSubBand (u1_t band);
-void  LMIC_disableSubBand (u1_t band);
-void  LMIC_selectSubBand (u1_t band);
-#endif
+void  LMIC_enableSubBand(u1_t band);
+void  LMIC_enableChannel(u1_t channel);
+void  LMIC_disableSubBand(u1_t band);
+void  LMIC_selectSubBand(u1_t band);
 
 void  LMIC_setDrTxpow   (dr_t dr, s1_t txpow);  // set default/start DR/txpow
 void  LMIC_setAdrMode   (bit_t enabled);        // set ADR mode (if mobile turn off)
