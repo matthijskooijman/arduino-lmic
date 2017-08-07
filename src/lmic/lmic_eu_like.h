@@ -51,6 +51,7 @@ LMICeulike_isValidBeacon1(const uint8_t *d) {
 
 #define LMICbandplan_isValidBeacon1(pFrame) LMICeulike_isValidBeacon1(pFrame)
 
+
 // provide a default for LMICbandplan_isFSK()
 #define LMICbandplan_isFSK()    (0)
 
@@ -76,7 +77,7 @@ enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2, BAND_AUX = 3 };
 u1_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap);
 #define LMICbandplan_mapChannels(c, m)  LMICeulike_mapChannels(c, m)
 
-void LMICeulike_initJoinLoop(uint8_t nDefaultChannels);
+void LMICeulike_initJoinLoop(u1_t nDefaultChannels, s1_t adrTxPow);
 
 #define LMICbandplan_setRx1Params() \
         do { /*LMIC.freq/rps remain unchanged*/ } while (0)
@@ -85,5 +86,10 @@ void LMICeulike_updateTx(ostime_t txbeg);
 #define LMICbandplan_updateTx(t)        LMICeulike_updateTx(t)
 
 ostime_t LMICeulike_nextJoinState(uint8_t nDefaultChannels);
+
+static inline ostime_t LMICeulike_nextJoinTime(ostime_t now) {
+        return now;
+}
+#define LMICbandplan_nextJoinTime(now)     LMICeulike_nextJoinTime(now)
 
 #endif // _lmic_eu_like_h_

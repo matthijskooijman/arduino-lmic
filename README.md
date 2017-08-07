@@ -59,6 +59,8 @@ so that your local changes are more clearly separated from
 the distribution files. The Arduino environment doesn't give
 us a better way to do this.
 
+Unlike other ports of the LMIC code, in this port, you should not edit `src/lmic/config.h` to configure this package.
+
 The following configuration variables are available.
 
 ### Selecting the LoRaWAN Region Configuration
@@ -87,9 +89,8 @@ If the library is configured for EU868 operation, we make the following changes:
 If the library is configured for US915 operation, we make the following changes:
 - Add the APIs `LMIC_enableChannel()`,
 `LMIC_enableSubBand()`, `LMIC_disableSubBand()`, and `LMIC_selectSubBand()`. 
-- Add the 
-constants `MAX_XCHANNELS` and `MAX_TXPOW_125kHz`.
-
+- Add the constants `MAX_XCHANNELS` and `MAX_TXPOW_125kHz`.
+- Add a number of additional `DR_...` symbols.
 
 
 ### Selecting the target radio transceiver
@@ -327,14 +328,14 @@ Arduino side. To tell the LMIC library about these, a pin mapping struct
 is used in the sketch file.
 
 For example, this could look like this:
-
+```c++
 	lmic_pinmap lmic_pins = {
 	    .nss = 6,
 	    .rxtx = LMIC_UNUSED_PIN,
 	    .rst = 5,
 	    .dio = {2, 3, 4},
 	};
-
+```
 The names refer to the pins on the transceiver side, the numbers refer
 to the Arduino pin numbers (to use the analog pins, use constants like
 `A0`). For the DIO pins, the three numbers refer to DIO0, DIO1 and DIO2
@@ -348,14 +349,14 @@ recognized by the library.
 
 #### LoRa Nexus by Ideetron
 This board uses the following pin mapping:
-
+```c++
     const lmic_pinmap lmic_pins = {
         .nss = 10,
         .rxtx = LMIC_UNUSED_PIN,
         .rst = LMIC_UNUSED_PIN, // hardwired to AtMega RESET
         .dio = {4, 5, 7},
     };
-
+```
 Examples
 --------
 This library currently provides three examples:

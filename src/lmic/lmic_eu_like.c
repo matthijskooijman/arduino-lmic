@@ -59,19 +59,19 @@ u1_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap) {
 }
 
 #if !defined(DISABLE_JOIN)
-void LMICeulike_initJoinLoop(uint8_t nDefaultChannels) {
+void LMICeulike_initJoinLoop(uint8_t nDefaultChannels, s1_t adrTxPow) {
 #if CFG_TxContinuousMode
         LMIC.txChnl = 0
 #else
         LMIC.txChnl = os_getRndU1() % nDefaultChannels;
 #endif
-        LMIC.adrTxPow = 14;
+        LMIC.adrTxPow = adrTxPow;
         // TODO(tmm@mcci.com) don't use EU directly, use a table. That
         // will allow upport for EU-style bandplans with similar code.
         LMICcore_setDrJoin(DRCHG_SET, LMICbandplan_getInitialDrJoin());
         LMICbandplan_initDefaultChannels(/* put into join mode */ 1);
         ASSERT((LMIC.opmode & OP_NEXTCHNL) == 0);
-        LMIC.txend = LMIC.bands[BAND_MILLI].avail + LMICcore_rndDelay(8);
+        LMIC.txend = os_getTime() + LMICcore_rndDelay(8);
 }
 #endif // DISABLE_JOIN
 
@@ -96,9 +96,8 @@ ostime_t LMICeulike_nextJoinState(uint8_t nDefaultChannels) {
         // If all fail try next lower datarate
         if (++LMIC.txChnl == /* NUM_DEFAULT_CHANNELS */ nDefaultChannels)
                 LMIC.txChnl = 0;
-        if ((++LMIC.txCnt & 1) == 0) {
-                // Lower DR every 2nd try (having tried 868.x and 864.x with the same DR)
-                // TODO(tmm@mcci.com): use a static const for sharing code
+        if ((++LMIC.txCnt % nDefaultChannels) == 0) {
+                // Lower DR every nth try (having all default channels with same DR)
                 if (LMIC.datarate == LORAWAN_DR0)
                         failed = 1; // we have tried all DR - signal EV_JOIN_FAILED
                 else
@@ -108,9 +107,7 @@ ostime_t LMICeulike_nextJoinState(uint8_t nDefaultChannels) {
         LMIC.opmode &= ~OP_NEXTCHNL;
         // Move txend to randomize synchronized concurrent joins.
         // Duty cycle is based on txend.
-        ostime_t time = os_getTime();
-        if (time - LMIC.bands[BAND_MILLI].avail < 0)
-                time = LMIC.bands[BAND_MILLI].avail;
+        ostime_t const time = LMICbandplan_nextJoinTime(os_getTime());
         LMIC.txend = time +
                 (isTESTMODE()
                         // Avoid collision with JOIN ACCEPT @ SF12 being sent by GW (but we missed it)

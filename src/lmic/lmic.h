@@ -101,7 +101,6 @@ TYPEDEF_xref2band_t; //!< \internal
 #elif CFG_LMIC_US_like  // US915 spectrum =================================================
 
 enum { MAX_XCHANNELS = 2 };      // extra channels in RAM, channels 0-71 are immutable
-enum { MAX_TXPOW_125kHz = 30 };
 
 #endif // ==========================================================================
 
@@ -265,6 +264,9 @@ struct lmic_t {
 #if !defined(DISABLE_MCMD_SNCH_REQ)
     u1_t        snchAns;      // answer set new channel
 #endif
+    // rx1DrOffset is the offset from uplink to downlink datarate
+    u1_t        rx1DrOffset;  // captured from join. zero by default.
+
     // 2nd RX window (after up stream)
     u1_t        dn2Dr;
     u4_t        dn2Freq;
