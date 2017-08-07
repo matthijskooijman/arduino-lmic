@@ -29,7 +29,6 @@
 #include "lmic_bandplan.h"
 
 #if defined(CFG_us915)
-// TODO(tmm@mcci.com): move to a separate file either external ref or #include
 // ================================================================================
 //
 // BEG: US915 related stuff
@@ -159,16 +158,20 @@ void LMICus915_updateTx(ostime_t txbeg) {
         u1_t chnl = LMIC.txChnl;
         if (chnl < 64) {
                 LMIC.freq = US915_125kHz_UPFBASE + chnl*US915_125kHz_UPFSTEP;
-                LMIC.txpow = 30;
-                return;
-        }
-        LMIC.txpow = 26;
-        if (chnl < 64 + 8) {
-                LMIC.freq = US915_500kHz_UPFBASE + (chnl - 64)*US915_500kHz_UPFSTEP;
-        }
-        else {
-                ASSERT(chnl < 64 + 8 + MAX_XCHANNELS);
-                LMIC.freq = LMIC.xchFreq[chnl - 72];
+                if (LMIC.activeChannels125khz >= 50)
+                        LMIC.txpow = 30;
+                else
+                        LMIC.txpow = 21;
+        } else {
+                // at 500kHz bandwidth, we're allowed more power.
+                LMIC.txpow = 26;
+                if (chnl < 64 + 8) {
+                        LMIC.freq = US915_500kHz_UPFBASE + (chnl - 64)*US915_500kHz_UPFSTEP;
+                }
+                else {
+                        ASSERT(chnl < 64 + 8 + MAX_XCHANNELS);
+                        LMIC.freq = LMIC.xchFreq[chnl - 72];
+                }
         }
 
         // Update global duty cycle stats

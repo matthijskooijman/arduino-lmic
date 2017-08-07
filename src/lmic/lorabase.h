@@ -48,8 +48,6 @@ typedef u2_t rps_t;
 TYPEDEF_xref2rps_t;
 
 enum { ILLEGAL_RPS = 0xFF };
-enum { DR_PAGE_EU868 = 0x00 };
-enum { DR_PAGE_US915 = 0x10 };
 
 // Global maximum frame length
 enum { STD_PREAMBLE_LEN  =  8 };
@@ -95,114 +93,8 @@ enum _dr_code_t {
         LORAWAN_DR_LENGTH       // 16, for sizing arrays.
 };
 
-// Default frequency plan for EU 868MHz ISM band
-// data rates
-// this is a little confusing: the integer values of these constants are the
-// DataRates from the LoRaWAN Regional Parmaeter spec. The names are just
-// convenient indications, so we can use them in the rare case that we need to
-// choose a DataRate by SF and configuration, not by DR code.
-
-enum _dr_eu868_t {
-        EU868_DR_SF12 = 0,
-        EU868_DR_SF11,
-        EU868_DR_SF10,
-        EU868_DR_SF9,
-        EU868_DR_SF8,
-        EU868_DR_SF7,
-        EU868_DR_SF7B,
-        EU868_DR_FSK,
-        EU868_DR_NONE
-};
-
-// Bands:
-//  g1 :   1%  14dBm
-//  g2 : 0.1%  14dBm
-//  g3 :  10%  27dBm
-//                 freq             band     datarates
-enum { EU868_F1 = 868100000,      // g1   SF7-12
-       EU868_F2 = 868300000,      // g1   SF7-12 FSK SF7/250
-       EU868_F3 = 868500000,      // g1   SF7-12
-       EU868_F4 = 868850000,      // g2   SF7-12
-       EU868_F5 = 869050000,      // g2   SF7-12
-       EU868_F6 = 869525000,      // g3   SF7-12
-       EU868_J4 = 864100000,      // g2   SF7-12  used during join
-       EU868_J5 = 864300000,      // g2   SF7-12   ditto
-       EU868_J6 = 864500000,      // g2   SF7-12   ditto
-};
-enum { EU868_FREQ_MIN = 863000000,
-       EU868_FREQ_MAX = 870000000 };
-
-// Frequency plan for US 915MHz ISM band
-// data rates
-enum _dr_us915_t {
-        US915_DR_SF12 = 0,
-        US915_DR_SF11,
-        US915_DR_SF10,
-        US915_DR_SF9,
-        US915_DR_SF8,
-        US915_DR_SF7,
-        US915_DR_SF8C,
-        US915_DR_NONE,
-        // Devices "behind a router" (and upper half of DR list):
-        US915_DR_SF12CR = 8,
-        US915_DR_SF11CR,
-        US915_DR_SF10CR,
-        US915_DR_SF9CR,
-        US915_DR_SF8CR,
-        US915_DR_SF7CR
-};
-
-// Default frequency plan for US 915MHz
-enum {
-        US915_125kHz_UPFBASE = 902300000,
-        US915_125kHz_UPFSTEP = 200000,
-        US915_500kHz_UPFBASE = 903000000,
-        US915_500kHz_UPFSTEP = 1600000,
-        US915_500kHz_DNFBASE = 923300000,
-        US915_500kHz_DNFSTEP = 600000
-};
-enum {
-        US915_FREQ_MIN = 902000000,
-        US915_FREQ_MAX = 928000000
-};
-
-// Frequency plan for AU 921 MHz
-enum _dr_as921_t {
-        AU921_DR_SF12 = 0,
-        AU921_DR_SF11,
-        AU921_DR_SF10,
-        AU921_DR_SF9,
-        AU921_DR_SF8,
-        AU921_DR_SF7,
-        AU921_DR_SF8C,
-        AU921_DR_NONE,
-        // Devices behind a router:
-        AU921_DR_SF12CR = 8,
-        AU921_DR_SF11CR,
-        AU921_DR_SF10CR,
-        AU921_DR_SF9CR,
-        AU921_DR_SF8CR,
-        AU921_DR_SF7CR
-};
-
-// Default frequency plan for AU 921MHz
-enum {
-        AU921_125kHz_UPFBASE = 915200000,
-        AU921_125kHz_UPFSTEP = 200000,
-        AU921_500kHz_UPFBASE = 915900000,
-        AU921_500kHz_UPFSTEP = 1600000,
-        AU921_500kHz_DNFBASE = 923300000,
-        AU921_500kHz_DNFSTEP = 600000
-};
-enum {
-        AU921_FREQ_MIN = 915000000,
-        AU921_FREQ_MAX = 928000000
-};
-
-
-
 // post conditions from this block: symbols used by general code that is not
-// ostensiblly bandplan-specific.
+// ostensiblly region-specific.
 // DR_DFLTMIN must be defined as a suitable substititute value if we get a bogus DR
 // DR_PAGE is used only for a non-supported debug system, but should be defined.
 // CHNL_DNW2 is the channel to be used for RX2
@@ -218,52 +110,60 @@ enum {
 // DR_BCN is the datarate to be used for the beacon
 // AIRTIME_BCN is the airtime for the beacon
 
+
+
 #if defined(CFG_eu868) // ==============================================
 
+#include "lorabase_eu868.h"
+
 enum { DR_DFLTMIN = EU868_DR_SF7 };   // DR5
-// DR_PAGE is a debugging parameter
+                                      // DR_PAGE is a debugging parameter
 enum { DR_PAGE = DR_PAGE_EU868 };
 
-enum { CHNL_PING         = 5 };
-enum { FREQ_PING         = EU868_F6 };  // default ping freq
-enum { DR_PING           = EU868_DR_SF9 };       // default ping DR
-enum { CHNL_DNW2         = 5 };
-enum { FREQ_DNW2         = EU868_F6 };
-enum { DR_DNW2           = EU868_DR_SF12 };
-enum { CHNL_BCN          = 5 };
-enum { FREQ_BCN          = EU868_F6 };
-enum { DR_BCN            = EU868_DR_SF9 };
-enum { AIRTIME_BCN       = 144384 };  // micros
+//enum { CHNL_PING         = 5 };
+enum { FREQ_PING = EU868_F6 };  // default ping freq
+enum { DR_PING = EU868_DR_SF9 };       // default ping DR
+                                       //enum { CHNL_DNW2         = 5 };
+enum { FREQ_DNW2 = EU868_F6 };
+enum { DR_DNW2 = EU868_DR_SF12 };
+enum { CHNL_BCN = 5 };
+enum { FREQ_BCN = EU868_F6 };
+enum { DR_BCN = EU868_DR_SF9 };
+enum { AIRTIME_BCN = 144384 };  // micros
+enum { LMIC_REGION_EIRP = EU868_LMIC_REGION_EIRP };         // region uses EIRP
 
 enum {
-    // Beacon frame format EU SF9
-    OFF_BCN_NETID    = 0,
-    OFF_BCN_TIME     = 3,
-    OFF_BCN_CRC1     = 7,
-    OFF_BCN_INFO     = 8,
-    OFF_BCN_LAT      = 9,
-    OFF_BCN_LON      = 12,
-    OFF_BCN_CRC2     = 15,
-    LEN_BCN          = 17
+        // Beacon frame format EU SF9
+        OFF_BCN_NETID = 0,
+        OFF_BCN_TIME = 3,
+        OFF_BCN_CRC1 = 7,
+        OFF_BCN_INFO = 8,
+        OFF_BCN_LAT = 9,
+        OFF_BCN_LON = 12,
+        OFF_BCN_CRC2 = 15,
+        LEN_BCN = 17
 };
 
 #elif defined(CFG_us915)  // =========================================
+
+#include "lorabase_us915.h"
 
 enum { DR_DFLTMIN = US915_DR_SF7 };  // DR5
 
 // DR_PAGE is a debugging parameter; it must be defined but it has no use in arduino-lmic
 enum { DR_PAGE = DR_PAGE_US915 };
 
-enum { CHNL_PING         = 0 }; // used only for default init of state (follows beacon - rotating)
-enum { FREQ_PING         = US915_500kHz_DNFBASE + CHNL_PING*US915_500kHz_DNFSTEP };  // default ping freq
+//enum { CHNL_PING         = 0 }; // used only for default init of state (follows beacon - rotating)
+enum { FREQ_PING         = US915_500kHz_DNFBASE + 0*US915_500kHz_DNFSTEP };  // default ping freq
 enum { DR_PING           = US915_DR_SF10CR };       // default ping DR
-enum { CHNL_DNW2         = 0 };
-enum { FREQ_DNW2         = US915_500kHz_DNFBASE + CHNL_DNW2*US915_500kHz_DNFSTEP };
+//enum { CHNL_DNW2         = 0 };
+enum { FREQ_DNW2         = US915_500kHz_DNFBASE + 0*US915_500kHz_DNFSTEP };
 enum { DR_DNW2           = US915_DR_SF12CR };
 enum { CHNL_BCN          = 0 }; // used only for default init of state (rotating beacon scheme)
 enum { DR_BCN            = US915_DR_SF12CR };
 // TODO(tmm@mcci.com): check this, as beacon DR was SF10 in IBM code.
 enum { AIRTIME_BCN       = 72192 };  // micros
+enum { LMIC_REGION_EIRP = US915_LMIC_REGION_EIRP };         // region uses EIRP
 
 enum {
     // Beacon frame format US SF10
@@ -278,22 +178,26 @@ enum {
     LEN_BCN          = 19
 };
 
-#elif defined(CFG_as921)  // =========================================
+#elif defined(CFG_au921)  // =========================================
 
-enum { DR_DFLTMIN = DR_SF8C };  // DR4
+#include "lorabase_au921.h"
+
+
+enum { DR_DFLTMIN       = AU921_DR_SF7 };  // DR5
 
                                 // DR_PAGE is a debugging parameter; it must be defined but it has no use in arduino-lmic
-enum { DR_PAGE = DR_PAGE_US915 };
+enum { DR_PAGE          = DR_PAGE_AU921 };
 
-enum { CHNL_PING = 0 }; // used only for default init of state (follows beacon - rotating)
-enum { FREQ_PING = US915_500kHz_DNFBASE + CHNL_PING*US915_500kHz_DNFSTEP };  // default ping freq
-enum { DR_PING = DR_SF10CR };       // default ping DR
-enum { CHNL_DNW2 = 0 };
-enum { FREQ_DNW2 = US915_500kHz_DNFBASE + CHNL_DNW2*US915_500kHz_DNFSTEP };
-enum { DR_DNW2 = DR_SF12CR };
-enum { CHNL_BCN = 0 }; // used only for default init of state (rotating beacon scheme)
-enum { DR_BCN = DR_SF10CR };
-enum { AIRTIME_BCN = 72192 };  // micros ... TODO(tmm@mcci.com) check.
+//enum { CHNL_PING        = 0 }; // used only for default init of state (follows beacon - rotating)
+enum { FREQ_PING        = AU921_500kHz_DNFBASE + 0*AU921_500kHz_DNFSTEP };  // default ping freq
+enum { DR_PING          = AU921_DR_SF10CR };       // default ping DR
+//enum { CHNL_DNW2        = 0 };
+enum { FREQ_DNW2        = AU921_500kHz_DNFBASE + 0*AU921_500kHz_DNFSTEP };
+enum { DR_DNW2          = AU921_DR_SF12CR };                  // DR8
+enum { CHNL_BCN         = 0 }; // used only for default init of state (rotating beacon scheme)
+enum { DR_BCN           = AU921_DR_SF10CR };
+enum { AIRTIME_BCN      = 72192 };  // micros ... TODO(tmm@mcci.com) check.
+enum { LMIC_REGION_EIRP = AU921_LMIC_REGION_EIRP };         // region uses EIRP
 
 enum {
         // Beacon frame format AU DR10/SF10 500kHz
@@ -308,6 +212,67 @@ enum {
         LEN_BCN = 19
 };
 
+#elif defined(CFG_as923) // ==============================================
+
+#include "lorabase_as923.h"
+
+enum { DR_DFLTMIN = AS923_DR_SF10 };  // DR2
+                                      // DR_PAGE is a debugging parameter
+enum { DR_PAGE = DR_PAGE_AS923 };
+
+enum { FREQ_PING = AS923_F2 };         // default ping freq
+enum { DR_PING = AS923_DR_SF9 };       // default ping DR: DR3
+enum { FREQ_DNW2 = AS923_FDOWN };
+enum { DR_DNW2 = AS923_DR_SF10 };
+enum { CHNL_BCN = 5 };
+enum { FREQ_BCN = AS923_FBCN };
+enum { DR_BCN = AS923_DR_SF9 };
+enum { AIRTIME_BCN = 144384 };  // micros
+enum { LMIC_REGION_EIRP = AS923_LMIC_REGION_EIRP };         // region uses EIRP
+
+enum {
+        // Beacon frame format AS SF9
+        OFF_BCN_NETID = 0,
+        OFF_BCN_TIME = 2,
+        OFF_BCN_CRC1 = 6,
+        OFF_BCN_INFO = 8,
+        OFF_BCN_LAT = 9,
+        OFF_BCN_LON = 12,
+        OFF_BCN_CRC2 = 15,
+        LEN_BCN = 17
+};
+
+#elif defined(CFG_in866) // ==============================================
+
+#include "lorabase_in866.h"
+
+enum { DR_DFLTMIN = IN866_DR_SF7 };     // DR5
+enum { DR_PAGE = DR_PAGE_IN866 };       // DR_PAGE is a debugging parameter
+
+enum { FREQ_PING = IN866_FB };          // default ping freq
+enum { DR_PING = IN866_DR_SF8 };        // default ping DR
+enum { FREQ_DNW2 = IN866_FB };
+enum { DR_DNW2 = IN866_DR_SF10 };
+enum { CHNL_BCN = 5 };
+enum { FREQ_BCN = IN866_FB };
+enum { DR_BCN = IN866_DR_SF8 };
+enum { AIRTIME_BCN = 144384 };  // micros
+enum { LMIC_REGION_EIRP = IN866_LMIC_REGION_EIRP };         // region uses EIRP
+
+enum {
+        // Beacon frame format IN SF9
+        OFF_BCN_NETID = 0,
+        OFF_BCN_TIME = 1,
+        OFF_BCN_CRC1 = 5,
+        OFF_BCN_INFO = 7,
+        OFF_BCN_LAT = 8,
+        OFF_BCN_LON = 11,
+        OFF_BCN_CRC2 = 17,
+        LEN_BCN = 19
+};
+
+#else
+# error Unsupported configuration setting
 #endif // ===================================================
 
 enum {
@@ -382,12 +347,16 @@ enum {
 // MAC uplink commands   downwlink too
 enum {
     // Class A
-    MCMD_LCHK_REQ = 0x02, // -  link check request : -
-    MCMD_LADR_ANS = 0x03, // -  link ADR answer    : u1:7-3:RFU, 3/2/1: pow/DR/Ch ACK
-    MCMD_DCAP_ANS = 0x04, // -  duty cycle answer  : -
-    MCMD_DN2P_ANS = 0x05, // -  2nd DN slot status : u1:7-2:RFU  1/0:datarate/channel ack
-    MCMD_DEVS_ANS = 0x06, // -  device status ans  : u1:battery 0,1-254,255=?, u1:7-6:RFU,5-0:margin(-32..31)
-    MCMD_SNCH_ANS = 0x07, // -  set new channel    : u1: 7-2=RFU, 1/0:DR/freq ACK
+    MCMD_LCHK_REQ = 0x02, // -  LinkCheckReq       : -
+    MCMD_LADR_ANS = 0x03, // -  LinkADRAnd         : u1:7-3:RFU, 3/2/1: pow/DR/Ch ACK
+    MCMD_DCAP_ANS = 0x04, // -  DutyCycleAns       : -
+    MCMD_DN2P_ANS = 0x05, // -  RxParamSetupAns    : u1:7-2:RFU  1/0:datarate/channel ack
+    MCMD_DEVS_ANS = 0x06, // -  DevStatusAns       : u1:battery 0,1-254,255=?, u1:7-6:RFU,5-0:margin(-32..31)
+    MCMD_SNCH_ANS = 0x07, // -  NewChannelAns      : u1: 7-2=RFU, 1/0:DR/freq ACK
+    MCMD_RXTimingSetupAns = 0x08,       //         : -
+    MCMD_TxParamSetupAns = 0x09,        //         : -
+    MCMD_DIChannelAns = 0x0A,           //         : u1: [7-2]:RFU 1:exists 0:OK
+
     // Class B
     MCMD_PING_IND = 0x10, // -  pingability indic  : u1: 7=RFU, 6-4:interval, 3-0:datarate
     MCMD_PING_ANS = 0x11, // -  ack ping freq      : u1: 7-1:RFU, 0:freq ok
@@ -397,12 +366,16 @@ enum {
 // MAC downlink commands
 enum {
     // Class A
-    MCMD_LCHK_ANS = 0x02, // link check answer  : u1:margin 0-254,255=unknown margin / u1:gwcnt
-    MCMD_LADR_REQ = 0x03, // link ADR request   : u1:DR/TXPow, u2:chmask, u1:chpage/repeat
-    MCMD_DCAP_REQ = 0x04, // duty cycle cap     : u1:255 dead [7-4]:RFU, [3-0]:cap 2^-k
-    MCMD_DN2P_SET = 0x05, // 2nd DN window param: u1:7-4:RFU/3-0:datarate, u3:freq
-    MCMD_DEVS_REQ = 0x06, // device status req  : -
-    MCMD_SNCH_REQ = 0x07, // set new channel    : u1:chidx, u3:freq, u1:DRrange
+    MCMD_LCHK_ANS = 0x02, // LinkCheckAns       : u1:margin 0-254,255=unknown margin / u1:gwcnt         LinkCheckReq
+    MCMD_LADR_REQ = 0x03, // LinkADRReq         : u1:DR/TXPow, u2:chmask, u1:chpage/repeat
+    MCMD_DCAP_REQ = 0x04, // DutyCycleReq       : u1:255 dead [7-4]:RFU, [3-0]:cap 2^-k
+    MCMD_DN2P_SET = 0x05, // RXParamSetupReq    : u1:7-4:RFU/3-0:datarate, u3:freq
+    MCMD_DEVS_REQ = 0x06, // DevStatusReq       : -
+    MCMD_SNCH_REQ = 0x07, // NewChannelReq      : u1:chidx, u3:freq, u1:DRrange
+    MCMD_RXTimingSetupReq = 0x08,       //      : u1: [7-4]:RFU [3-0]: Delay 1-15s (0 => 1)
+    MCMD_TxParamSetupReq = 0x09,        //      : u1: [7-6]:RFU [5:4]: dl dwell/ul dwell [3:0] max EIRP
+    MCMD_DIChannelReq = 0x0A,           //      : u1: channel, u3: frequency
+
     // Class B
     MCMD_PING_SET = 0x11, // set ping freq      : u3: freq
     MCMD_BCNI_ANS = 0x12, // next beacon start  : u2: delay(in TUNIT millis), u1:channel
@@ -537,8 +510,6 @@ inline dr_t  lowerDR  (dr_t dr, u1_t n) { while(n--){dr=decDR(dr);} return dr; }
 // ================================================================================
 
 
-// Convert between dBm values and power codes (MCMD_LADR_XdBm)
-s1_t pow2dBm (u1_t mcmd_ladr_p1);
 // Calculate airtime
 ostime_t calcAirTime (rps_t rps, u1_t plen);
 // Sensitivity at given SF/BW

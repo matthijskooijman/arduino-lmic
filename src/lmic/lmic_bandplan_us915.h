@@ -26,11 +26,37 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _lmic_au921_h_
-# define _lmic_au921_h_
+#ifndef _lmic_us915_h_
+# define _lmic_us915_h_
+
+// preconditions for lmic_us_like.h
+#define LMICuslike_getFirst500kHzDR()   (US915_DR_SF8C)
 
 #ifndef _lmic_us_like_h_
 # include "lmic_us_like.h"
 #endif
 
-#endif // _lmic_au921_h_
+uint8_t LMICus915_maxFrameLen(uint8_t dr);
+#define maxFrameLen(dr) LMICus915_maxFrameLen(dr)
+
+#define pow2dBm(mcmd_ladr_p1) ((s1_t)(US915_TX_MAX_DBM - (((mcmd_ladr_p1)&MCMD_LADR_POW_MASK)<<1)))
+
+ostime_t LMICus915_dr2hsym(uint8_t dr);
+#define dr2hsym(dr) LMICus915_dr2hsym(dr)
+
+
+#define LMICbandplan_getInitialDrJoin() (US915_DR_SF7)
+
+void LMICus915_setBcnRxParams(void);
+#define LMICbandplan_setBcnRxParams() LMICus915_setBcnRxParams()
+
+u4_t LMICus915_convFreq(xref2cu1_t ptr);
+#define LMICbandplan_convFreq(ptr)      LMICus915_convFreq(ptr)
+
+void LMICus915_setRx1Params(void);
+#define LMICbandplan_setRx1Params()     LMICus915_setRx1Params()
+
+void LMICus915_updateTx(ostime_t txbeg);
+#define LMICbandplan_updateTx(txbeg)    LMICus915_updateTx(txbeg)
+
+#endif // _lmic_us915_h_

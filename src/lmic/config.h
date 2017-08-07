@@ -8,115 +8,32 @@
 // be applied to a globally-distributed file. Instead, create an
 // lmic_project_config.h file.
 
-// We need to be able to compile with different options without editing source.
-// When building with a more advanced environment, set the following variable:
-// ARDUINO_LMIC_PROJECT_CONFIG_H=my_project_config.h
-//
-// otherwise the lmic_project_config.h from the ../../project_config directory will be used.
-#ifndef ARDUINO_LMIC_PROJECT_CONFIG_H
-# define ARDUINO_LMIC_PROJECT_CONFIG_H ../../project_config/lmic_project_config.h
+#ifndef _LMIC_CONFIG_PRECONDITIONS_H_
+# include "lmic_config_preconditions.h"
 #endif
 
-#define CFG_TEXT_1(x)	CFG_TEXT_2(x)
-#define CFG_TEXT_2(x)	#x
+// if you're editing this file directly (and not editing the project-config file
+// referenced from the pre-conditions file), then uncomment exactly one of the 
+// following to select the operating bandplan
 
-#include CFG_TEXT_1(ARDUINO_LMIC_PROJECT_CONFIG_H)
-
-// constants for comparison
-// TODO(tmm@mcci.com) consider moving this block to a central file as it's not
-// user-editable.
-#define LMIC_REGION_eu868    1
-#define LMIC_REGION_us915    2
-#define LMIC_REGION_cn783    3
-#define LMIC_REGION_eu433    4
-#define LMIC_REGION_au921    5
-#define LMIC_REGION_cn490    6
-#define LMIC_REGION_as923    7
-#define LMIC_REGION_kr921    8
-#define LMIC_REGION_in866    9
-
-// a mask of the supported regions
-// TODO(tmm@mcci.com) consider moving this block to a central file as it's not
-// user-editable.
-#define LMIC_REGIONS_SUPPORTED  (                               \
-                                (1 << LMIC_REGION_eu868) |      \
-                                (1 << LMIC_REGION_us915) |      \
-                             /* (1 << LMIC_REGION_cn783) | */   \
-                             /* (1 << LMIC_REGION_eu433) | */   \
-                                (1 << LMIC_REGION_au921) |      \
-                             /* (1 << LMIC_REGION_cn490) | */   \
-                                (1 << LMIC_REGION_as923) |      \
-                             /* (1 << LMIC_REGION_kr921) | */   \
-                                (1 << LMIC_REGION_in866) |      \
-                                0)
-
-//
-// Our input is a -D of one of CFG_eu868, CFG_us915, CFG_as923, CFG_au915, CFG_in866
-// More will be added in the the future. So at this point we create CFG_region with
-// following values. These are in order of the sections in the manual. Not all of the
-// below are supported yet.
-//
-# define CFG_LMIC_REGION_MASK   \
-                        ((defined(CFG_eu868) << LMIC_REGION_eu868) | \
-                         (defined(CFG_us915) << LMIC_REGION_us915) | \
-                         (defined(CFG_cn783) << LMIC_REGION_cn783) | \
-                         (defined(CFG_eu433) << LMIC_REGION_eu433) | \
-                         (defined(CFG_au921) << LMIC_REGION_au921) | \
-                         (defined(CFG_cn490) << LMIC_REGION_cn490) | \
-                         (defined(CFG_as923) << LMIC_REGION_as923) | \
-                         (defined(CFG_kr921) << LMIC_REGION_kr921) | \
-                         (defined(CFG_in866) << LMIC_REGION_in866) | \
-                         0)
-
+//#define CFG_eu868 1
+//#define CFG_us915 1
+//#define CFG_cn783 1   // not yet
+//#define CFG_eu433 1   // not yet
+//#define CFG_au921 1
+//#define CFG_cn490 1   // not yet
+//#define CFG_as923 1
+//#define CFG_kr921 1   // not yet
+//#define CFG_in866 1
 
 #if CFG_LMIC_REGION_MASK == 0
 # warning Target RF configuration not defined, assuming CFG_eu868
 # define CFG_eu868 1
-#elif (CFG_LMIC_REGION_MASK & (-CFG_MASK)) != CFG_MASK
+#elif (CFG_LMIC_REGION_MASK & (-CFG_LMIC_REGION_MASK)) != CFG_LMIC_REGION_MASK
 # error You can define at most one of CFG_... variables
 #elif (CFG_LMIC_REGION_MASK & LMIC_REGIONS_SUPPORTED) == 0
 # error The selected CFG_... region is not supported yet.
 #endif
-
-// the selected region.
-#define CFG_region      ((defined(CFG_eu868) * LMIC_REGION_eu868) + \
-                         (defined(CFG_us915) * LMIC_REGION_us915) + \
-                         (defined(CFG_cn783) * LMIC_REGION_cn783) + \
-                         (defined(CFG_eu433) * LMIC_REGION_eu433) + \
-                         (defined(CFG_au921) * LMIC_REGION_au921) + \
-                         (defined(CFG_cn490) * LMIC_REGION_cn490) + \
-                         (defined(CFG_as923) * LMIC_REGION_as923) + \
-                         (defined(CFG_kr921) * LMIC_REGION_kr921) + \
-                         (defined(CFG_in866) * LMIC_REGION_in866) + \
-                         0)
-
-// finally the mask of US-like and EU-like regions
-#define CFG_LMIC_EU_like_MASK   (                               \
-                                (1 << LMIC_REGION_eu868) |      \
-                             /* (1 << LMIC_REGION_us915) | */   \
-                                (1 << LMIC_REGION_cn783) |      \
-                                (1 << LMIC_REGION_eu433) |      \
-                             /* (1 << LMIC_REGION_au921) | */   \
-                             /* (1 << LMIC_REGION_cn490) | */   \
-                                (1 << LMIC_REGION_as923) |      \
-                                (1 << LMIC_REGION_kr921) |      \
-                                (1 << LMIC_REGION_in866) |      \
-                                0)
-
-#define CFG_LMIC_US_like_MASK   (                               \
-                             /* (1 << LMIC_REGION_eu868) | */   \
-                                (1 << LMIC_REGION_us915) |      \
-                             /* (1 << LMIC_REGION_cn783) | */   \
-                             /* (1 << LMIC_REGION_eu433) | */   \
-                                (1 << LMIC_REGION_au921) |      \
-                             /* (1 << LMIC_REGION_cn490) | */   \
-                             /* (1 << LMIC_REGION_as923) | */   \
-                             /* (1 << LMIC_REGION_kr921) | */   \
-                             /* (1 << LMIC_REGION_in866) | */   \
-                                0)
-
-#define CFG_LMIC_EU_like        (!!(CFG_LMIC_REGION_MASK & CFG_LMIC_EU_like_MASK))
-#define CFG_LMIC_US_like        (!!(CFG_LMIC_REGION_MASK & CFG_LMIC_US_like_MASK))
 
 #if !(CFG_LMIC_EU_like || CFG_LMIC_US_like)
 # error "Internal error: Neither EU-like nor US-like!"

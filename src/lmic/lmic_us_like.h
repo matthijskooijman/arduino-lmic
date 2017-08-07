@@ -89,4 +89,10 @@ void LMICuslike_initJoinLoop(void);
 ostime_t LMICuslike_nextJoinState(void);
 #define LMICbandplan_nextJoinState()    LMICuslike_nextJoinState();
 
+static inline ostime_t LMICeulike_nextJoinTime(ostime_t now) {
+        return now;
+}
+#define LMICbandplan_nextJoinTime(now)     LMICeulike_nextJoinTime(now)
+
+
 #endif // _lmic_us_like_h_

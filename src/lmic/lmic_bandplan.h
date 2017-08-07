@@ -34,11 +34,15 @@
 #endif
 
 #if defined(CFG_eu868)
-# include "lmic_eu868.h"
+# include "lmic_bandplan_eu868.h"
 #elif defined(CFG_us915)
-# include "lmic_us915.h"
+# include "lmic_bandplan_us915.h"
 #elif defined(CFG_au921)
-# include "lmic_au921.h"
+# include "lmic_bandplan_au921.h"
+#elif defined(CFG_as923)
+# include "lmic_bandplan_as923.h"
+#elif defined(CFG_in866)
+# include "lmic_bandplan_in866.h"
 #else
 # error "CFG_... not properly set for bandplan"
 #endif
@@ -130,6 +134,10 @@
 
 #if !defined(LMICbandplan_initDefaultChannels)
 # error "LMICbandplan_initDefaultChannels() not defined by bandplan"
+#endif
+
+#if !defined(LMICbandplan_nextJoinTime)
+# error "LMICbandplan_nextJoinTime() not defined by bandplan"
 #endif
 
 //

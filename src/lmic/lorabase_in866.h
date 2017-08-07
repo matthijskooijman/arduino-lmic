@@ -1,6 +1,8 @@
 /*
 * Copyright (c) 2014-2016 IBM Corporation.
-* Copyright (c) 2017 MCCI Corporation.
+* All rights reserved.
+*
+* Copyright (c) 2017 MCCI Corporation
 * All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
@@ -26,37 +28,51 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _lmic_us915_h_
-# define _lmic_us915_h_
+#ifndef _lorabase_in866_h_
+#define _lorabase_in866_h_
 
-// preconditions for lmic_us_like.h
-#define LMICuslike_getFirst500kHzDR()   (US915_DR_SF8C)
-
-#ifndef _lmic_us_like_h_
-# include "lmic_us_like.h"
+#ifndef _LMIC_CONFIG_PRECONDITIONS_H_
+# include "lmic_config_preconditions.h"
 #endif
 
-uint8_t LMICus915_maxFrameLen(uint8_t dr);
-#define maxFrameLen(dr) LMICeus915_maxFrameLen(dr)
+/****************************************************************************\
+|
+| Basic definitions for IN866 (always in scope)
+|
+\****************************************************************************/
 
-#define pow2dBm(mcmd_ladr_p1) ((s1_t)(30 - (((mcmd_ladr_p1)&MCMD_LADR_POW_MASK)<<1)))
+enum _dr_in866_t {
+        IN866_DR_SF12 = 0,      // DR0
+        IN866_DR_SF11,          // DR1
+        IN866_DR_SF10,          // DR2
+        IN866_DR_SF9,           // DR3
+        IN866_DR_SF8,           // DR4
+        IN866_DR_SF7,           // DR5
+        IN866_DR_RFU,           // -
+        IN866_DR_FSK,           // DR7
+        IN866_DR_NONE
+};
 
-ostime_t LMICus915_dr2hsym(uint8_t dr);
-#define dr2hsym(dr) LMICus915_dr2hsym(dr)
+// There is no dwell-time or duty-cycle limitation for IN
+//
+// max power: 30dBM
+//
+//                 freq                 datarates
+enum {
+        IN866_F1 = 865062500,      //   SF7-12 (DR0-5)
+        IN866_F2 = 865402500,      //   SF7-12 (DR0-5)
+        IN866_F3 = 865985000,      //   SF7-12 (DR0-5)
+        IN866_FB = 866550000,      //   beacon/ping
+};
+enum {
+        IN866_FREQ_MIN = 865000000,
+        IN866_FREQ_MAX = 867000000
+};
+enum {
+        IN866_TX_EIRP_MAX_DBM = 30      // 30 dBm
+};
+enum { DR_PAGE_IN866 = 0x10 * (LMIC_REGION_in866 - 1) };
 
+enum { IN866_LMIC_REGION_EIRP = 1 };         // region uses EIRP
 
-#define LMICbandplan_getInitialDrJoin() (EU868_DR_SF7)
-
-void LMICus915_setBcnRxParams(void);
-#define LMICbandplan_setBcnRxParams() LMICus915_setBcnRxParams()
-
-u4_t LMICus915_convFreq(xref2cu1_t ptr);
-#define LMICbandplan_convFreq(ptr)      LMICus915_convFreq(ptr)
-
-void LMICus915_setRx1Params(void);
-#define LMICbandplan_setRx1Params()     LMICus915_setRx1Params()
-
-void LMICus915_updateTx(ostime_t txbeg);
-#define LMICbandplan_updateTx(txbeg)    LMICus915_updateTx(txbeg)
-
-#endif // _lmic_us915_h_
+#endif /* _lorabase_in866_h_ */
