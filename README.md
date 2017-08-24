@@ -30,7 +30,7 @@ Features
 --------
 The LMIC library provides a fairly complete LoRaWAN Class A and Class B
 implementation, supporting the EU-868 and US-915 bands. Only a limited
-number of features was tested using this port on Arduino hardware, so be
+number of features were tested using this port on Arduino hardware, so be
 careful when using any of the untested features.
 
 What certainly works:
@@ -51,7 +51,7 @@ us know (creating a github issue is probably the best way for that).
 Configuration
 -------------
 A number of features can be configured or disabled by editing the
-`config.h` file in the library folder. Unfortunately the Arduino
+`config.h` file in the library folder. Unfortunately, the Arduino
 environment does not offer any way to do this (compile-time)
 configuration from the sketch, so be careful to recheck your
 configuration when you switch between sketches or update the library.
