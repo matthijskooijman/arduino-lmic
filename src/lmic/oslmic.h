@@ -102,6 +102,7 @@ void os_init (void);
 int os_init_ex (const void *pPinMap);
 void os_runloop (void);
 void os_runloop_once (void);
+u1_t radio_rssi (void);
 
 //================================================================================
 
