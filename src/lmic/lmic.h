@@ -53,7 +53,19 @@
 #     define LMIC_DEBUG_PRINTF(f, ...) printf(f, ## __VA_ARGS__)
 #   endif // ndef LMIC_DEBUG_PRINTF_FN
 # endif // ndef LMIC_DEBUG_PRINTF
-#endif // LMIC_DEBUG_LEVEL > 0
+# ifndef LMIC_DEBUG_FLUSH
+#   ifdef LMIC_DEBUG_FLUSH_FN
+#     define LMIC_DEBUG_FLUSH() LMIC_DEBUG_FLUSH_FN()
+#   else // ndef LMIC_DEBUG_FLUSH_FN
+//    if there's no other info, assume that flush is not needed.
+#     define LMIC_DEBUG_FLUSH() do { ; } while (0)
+#   endif // ndef LMIC_DEBUG_FLUSH_FN
+# endif // ndef LMIC_DEBUG_FLUSH
+#else // LMIC_DEBUG_LEVEL == 0
+// If debug level is zero, printf and flush expand to nothing.
+# define LMIC_DEBUG_PRINTF(f, ...) 	do { ; } while (0)
+# define LMIC_DEBUG_FLUSH()	 	do { ; } while (0)
+#endif // LMIC_DEBUG_LEVEL == 0
 
 #ifdef __cplusplus
 extern "C"{
