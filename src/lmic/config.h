@@ -150,4 +150,19 @@
 #if defined(USE_ORIGINAL_AES) && defined(USE_IDEETRON_AES)
 # error "You may define at most one of USE_ORIGINAL_AES and USE_IDEETRON_AES"
 #endif
+
+// LMIC_DISABLE_DR_LEGACY
+// turn off legacy DR_* symbols that vary by bandplan.
+// Older code uses these for configuration. EU868_DR_*, US915_DR_*
+// etc symbols are prefered, but breaking older code is inconvenient for
+// everybody. We don't want to use DR_* in the LMIC itself, so we provide
+// this #define to allow them to be removed.
+#if !defined(LMIC_DR_LEGACY)
+# if !defined(LMIC_DISABLE_DR_LEGACY)
+#  define LMIC_DR_LEGACY 1
+# else // defined(LMIC_DISABLE_DR_LEGACY)
+#  define LMIC_DR_LEGACY 0
+# endif // defined(LMIC_DISABLE_DR_LEGACY)
+#endif // LMIC_DR_LEGACY
+
 #endif // _lmic_config_h_
