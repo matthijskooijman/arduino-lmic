@@ -79,19 +79,19 @@ You should define exactly one of `CFG_...` variables. If you don't,
 the library assumes `CFG_eu868`. The library changes configuration pretty substantially
 according to the region. Some of the differences are listed below.
 
-#### eu868 
-If the library is configured for EU868 operation, we make the following changes:
+#### eu868, as923, in866
+If the library is configured for EU868, AS923, or IN866 operation, we make
+the following changes:
 - Add the API `LMIC_setupBand()`.
 - Add the constants `MAX_CHANNELS`, `MAX_BANDS`, `LIMIT_CHANNELS`, `BAND_MILLI`,
 `BAND_CENTI`, `BAND_DECI`, and `BAND_AUX`.
 
-#### us915
+#### us915, au921
 If the library is configured for US915 operation, we make the following changes:
 - Add the APIs `LMIC_enableChannel()`,
 `LMIC_enableSubBand()`, `LMIC_disableSubBand()`, and `LMIC_selectSubBand()`. 
 - Add the constants `MAX_XCHANNELS` and `MAX_TXPOW_125kHz`.
 - Add a number of additional `DR_...` symbols.
-
 
 ### Selecting the target radio transceiver
 
@@ -107,7 +107,7 @@ Configures the library for use with an sx1276 transceiver.
 
 ### Controlling use of interrupts
 #### `#define LMIC_USE_INTERRUPTS`
-If defined, configures the library to use interrupts for detecting events from the transceiver. If left undefined, the library will poll for events from the transceiver.
+If defined, configures the library to use interrupts for detecting events from the transceiver. If left undefined, the library will poll for events from the transceiver.  `LMIC_USE_INTERRUPTS` is not currently tested.
 
 ### Disabling PING 
 #### `#define DISABLE_PING`
@@ -258,7 +258,7 @@ library what pin you used through the pin mapping (see below).
 [SPI]: https://www.arduino.cc/en/Reference/SPI
 
 ### DIO pins
-The DIO (digitial I/O) pins on the transceiver board can be configured
+The DIO (digitial I/O) pins on the SX127x can be configured
 for various functions. The LMIC library uses them to get instant status
 information from the transceiver. For example, when a LoRa transmission
 starts, the DIO0 pin is configured as a TxDone output. When the
@@ -347,6 +347,20 @@ see the notes above for when a pin can or cannot be left out).
 The name of this struct must always be `lmic_pins`, which is a special name
 recognized by the library.
 
+#### Adafruit [Feather M0 LoRa](https://www.adafruit.com/product/3178)
+This board uses the following pin mapping, as shown in the various "...-feather"
+sketches.  DIO0 is hardwared by Adafruit to Arduino D3, but DIO1 is not
+normally connected (it comes to an otherwise unused pad). This pin table
+assumes that you have wired DIO1 to Arduino D6.
+```c++
+const lmic_pinmap lmic_pins = {
+    .nss = 8,
+    .rxtx = LMIC_UNUSED_PIN,
+    .rst = 4,
+    .dio = {3, 6, LMIC_UNUSED_PIN},
+};
+```
+
 #### LoRa Nexus by Ideetron
 This board uses the following pin mapping:
 ```c++
@@ -383,6 +397,14 @@ This library currently provides three examples:
    This is useful to verify basic connectivity, and when no gateway is
    available, but this example also bypasses duty cycle checks, so be
    careful when changing the settings.
+
+ - `raw-feather.ino` is a version of `raw.ino` that is completely configured
+   for the Adafruit [Feather M0 LoRa](https://www.adafruit.com/product/3178)
+
+ - `ttn-otaa-feather-us915.ino` is a version of `ttn-otaa.ino` that has
+   been configured for use with the Feather M0 LoRa, on the US915 bandplan,
+   with The Things Network. Remember that you may also have to change `config.h`
+   from defaults.
 
 Timing
 ------
@@ -474,7 +496,7 @@ this.
 
 When using OTAA, the network communicates the RX2 settings in the
 join accept message, but the LMIC library does not currently process
-these settings. Until that is solved (see issue #20), you should
+these settings. Until that is solved (see issue [#20](https://github.com/matthijskooijman/arduino-lmic/issues/20)), you should
 manually set the RX2 rate, *after* joining (see the handling of
 `EV_JOINED` in the `ttn-otaa.ino` for an example.
 
