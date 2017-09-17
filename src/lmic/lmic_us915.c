@@ -35,22 +35,22 @@
 //
 
 CONST_TABLE(u1_t, _DR2RPS_CRC)[] = {
-        ILLEGAL_RPS,
-        MAKERPS(SF10, BW125, CR_4_5, 0, 0),
-        MAKERPS(SF9 , BW125, CR_4_5, 0, 0),
-        MAKERPS(SF8 , BW125, CR_4_5, 0, 0),
-        MAKERPS(SF7 , BW125, CR_4_5, 0, 0),
-        MAKERPS(SF8 , BW500, CR_4_5, 0, 0),
-        ILLEGAL_RPS ,
-        ILLEGAL_RPS ,
-        ILLEGAL_RPS ,
-        MAKERPS(SF12, BW500, CR_4_5, 0, 0),
-        MAKERPS(SF11, BW500, CR_4_5, 0, 0),
-        MAKERPS(SF10, BW500, CR_4_5, 0, 0),
-        MAKERPS(SF9 , BW500, CR_4_5, 0, 0),
-        MAKERPS(SF8 , BW500, CR_4_5, 0, 0),
-        MAKERPS(SF7 , BW500, CR_4_5, 0, 0),
-        ILLEGAL_RPS
+        ILLEGAL_RPS,				// [-1]
+        MAKERPS(SF10, BW125, CR_4_5, 0, 0),	// [0]
+        MAKERPS(SF9 , BW125, CR_4_5, 0, 0),	// [1]
+        MAKERPS(SF8 , BW125, CR_4_5, 0, 0),	// [2]
+        MAKERPS(SF7 , BW125, CR_4_5, 0, 0),	// [3]
+        MAKERPS(SF8 , BW500, CR_4_5, 0, 0),	// [4]
+        ILLEGAL_RPS ,				// [5]
+        ILLEGAL_RPS ,				// [6]
+        ILLEGAL_RPS ,				// [7]
+        MAKERPS(SF12, BW500, CR_4_5, 0, 0),	// [8]
+        MAKERPS(SF11, BW500, CR_4_5, 0, 0),	// [9]
+        MAKERPS(SF10, BW500, CR_4_5, 0, 0),	// [10]
+        MAKERPS(SF9 , BW500, CR_4_5, 0, 0),	// [11]
+        MAKERPS(SF8 , BW500, CR_4_5, 0, 0),	// [12]
+        MAKERPS(SF7 , BW500, CR_4_5, 0, 0),	// [13]
+        ILLEGAL_RPS				// [14]
 };
 
 static CONST_TABLE(u1_t, maxFrameLens)[] = { 24,66,142,255,255,255,255,255,  66,142 };
