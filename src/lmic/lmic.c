@@ -37,8 +37,10 @@ DEFINE_LMIC;
 
 // Fwd decls.
 static void engineUpdate(void);
-static void startScan (void);
 
+#if !defined(DISABLE_BEACONS)
+static void startScan (void);
+#endif
 
 // ================================================================================
 // BEG OS - default implementations for certain OS suport functions
