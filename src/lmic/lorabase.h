@@ -428,7 +428,7 @@ enum {
     MCMD_LADR_POW_MASK   = 0x0F,
     MCMD_LADR_DR_SHIFT   = 4,
     MCMD_LADR_POW_SHIFT  = 0,
-#if defined(CFG_eu868)
+#if defined(CFG_eu868) // TODO(tmm@mcci.com): complete refactor.
     EU868_MCMD_LADR_SF12      = EU868_DR_SF12<<4,
     EU868_MCMD_LADR_SF11      = EU868_DR_SF11<<4,
     EU868_MCMD_LADR_SF10      = EU868_DR_SF10<<4,
