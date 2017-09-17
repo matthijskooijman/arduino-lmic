@@ -26,6 +26,7 @@
  */
 
 //! \file
+#define LMIC_DR_LEGACY 0
 #include "lmic_bandplan.h"
 
 #if defined(DISABLE_BEACONS) && !defined(DISABLE_PING)

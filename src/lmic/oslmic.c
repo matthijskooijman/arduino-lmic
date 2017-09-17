@@ -25,6 +25,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define LMIC_DR_LEGACY 0
+
 #include "lmic.h"
 
 extern const struct lmic_pinmap lmic_pins;

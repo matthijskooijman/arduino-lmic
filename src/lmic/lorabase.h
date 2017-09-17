@@ -144,6 +144,21 @@ enum {
         LEN_BCN = 17
 };
 
+// for backwards compatibility. This must match _dr_eu868_t
+# if LMIC_DR_LEGACY
+enum _dr_configured_t {
+	DR_SF12 = EU868_DR_SF12,
+	DR_SF11 = EU868_DR_SF11,
+	DR_SF10 = EU868_DR_SF10,
+	DR_SF9  = EU868_DR_SF9,
+	DR_SF8  = EU868_DR_SF8,
+	DR_SF7  = EU868_DR_SF7,
+	DR_SF7B = EU868_DR_SF7B,
+	DR_FSK  = EU868_DR_FSK,
+	DR_NONE = EU868_DR_NONE
+};
+# endif // LMIC_DR_LEGACY
+
 #elif defined(CFG_us915)  // =========================================
 
 #include "lorabase_us915.h"
@@ -177,6 +192,23 @@ enum {
     OFF_BCN_CRC2     = 17,
     LEN_BCN          = 19
 };
+
+# if LMIC_DR_LEGACY
+enum _dr_configured_t {
+        DR_SF10   = US915_DR_SF10,
+        DR_SF9    = US915_DR_SF9,
+        DR_SF8    = US915_DR_SF8,
+        DR_SF7    = US915_DR_SF7,
+        DR_SF8C   = US915_DR_SF8C,
+        DR_NONE   = US915_DR_NONE,
+        DR_SF12CR = US915_DR_SF12CR,
+        DR_SF11CR = US915_DR_SF11CR,
+        DR_SF10CR = US915_DR_SF10CR,
+        DR_SF9CR  = US915_DR_SF9CR,
+        DR_SF8CR  = US915_DR_SF8CR,
+        DR_SF7CR  = US915_DR_SF7CR
+};
+# endif // LMIC_DR_LEGACY
 
 #elif defined(CFG_au921)  // =========================================
 
@@ -212,6 +244,25 @@ enum {
         LEN_BCN = 19
 };
 
+# if LMIC_DR_LEGACY
+enum _dr_configured_t {
+        DR_SF12    = AU921_DR_SF12,
+        DR_SF11    = AU921_DR_SF11,
+        DR_SF10    = AU921_DR_SF10,
+        DR_SF9     = AU921_DR_SF9,
+        DR_SF8     = AU921_DR_SF8,
+        DR_SF7     = AU921_DR_SF7,
+        DR_SF8C    = AU921_DR_SF8C,
+        DR_NONE    = AU921_DR_NONE,
+        DR_SF12CR  = AU921_DR_SF12CR,
+        DR_SF11CR  = AU921_DR_SF11CR,
+        DR_SF10CR  = AU921_DR_SF10CR,
+        DR_SF9CR   = AU921_DR_SF9CR,
+        DR_SF8CR   = AU921_DR_SF8CR,
+        DR_SF7CR   = AU921_DR_SF7CR
+};
+# endif // LMIC_DR_LEGACY
+
 #elif defined(CFG_as923) // ==============================================
 
 #include "lorabase_as923.h"
@@ -242,6 +293,20 @@ enum {
         LEN_BCN = 17
 };
 
+# if LMIC_DR_LEGACY
+enum _dr_configured_t {
+        DR_SF12 = AS923_DR_SF12,
+        DR_SF11 = AS923_DR_SF11,
+        DR_SF10 = AS923_DR_SF10,
+        DR_SF9  = AS923_DR_SF9,
+        DR_SF8  = AS923_DR_SF8,
+        DR_SF7  = AS923_DR_SF7,
+        DR_SF7B = AS923_DR_SF7B,
+        DR_FSK  = AS923_DR_FSK,
+        DR_NONE = AS923_DR_NONE
+};
+# endif // LMIC_DR_LEGACY
+
 #elif defined(CFG_in866) // ==============================================
 
 #include "lorabase_in866.h"
@@ -270,6 +335,19 @@ enum {
         OFF_BCN_CRC2 = 17,
         LEN_BCN = 19
 };
+
+# if LMIC_DR_LEGACY
+enum _dr_configured_t {
+        DR_SF12 = IN866_DR_SF12,          // DR0
+        DR_SF11 = IN866_DR_SF11,          // DR1
+        DR_SF10 = IN866_DR_SF10,          // DR2
+        DR_SF9  = IN866_DR_SF9,           // DR3
+        DR_SF8  = IN866_DR_SF8,           // DR4
+        DR_SF7  = IN866_DR_SF7,           // DR5
+        DR_FSK  = IN866_DR_FSK,           // DR7
+        DR_NONE = IN866_DR_NONE
+};
+# endif // LMIC_DR_LEGACY
 
 #else
 # error Unsupported configuration setting
