@@ -8,25 +8,35 @@
 // be applied to a globally-distributed file. Instead, create an
 // lmic_project_config.h file.
 
-// We need to be able to compile with different options without editing source.
-// When building with a more advanced environment, set the following variable:
-// ARDUINO_LMIC_PROJECT_CONFIG_H=my_project_config.h
-//
-// otherwise the lmic_project_config.h from the ../../project_config directory will be used.
-#ifndef ARDUINO_LMIC_PROJECT_CONFIG_H
-# define ARDUINO_LMIC_PROJECT_CONFIG_H ../../project_config/lmic_project_config.h
+#ifndef _LMIC_CONFIG_PRECONDITIONS_H_
+# include "lmic_config_preconditions.h"
 #endif
 
-#define CFG_TEXT_1(x)	CFG_TEXT_2(x)
-#define CFG_TEXT_2(x)	#x
+// if you're editing this file directly (and not editing the project-config file
+// referenced from the pre-conditions file), then uncomment exactly one of the 
+// following to select the operating bandplan
 
-#include CFG_TEXT_1(ARDUINO_LMIC_PROJECT_CONFIG_H)
+//#define CFG_eu868 1
+//#define CFG_us915 1
+//#define CFG_cn783 1   // not yet
+//#define CFG_eu433 1   // not yet
+//#define CFG_au921 1
+//#define CFG_cn490 1   // not yet
+//#define CFG_as923 1
+//#define CFG_kr921 1   // not yet
+//#define CFG_in866 1
 
-#if ! (defined(CFG_eu868) || defined(CFG_us915))
+#if CFG_LMIC_REGION_MASK == 0
 # warning Target RF configuration not defined, assuming CFG_eu868
-#define CFG_eu868 1
-#elif defined(CFG_eu868) && defined(CFG_us915)
-# error You can define at most one of CFG_eu868 and CFG_us915
+# define CFG_eu868 1
+#elif (CFG_LMIC_REGION_MASK & (-CFG_LMIC_REGION_MASK)) != CFG_LMIC_REGION_MASK
+# error You can define at most one of CFG_... variables
+#elif (CFG_LMIC_REGION_MASK & LMIC_REGIONS_SUPPORTED) == 0
+# error The selected CFG_... region is not supported yet.
+#endif
+
+#if !(CFG_LMIC_EU_like || CFG_LMIC_US_like)
+# error "Internal error: Neither EU-like nor US-like!"
 #endif
 
 // This is the SX1272/SX1273 radio, which is also used on the HopeRF
@@ -140,4 +150,19 @@
 #if defined(USE_ORIGINAL_AES) && defined(USE_IDEETRON_AES)
 # error "You may define at most one of USE_ORIGINAL_AES and USE_IDEETRON_AES"
 #endif
+
+// LMIC_DISABLE_DR_LEGACY
+// turn off legacy DR_* symbols that vary by bandplan.
+// Older code uses these for configuration. EU868_DR_*, US915_DR_*
+// etc symbols are prefered, but breaking older code is inconvenient for
+// everybody. We don't want to use DR_* in the LMIC itself, so we provide
+// this #define to allow them to be removed.
+#if !defined(LMIC_DR_LEGACY)
+# if !defined(LMIC_DISABLE_DR_LEGACY)
+#  define LMIC_DR_LEGACY 1
+# else // defined(LMIC_DISABLE_DR_LEGACY)
+#  define LMIC_DR_LEGACY 0
+# endif // defined(LMIC_DISABLE_DR_LEGACY)
+#endif // LMIC_DR_LEGACY
+
 #endif // _lmic_config_h_
