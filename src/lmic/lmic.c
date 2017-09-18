@@ -557,6 +557,10 @@ scan_mac_cmds(
             u1_t uprpt  = opts[oidx+4] & MCMD_LADR_REPEAT_MASK;     // up repeat count
             oidx += 5;
 
+            // TODO(tmm@mcci.com): LoRaWAN 1.1 requires us to process multiple
+            // LADR requests, and only update if all pass. So this should check
+            // ladrAns == 0, and only initialize if so. Need to repeat ACKs, so
+            // we need to count the number we see.
             LMIC.ladrAns = 0x80 |     // Include an answer into next frame up
                 MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
             if( !LMICbandplan_mapChannels(chpage, chmap) )
@@ -569,6 +573,10 @@ scan_mac_cmds(
                                    e_.info   = Base::lsbf4(&d[pend]),
                                    e_.info2  = Base::msbf4(&opts[oidx-4])));
             }
+            // TODO(tmm@mcci.com): see above; this needs to move outside the
+            // txloop. And we need to have "consistent" ansswers for the block
+            // of contiguous commands (whatever that means), and ignore the
+            // data rate, NbTrans (uprpt) and txPow until the last one.
             if( (LMIC.ladrAns & 0x7F) == (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK) ) {
                 // Nothing went wrong - use settings
                 LMIC.upRepeat = uprpt;
@@ -670,6 +678,21 @@ scan_mac_cmds(
             }
 #endif // !DISABLE_MCMD_BCNI_ANS && !DISABLE_BEACONS
             oidx += 4;
+            continue;
+        } /* end case */
+        case MCMD_TxParamSetupReq: {
+#if LMIC_ENABLE_TxParamSetupReq
+            uint8_t txParam;
+            txParam = opts[oidx+1];
+
+            // we don't allow unrecognized bits to come through
+            txParam &= (MCMD_TxParam_RxDWELL_MASK|
+                        MCMD_TxParam_TxDWELL_MASK|
+                        MCMD_TxParam_MaxEIRP_MASK);
+            LMIC.txParam = txParam;
+            LMIC.txParamSetupAns = 1;
+#endif // LMIC_ENABLE_TxParamSetupReq
+            oidx += 2;
             continue;
         } /* end case */
         } /* end switch */
@@ -1222,6 +1245,13 @@ static void buildDataFrame (void) {
         LMIC.snchAns = 0;
     }
 #endif // !DISABLE_MCMD_SNCH_REQ
+#if LMIC_ENABLE_TxParamSetupReq
+    if ( LMIC.txParamSetupAns ) {
+        LMIC.frame[end+0] = MCMD_TxParamSetupAns;
+        end += 1;
+        LMIC.txParamSetupAns = 0;
+    }
+#endif
     ASSERT(end <= OFF_DAT_OPTS+16);
 
     u1_t flen = end + (txdata ? 5+dlen : 4);

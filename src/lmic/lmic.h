@@ -63,8 +63,8 @@
 # endif // ndef LMIC_DEBUG_FLUSH
 #else // LMIC_DEBUG_LEVEL == 0
 // If debug level is zero, printf and flush expand to nothing.
-# define LMIC_DEBUG_PRINTF(f, ...) 	do { ; } while (0)
-# define LMIC_DEBUG_FLUSH()	 	do { ; } while (0)
+# define LMIC_DEBUG_PRINTF(f, ...)      do { ; } while (0)
+# define LMIC_DEBUG_FLUSH()             do { ; } while (0)
 #endif // LMIC_DEBUG_LEVEL == 0
 
 #ifdef __cplusplus
@@ -276,6 +276,11 @@ struct lmic_t {
 #if !defined(DISABLE_MCMD_SNCH_REQ)
     u1_t        snchAns;      // answer set new channel
 #endif
+#if LMIC_ENABLE_TxParamSetupReq
+    bit_t       txParamSetupAns; // transmit setup answer pending.
+    u1_t        txParam;        // the saved TX param byte.
+#endif
+
     // rx1DrOffset is the offset from uplink to downlink datarate
     u1_t        rx1DrOffset;  // captured from join. zero by default.
 
@@ -359,8 +364,8 @@ void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t
 void LMIC_setLinkCheckMode (bit_t enabled);
 void LMIC_setClockError(u2_t error);
 
-u4_t LMIC_getSeqnoUp	(void);
-u4_t LMIC_setSeqnoUp	(u4_t);
+u4_t LMIC_getSeqnoUp    (void);
+u4_t LMIC_setSeqnoUp    (u4_t);
 void LMIC_getSessionKeys (u4_t *netid, devaddr_t *devaddr, xref2u1_t nwkKey, xref2u1_t artKey);
 
 // Declare onEvent() function, to make sure any definition will have the

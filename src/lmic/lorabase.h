@@ -116,6 +116,9 @@ enum _dr_code_t {
 
 #include "lorabase_eu868.h"
 
+// per 2.1.3: not implemented
+#define LMIC_ENABLE_TxParamSetupReq	0
+
 enum { DR_DFLTMIN = EU868_DR_SF7 };   // DR5
                                       // DR_PAGE is a debugging parameter
 enum { DR_PAGE = DR_PAGE_EU868 };
@@ -162,6 +165,9 @@ enum _dr_configured_t {
 #elif defined(CFG_us915)  // =========================================
 
 #include "lorabase_us915.h"
+
+// per 2.2.3: not implemented
+#define LMIC_ENABLE_TxParamSetupReq	0
 
 enum { DR_DFLTMIN = US915_DR_SF7 };  // DR5
 
@@ -214,6 +220,8 @@ enum _dr_configured_t {
 
 #include "lorabase_au921.h"
 
+// per 2.5.3: not implemented
+#define LMIC_ENABLE_TxParamSetupReq	0
 
 enum { DR_DFLTMIN       = AU921_DR_SF7 };  // DR5
 
@@ -267,6 +275,9 @@ enum _dr_configured_t {
 
 #include "lorabase_as923.h"
 
+// per 2.7.3: must be implemented
+#define LMIC_ENABLE_TxParamSetupReq	1
+
 enum { DR_DFLTMIN = AS923_DR_SF10 };  // DR2
                                       // DR_PAGE is a debugging parameter
 enum { DR_PAGE = DR_PAGE_AS923 };
@@ -310,6 +321,9 @@ enum _dr_configured_t {
 #elif defined(CFG_in866) // ==============================================
 
 #include "lorabase_in866.h"
+
+// per 2.9.3: not implemented
+#define LMIC_ENABLE_TxParamSetupReq	0
 
 enum { DR_DFLTMIN = IN866_DR_SF7 };     // DR5
 enum { DR_PAGE = DR_PAGE_IN866 };       // DR_PAGE is a debugging parameter
@@ -547,6 +561,16 @@ enum {
     US915_MCMD_LADR_12dBm     = 9,
     US915_MCMD_LADR_10dBm     = 10
 #endif
+};
+
+// bit fields of the TxParam request
+enum {
+    MCMD_TxParam_RxDWELL_SHIFT   = 5,
+    MCMD_TxParam_RxDWELL_MASK    = 1 << MCMD_TxParam_RxDWELL_SHIFT,
+    MCMD_TxParam_TxDWELL_SHIFT   = 4,
+    MCMD_TxParam_TxDWELL_MASK    = 1 << MCMD_TxParam_TxDWELL_SHIFT,
+    MCMD_TxParam_MaxEIRP_SHIFT   = 0,
+    MCMD_TxParam_MaxEIRP_MASK    = 0xF << MCMD_TxParam_MaxEIRP_SHIFT,
 };
 
 // Device address
