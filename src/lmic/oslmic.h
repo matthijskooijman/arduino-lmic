@@ -96,6 +96,15 @@ u1_t radio_rand1 (void);
 #define DEFINE_LMIC  struct lmic_t LMIC
 #define DECLARE_LMIC extern struct lmic_t LMIC
 
+typedef struct oslmic_radio_rssi_s oslmic_radio_rssi_t;
+
+struct oslmic_radio_rssi_s {
+        s2_t    min_rssi;
+        s2_t    max_rssi;
+        s2_t    mean_rssi;
+        u2_t    n_rssi;
+};
+
 int radio_init (void);
 void radio_irq_handler (u1_t dio);
 void os_init (void);

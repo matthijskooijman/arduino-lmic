@@ -27,12 +27,21 @@
 //#define CFG_in866 1
 
 #if CFG_LMIC_REGION_MASK == 0
-# warning Target RF configuration not defined, assuming CFG_eu868
+# ifdef CFG_as923jp     // if user defines this special symbol, treat as as923
+#  define CFG_as923 1
+#  define LMIC_COUNTRY_CODE     LMIC_COUNTRY_CODE_JP
+# else
+#  warning Target RF configuration not defined, assuming CFG_eu868
+# endif
 # define CFG_eu868 1
 #elif (CFG_LMIC_REGION_MASK & (-CFG_LMIC_REGION_MASK)) != CFG_LMIC_REGION_MASK
 # error You can define at most one of CFG_... variables
 #elif (CFG_LMIC_REGION_MASK & LMIC_REGIONS_SUPPORTED) == 0
 # error The selected CFG_... region is not supported yet.
+#endif
+
+#ifndef LMIC_COUNTRY_CODE
+# define LMIC_COUNTRY_CODE      LMIC_COUNTRY_CODE_NONE
 #endif
 
 #if !(CFG_LMIC_EU_like || CFG_LMIC_US_like)

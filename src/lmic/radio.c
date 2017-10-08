@@ -195,7 +195,17 @@
 #define RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2 0x74
 #endif
 
+//-----------------------------------------
+// Parameters for RSSI monitoring
+#define SX127X_FREQ_LF_MAX      525000000       // per datasheet 6.3
 
+// per datasheet 5.5.3:
+#define SX127X_RSSI_ADJUST_LF   -164            // add to rssi value to get dB (LF)
+#define SX127X_RSSI_ADJUST_HF   -157            // add to rssi value to get dB (HF)
+
+// per datasheet 2.5.2 (but note that we ought to ask Semtech to confirm, because 
+// datasheet is unclear).
+#define SX127X_RX_POWER_UP      us2osticks(500) // delay this long to let the receiver power up.
 
 // ----------------------------------------
 // Constants for radio registers
@@ -785,6 +795,69 @@ u1_t radio_rssi () {
     u1_t r = readReg(LORARegRssiValue);
     hal_enableIRQs();
     return r;
+}
+
+// monitor rssi for specified number of ostime_t ticks, and return statistics
+// This puts the radio into RX continuous mode, waits long enough for the 
+// oscillators to start and the PLL to lock, and then measures for the specified
+// period of time.  The radio is then returned to idel.
+//
+// RSSI returned is expressed in units of dB, and is offset according to the
+// current radio setting per section 5.5.5 of Semtech 1276 datasheet.
+s2_t radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
+    uint8_t rssiMax, rssiMin;
+    uint16_t rssiSum;
+    uint16_t rssiN;
+
+    int rssiAdjust;
+    ostime_t tBegin;
+
+    rxlora(RXMODE_SCAN);
+
+    tBegin = os_getTime();
+
+    // while we're waiting for the PLLs to spin up, determine which
+    // band we're in and choose the base RSSI.
+    if (LMIC.freq > SX127X_FREQ_LF_MAX) {
+            rssiAdjust = SX127X_RSSI_ADJUST_LF;
+    }
+    else {
+            rssiAdjust = SX127X_RSSI_ADJUST_HF;
+    }
+
+    // zero the results
+    rssiMax = 255;
+    rssiMin = 0;
+    rssiSum = 0;
+    rssiN = 0;
+
+    // wait for PLLs
+    while ((os_getTime() - tBegin) < SX127X_RX_POWER_UP) {
+        // nothing
+    }
+
+    // scan for the desired time.
+    tBegin = os_getTime();
+    rssiMax = 0;
+    do {
+        u1_t rssiNow = readReg(LORARegRssiValue);
+
+        if (rssiMax < rssiNow)
+                rssiMax = rssiNow;
+        if (rssiNow < rssiMin)
+                rssiMin = rssiNow;
+        rssiSum += rssiNow;
+        ++rssiN;
+    } while ((os_getTime() - tBegin) < nTicks);
+
+    // put radio back to sleep
+    opmode(OPMODE_SLEEP);
+
+    // compute the results
+    pRssi->max_rssi = (s2_t) (rssiMax + rssiAdjust);
+    pRssi->min_rssi = (s2_t) (rssiMin + rssiAdjust);
+    pRssi->mean_rssi = (s2_t) (rssiAdjust + ((rssiSum + (rssiN >> 1)) / rssiN));
+    pRssi->n_rssi = rssiN;
 }
 
 static CONST_TABLE(u2_t, LORA_RXDONE_FIXUP)[] = {
