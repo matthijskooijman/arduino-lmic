@@ -203,7 +203,9 @@ void setup() {
   // guides the responder through all the channels, powers, ramps
   // the transmit power from min to max, and measures the RSSI and SNR.
   // Even more amazing would be a scheme where the controller could
-  // handle multiple nodes; in that case we'd have a
+  // handle multiple nodes; in that case we'd have a way to do
+  // production test and qualification. However, using an RWC5020A
+  // is a much better use of development time.
   const static bool fDownlink = true;
   const static uint8_t kDownlinkChannel = 3;
   const static uint8_t kUplinkChannel = 8 + 3;
