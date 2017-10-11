@@ -808,7 +808,7 @@ u1_t radio_rssi () {
 //
 // RSSI returned is expressed in units of dB, and is offset according to the
 // current radio setting per section 5.5.5 of Semtech 1276 datasheet.
-s2_t radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
+void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
     uint8_t rssiMax, rssiMin;
     uint16_t rssiSum;
     uint16_t rssiN;
