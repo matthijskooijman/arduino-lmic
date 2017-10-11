@@ -206,7 +206,7 @@ void setup() {
   // handle multiple nodes; in that case we'd have a way to do
   // production test and qualification. However, using an RWC5020A
   // is a much better use of development time.
-  const static bool fDownlink = true;
+  const static bool fDownlink = false;
   const static uint8_t kDownlinkChannel = 3;
   const static uint8_t kUplinkChannel = 8 + 3;
   uint32_t uBandwidth;
@@ -236,9 +236,9 @@ void setup() {
 
   // Use a suitable spreading factor
   if (uBandwidth < 500)
-        LMIC.datarate = DR_SF10;        // DR0
+        LMIC.datarate = US915_DR_SF7;         // DR4
   else
-        LMIC.datarate = DR_SF12CR;      // DR8
+        LMIC.datarate = US915_DR_SF12CR;      // DR8
 
   // default tx power for US: 21 dBm
   LMIC.txpow = 21;
