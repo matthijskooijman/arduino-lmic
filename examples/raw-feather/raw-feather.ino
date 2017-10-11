@@ -242,7 +242,7 @@ void setup() {
   // handle multiple nodes; in that case we'd have a way to do
   // production test and qualification. However, using an RWC5020A
   // is a much better use of development time.
-  const static bool fDownlink = true;
+  const static bool fDownlink = false;
   const static uint8_t kDownlinkChannel = 3;
   const static uint8_t kUplinkChannel = 8 + 3;
   uint32_t uBandwidth;
