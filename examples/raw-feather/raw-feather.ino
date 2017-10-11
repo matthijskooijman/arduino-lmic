@@ -72,6 +72,7 @@ Revision history:
 // https://docs.google.com/spreadsheets/d/1voGAtQAjC1qBmaVuP1ApNKs1ekgUjavHuVQIXyYSvNc
 
 #define TX_INTERVAL 2000        // milliseconds
+#define RX_RSSI_INTERVAL 100    // milliseconds
 
 #ifdef ARDUINO_ARCH_SAMD
 // Pin mapping for Adafruit Feather M0 LoRa
@@ -118,8 +119,19 @@ static void tx_func (osjob_t* job);
 
 // Transmit the given string and call the given function afterwards
 void tx(const char *str, osjobcb_t func) {
+  oslmic_radio_rssi_t rssi;
   os_radio(RADIO_RST); // Stop RX first
   delay(1); // Wait a bit, without this os_radio below asserts, apparently because the state hasn't changed yet
+
+  // if requested, scan RSSI (LBT). On a Feather, it's about 42 us/sample.
+  if (RX_RSSI_INTERVAL > 0) {
+    radio_monitor_rssi(ms2osticks(RX_RSSI_INTERVAL), &rssi);
+    Serial.print("RSSI results (dB): min: "); Serial.print(rssi.min_rssi);
+    Serial.print(" max: "); Serial.print(rssi.max_rssi);
+    Serial.print(" mean: "); Serial.print(rssi.mean_rssi);
+    Serial.print(" n: "); Serial.println(rssi.n_rssi);
+  }
+
   LMIC.dataLen = 0;
   while (*str)
     LMIC.frame[LMIC.dataLen++] = *str++;
