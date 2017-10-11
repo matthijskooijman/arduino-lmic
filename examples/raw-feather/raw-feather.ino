@@ -266,6 +266,8 @@ void setup() {
 
   // default tx power for US: 21 dBm
   LMIC.txpow = 21;
+#else
+# error Unsupported LMIC regional configuration.
 #endif
 
   // disable RX IQ inversion
