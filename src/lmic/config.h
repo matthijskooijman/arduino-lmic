@@ -69,7 +69,21 @@
 // communicating with the radio.
 // The standard range is 125kHz-8MHz, but some boards can go faster.
 #ifndef LMIC_SPI_FREQ
-#define LMIC_SPI_FREQ 1E6
+# ifdef ARDUINO_CATENA_4550
+#  define LMIC_SPI_FREQ 4000000	/* 4MHz */
+# else
+#  define LMIC_SPI_FREQ 1E6
+# endif
+#endif
+
+// Change the TX/RX antenna polarity
+// By default, TX is 1 and RX is 0.
+#ifdef ARDUINO_CATENA_4550
+# define LMIC_ANTENNA_SWITCH_RX 1
+# define LMIC_ANTENNA_SWITCH_TX 0
+#else
+# define LMIC_ANTENNA_SWITCH_RX 0
+# define LMIC_ANTENNA_SWITCH_TX 1
 #endif
 
 // Set this to 1 to enable some basic debug output (using printf) about

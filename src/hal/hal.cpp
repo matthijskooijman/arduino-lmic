@@ -42,7 +42,7 @@ static void hal_io_init () {
     hal_interrupt_init();
 }
 
-// val == 1  => tx 1
+// val == LMIC_ANTENNA_SWITCH_TX  => tx
 void hal_pin_rxtx (u1_t val) {
     if (plmic_pins->rxtx != LMIC_UNUSED_PIN)
         digitalWrite(plmic_pins->rxtx, val);

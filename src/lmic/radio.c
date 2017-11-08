@@ -485,7 +485,7 @@ static void txfsk () {
     writeBuf(RegFifo, LMIC.frame, LMIC.dataLen);
 
     // enable antenna switch for TX
-    hal_pin_rxtx(1);
+    hal_pin_rxtx(LMIC_ANTENNA_SWITCH_TX);
 
     // now we actually start the transmission
     opmode(OPMODE_TX);
@@ -525,7 +525,7 @@ static void txlora () {
     writeBuf(RegFifo, LMIC.frame, LMIC.dataLen);
 
     // enable antenna switch for TX
-    hal_pin_rxtx(1);
+    hal_pin_rxtx(LMIC_ANTENNA_SWITCH_TX);
 
     // now we actually start the transmission
     opmode(OPMODE_TX);
@@ -607,7 +607,7 @@ static void rxlora (u1_t rxmode) {
     writeReg(LORARegIrqFlagsMask, ~TABLE_GET_U1(rxlorairqmask, rxmode));
 
     // enable antenna switch for RX
-    hal_pin_rxtx(0);
+    hal_pin_rxtx(LMIC_ANTENNA_SWITCH_RX);
 
     // now instruct the radio to receive
     if (rxmode == RXMODE_SINGLE) { // single rx
@@ -684,7 +684,7 @@ static void rxfsk (u1_t rxmode) {
     writeReg(RegDioMapping1, MAP_DIO0_FSK_READY|MAP_DIO1_FSK_NOP|MAP_DIO2_FSK_TIMEOUT);
 
     // enable antenna switch for RX
-    hal_pin_rxtx(0);
+    hal_pin_rxtx(LMIC_ANTENNA_SWITCH_RX);
 
     // now instruct the radio to receive
     hal_waitUntil(LMIC.rxtime); // busy wait until exact rx time
