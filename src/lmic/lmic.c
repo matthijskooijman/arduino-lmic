@@ -593,15 +593,20 @@ scan_mac_cmds(
         case MCMD_DN2P_SET: {
 #if !defined(DISABLE_MCMD_DN2P_SET)
             dr_t dr = (dr_t)(opts[oidx+1] & 0x0F);
+            u1_t rx1DrOffset = (u1_t)((opts[oidx+1] & 0x70) >> 4);
             u4_t freq = LMICbandplan_convFreq(&opts[oidx+2]);
             LMIC.dn2Ans = 0x80;   // answer pending
             if( validDR(dr) )
                 LMIC.dn2Ans |= MCMD_DN2P_ANS_DRACK;
             if( freq != 0 )
                 LMIC.dn2Ans |= MCMD_DN2P_ANS_CHACK;
-            if( LMIC.dn2Ans == (0x80|MCMD_DN2P_ANS_DRACK|MCMD_DN2P_ANS_CHACK) ) {
+            if (rx1DrOffset <= 3)
+                LMIC.dn2Ans |= MCMD_DN2P_ANS_RX1DrOffsetAck;
+
+            if( LMIC.dn2Ans == (0x80|MCMD_DN2P_ANS_DRACK|MCMD_DN2P_ANS_CHACK| MCMD_DN2P_ANS_RX1DrOffsetAck) ) {
                 LMIC.dn2Dr = dr;
                 LMIC.dn2Freq = freq;
+                LMIC.rx1DrOffset = rx1DrOffset;
                 DO_DEVDB(LMIC.dn2Dr,dn2Dr);
                 DO_DEVDB(LMIC.dn2Freq,dn2Freq);
             }
@@ -1197,14 +1202,6 @@ static void buildDataFrame (void) {
         LMIC.dutyCapAns = 0;
     }
 #endif // !DISABLE_MCMD_DCAP_REQ
-#if !defined(DISABLE_MCMD_DN2P_SET)
-    if( LMIC.dn2Ans ) {
-        LMIC.frame[end+0] = MCMD_DN2P_ANS;
-        LMIC.frame[end+1] = LMIC.dn2Ans & ~MCMD_DN2P_ANS_RFU;
-        end += 2;
-        LMIC.dn2Ans = 0;
-    }
-#endif // !DISABLE_MCMD_DN2P_SET
     if( LMIC.devsAns ) {  // answer to device status
         LMIC.frame[end+0] = MCMD_DEVS_ANS;
         LMIC.frame[end+1] = os_getBattLevel();
@@ -1229,6 +1226,14 @@ static void buildDataFrame (void) {
             LMIC.adrAckReq = 0;
         LMIC.adrChanged = 0;
     }
+#if !defined(DISABLE_MCMD_DN2P_SET)
+    if (LMIC.dn2Ans) {
+            LMIC.frame[end + 0] = MCMD_DN2P_ANS;
+            LMIC.frame[end + 1] = LMIC.dn2Ans & ~MCMD_DN2P_ANS_RFU;
+            end += 2;
+            LMIC.dn2Ans = 0;
+    }
+#endif // !DISABLE_MCMD_DN2P_SET
 #if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
     if( LMIC.pingSetAns != 0 ) {
         LMIC.frame[end+0] = MCMD_PING_ANS;
