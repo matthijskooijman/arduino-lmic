@@ -483,7 +483,8 @@ enum {
     MCMD_LADR_ANS_CHACK  = 0x01, // 0=unknown channel enabled
 };
 enum {
-    MCMD_DN2P_ANS_RFU    = 0xFC, // RFU bits
+    MCMD_DN2P_ANS_RFU    = 0xF8, // RFU bits
+    MCMD_DN2P_ANS_RX1DrOffsetAck = 0x04, // 0=dr2 not allowed
     MCMD_DN2P_ANS_DRACK  = 0x02, // 0=unknown data rate
     MCMD_DN2P_ANS_CHACK  = 0x01, // 0=unknown channel enabled
 };
