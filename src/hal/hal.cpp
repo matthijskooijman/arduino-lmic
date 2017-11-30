@@ -42,10 +42,10 @@ static void hal_io_init () {
     hal_interrupt_init();
 }
 
-// val == 1  => tx
+// val == LMIC_ANTENNA_SWITCH_TX  => tx
 void hal_pin_rxtx (u1_t val) {
     if (plmic_pins->rxtx != LMIC_UNUSED_PIN)
-        digitalWrite(plmic_pins->rxtx, val != plmic_pins->rxtx_rx_active);
+        digitalWrite(plmic_pins->rxtx, val);
 }
 
 // set radio RST pin to given value (or keep floating!)
@@ -128,20 +128,16 @@ static void hal_io_check() {
 // -----------------------------------------------------------------------------
 // SPI
 
+static const SPISettings settings(LMIC_SPI_FREQ, MSBFIRST, SPI_MODE0);
+
 static void hal_spi_init () {
     SPI.begin();
 }
 
 void hal_pin_nss (u1_t val) {
-    if (!val) {
-        uint32_t spi_freq;
-
-        if ((spi_freq = plmic_pins->spi_freq) == 0)
-            spi_freq = LMIC_SPI_FREQ;
-
-        SPISettings settings(spi_freq, MSBFIRST, SPI_MODE0);
+    if (!val)
         SPI.beginTransaction(settings);
-    } else
+    else
         SPI.endTransaction();
 
     //Serial.println(val?">>":"<<");
