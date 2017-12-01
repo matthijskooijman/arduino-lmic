@@ -141,8 +141,9 @@ void hal_pin_nss (u1_t val) {
 
         SPISettings settings(spi_freq, MSBFIRST, SPI_MODE0);
         SPI.beginTransaction(settings);
-    } else
+    } else {
         SPI.endTransaction();
+    }
 
     //Serial.println(val?">>":"<<");
     digitalWrite(plmic_pins->nss, val);
