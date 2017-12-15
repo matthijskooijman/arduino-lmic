@@ -47,7 +47,9 @@
 //  and use it if so.
 #   ifdef LMIC_DEBUG_PRINTF_FN
 #     define LMIC_DEBUG_PRINTF(f, ...) LMIC_DEBUG_PRINTF_FN(f, ## __VA_ARGS__)
-      void LMIC_DEBUG_PRINTF_FN(const char *f, ...);
+#     ifndef LMIC_DEBUG_INCLUDE // If you use LMIC_DEBUG_INCLUDE, put the declaration in there
+        void LMIC_DEBUG_PRINTF_FN(const char *f, ...);
+#     endif // ndef LMIC_DEBUG_INCLUDE
 #   else // ndef LMIC_DEBUG_PRINTF_FN
 //    if there's no other info, just use printf. In a pure Arduino environment,
 //    that's what will happen.
