@@ -73,7 +73,8 @@ requires C99 mode to be enabled by default.
 6. [Example Sketches](#example-sketches)
 7. [Timing](#timing)
 8. [Downlink datarate](#downlink-datarate)
-9. [License](#license)
+9. [Release History](#release-history)
+10. [License](#license)
 
 <!-- /TOC -->
 
@@ -630,6 +631,14 @@ join accept message, but the LMIC library does not currently process
 these settings. Until that is solved (see issue [#20](https://github.com/matthijskooijman/arduino-lmic/issues/20)), you should
 manually set the RX2 rate, *after* joining (see the handling of
 `EV_JOINED` in the `ttn-otaa.ino` for an example.
+
+## Release History
+
+- V2.1.1 has a fix for issue [#39](https://github.com/mcci-catena/arduino-lmic/issues/39) (adding a prototype for `LMIC_DEBUG_PRINTF` if needed).
+
+- V2.1.0 adds support for the Murata LoRaWAN module.
+
+- V2.0.2 adds support for the extended bandplans.
 
 ## License
 
