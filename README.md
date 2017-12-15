@@ -634,8 +634,10 @@ manually set the RX2 rate, *after* joining (see the handling of
 
 ## Release History
 
-- V2.1.1 has a fix for issue [#39](https://github.com/mcci-catena/arduino-lmic/issues/39) (adding a prototype for `LMIC_DEBUG_PRINTF` if needed).
+- V2.1.2 has a fix for issue [#39](https://github.com/mcci-catena/arduino-lmic/issues/39) (adding a prototype for `LMIC_DEBUG_PRINTF` if needed). Fully upward compatible, so just a patch.
 
+- V2.1.1 has the same content as V2.1.2, but was accidentally released without updating `library.properties`.
+ 
 - V2.1.0 adds support for the Murata LoRaWAN module.
 
 - V2.0.2 adds support for the extended bandplans.
