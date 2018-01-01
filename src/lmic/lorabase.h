@@ -506,8 +506,10 @@ enum {
 
 // Bit fields byte#3 of MCMD_LADR_REQ payload
 enum {
+    MCMD_LADR_CHP_USLIKE_SPECIAL = 0x50,  // first special for us-like
+    MCMD_LADR_CHP_BANK    = 0x50,  // special: bits are banks.
     MCMD_LADR_CHP_125ON   = 0x60,  // special channel page enable, bits applied to 64..71
-    MCMD_LADR_CHP_125OFF  = 0x70,  //  ditto
+    MCMD_LADR_CHP_125OFF  = 0x70,  // special channel page: disble 125K, bits apply to 64..71
     MCMD_LADR_N3RFU_MASK  = 0x80,
     MCMD_LADR_CHPAGE_MASK = 0xF0,
     MCMD_LADR_REPEAT_MASK = 0x0F,
