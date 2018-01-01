@@ -574,7 +574,7 @@ scan_mac_cmds(
                                    e_.info2  = Base::msbf4(&opts[oidx-4])));
             }
             // TODO(tmm@mcci.com): see above; this needs to move outside the
-            // txloop. And we need to have "consistent" ansswers for the block
+            // txloop. And we need to have "consistent" answers for the block
             // of contiguous commands (whatever that means), and ignore the
             // data rate, NbTrans (uprpt) and txPow until the last one.
             if( (LMIC.ladrAns & 0x7F) == (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK) ) {
