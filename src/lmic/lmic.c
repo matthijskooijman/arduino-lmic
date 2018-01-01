@@ -577,6 +577,12 @@ scan_mac_cmds(
             // txloop. And we need to have "consistent" answers for the block
             // of contiguous commands (whatever that means), and ignore the
             // data rate, NbTrans (uprpt) and txPow until the last one.
+#if LMIC_DEBUG_LEVEL > 0
+            LMIC_DEBUG_PRINTF("%lu: LinkAdrReq: p1:%02x chmap:%04x chpage:%02x uprt:%02x ans:%02x\n",
+		os_getTime(), p1, chmap, chpage, uprpt, LMIC.ladrAns
+		);
+#endif /* LMIC_DEBUG_LEVEL */
+
             if( (LMIC.ladrAns & 0x7F) == (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK) ) {
                 // Nothing went wrong - use settings
                 LMIC.upRepeat = uprpt;
