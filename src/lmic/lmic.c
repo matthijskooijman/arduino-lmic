@@ -2,6 +2,9 @@
  * Copyright (c) 2014-2016 IBM Corporation.
  * All rights reserved.
  *
+ * Copyright (c) 2016-2018 MCCI Corporation.
+ * All rights reserved.
+ * 
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *  * Redistributions of source code must retain the above copyright
@@ -42,6 +45,19 @@ static void engineUpdate(void);
 #if !defined(DISABLE_BEACONS)
 static void startScan (void);
 #endif
+
+static inline void initTxrxFlags(const char *func, u1_t mask) {
+#if LMIC_DEBUG_LEVEL > 1
+	LMIC_DEBUG_PRINTF("%lu: %s txrxFlags %#02x --> %02x\n", os_getTime(), func, LMIC.txrxFlags, mask);
+#endif
+	LMIC.txrxFlags = mask;
+}
+
+static inline void orTxrxFlags(const char *func, u1_t mask) {
+	initTxrxFlags(func, LMIC.txrxFlags | mask);
+}
+
+
 
 // ================================================================================
 // BEG OS - default implementations for certain OS suport functions
@@ -883,22 +899,25 @@ static bit_t decodeFrame (void) {
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = seqno,
                            e_.info2  = ackup));
+#if LMIC_DEBUG_LEVEL > 1
+	LMIC_DEBUG_PRINTF("%lu: ??ack error ack=%d txCnt=%d\n", os_getTime(), ackup, LMIC.txCnt);
+#endif
     }
 
     if( LMIC.txCnt != 0 ) // we requested an ACK
-        LMIC.txrxFlags |= ackup ? TXRX_ACK : TXRX_NACK;
+        orTxrxFlags(__func__, ackup ? TXRX_ACK : TXRX_NACK);
 
     if( port <= 0 ) {
-        LMIC.txrxFlags |= TXRX_NOPORT;
+        orTxrxFlags(__func__, TXRX_NOPORT);
         LMIC.dataBeg = poff;
         LMIC.dataLen = 0;
     } else {
-        LMIC.txrxFlags |= TXRX_PORT;
+        orTxrxFlags(__func__, TXRX_PORT);
         LMIC.dataBeg = poff;
         LMIC.dataLen = pend-poff;
     }
 #if LMIC_DEBUG_LEVEL > 0
-    LMIC_DEBUG_PRINTF("%lu: Received downlink, window=%s, port=%d, ack=%d\n", os_getTime(), window, port, ackup);
+    LMIC_DEBUG_PRINTF("%lu: Received downlink, window=%s, port=%d, ack=%d, txrxFlags=%#x\n", os_getTime(), window, port, ackup, LMIC.txrxFlags);
 #endif
     return 1;
 }
@@ -909,7 +928,7 @@ static bit_t decodeFrame (void) {
 
 
 static void setupRx2 (void) {
-    LMIC.txrxFlags = TXRX_DNW2;
+    initTxrxFlags(__func__, TXRX_DNW2);
     LMIC.rps = dndr2rps(LMIC.dn2Dr);
     LMIC.freq = LMIC.dn2Freq;
     LMIC.dataLen = 0;
@@ -951,7 +970,7 @@ static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
 }
 
 static void setupRx1 (osjobcb_t func) {
-    LMIC.txrxFlags = TXRX_DNW1;
+    initTxrxFlags(__func__, TXRX_DNW1);
     // Turn LMIC.rps from TX over to RX
     LMIC.rps = setNocrc(LMIC.rps,1);
     LMIC.dataLen = 0;
@@ -1105,8 +1124,9 @@ static bit_t processJoinAccept (void) {
 
 
 static void processRx2Jacc (xref2osjob_t osjob) {
-    if( LMIC.dataLen == 0 )
-        LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
+    if( LMIC.dataLen == 0 ) {
+        initTxrxFlags(__func__, 0);  // nothing in 1st/2nd DN slot
+    }
     processJoinAccept();
 }
 
@@ -1145,7 +1165,7 @@ static void processRx2DnDataDelay (xref2osjob_t osjob) {
 
 static void processRx2DnData (xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 ) {
-        LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
+        initTxrxFlags(__func__, 0);  // nothing in 1st/2nd DN slot
         // Delay callback processing to avoid up TX while gateway is txing our missed frame!
         // Since DNW2 uses SF12 by default we wait 3 secs.
         os_setTimedCallback(&LMIC.osjob,
@@ -1474,7 +1494,7 @@ bit_t LMIC_startJoining (void) {
 #if !defined(DISABLE_PING)
 static void processPingRx (xref2osjob_t osjob) {
     if( LMIC.dataLen != 0 ) {
-        LMIC.txrxFlags = TXRX_PING;
+        initTxrxFlags(__func__, TXRX_PING);
         if( decodeFrame() ) {
             reportEvent(EV_RXCOMPLETE);
             return;
@@ -1501,10 +1521,10 @@ static bit_t processDnData (void) {
                 engineUpdate();
                 return 1;
             }
-            LMIC.txrxFlags = TXRX_NACK | TXRX_NOPORT;
+            initTxrxFlags(__func__, TXRX_NACK | TXRX_NOPORT);
         } else {
             // Nothing received - implies no port
-            LMIC.txrxFlags = TXRX_NOPORT;
+            initTxrxFlags(__func__, TXRX_NOPORT);
         }
         if( LMIC.adrAckReq != LINK_CHECK_OFF )
             LMIC.adrAckReq += 1;
