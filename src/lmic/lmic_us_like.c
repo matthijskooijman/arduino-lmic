@@ -86,30 +86,63 @@ void LMICuslike_initDefaultChannels(bit_t fJoin) {
 }
 
 u1_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap) {
-        if (chpage == MCMD_LADR_CHP_125ON || chpage == MCMD_LADR_CHP_125OFF) {
-                u2_t en125 = chpage == MCMD_LADR_CHP_125ON ? 0xFFFF : 0x0000;
-                for (u1_t u = 0; u<4; u++)
-                        LMIC.channelMap[u] = en125;
-                LMIC.channelMap[64 / 16] = chmap & 0x00FF;
-                if (en125 == 0) {
-                        LMIC.activeChannels125khz = 0;
-                        LMIC.activeChannels500khz = 0;
-                }
-                else {
-                        LMIC.activeChannels125khz = 64;
-                        LMIC.activeChannels500khz = 8;
-                }
-        }
-        else {
-                if (chpage >= (72 + MAX_XCHANNELS + 15) / 16)
-                        return 0;
-                // Use enable/disable channel to keep activeChannel counts in sync.
-                for (uint base = chpage << 4, chnl = chpage << 4; chnl<(base + 16); ++chnl, chmap >>= 1) {
-                        if (chmap & 0x0001)
-                                LMIC_enableChannel(chnl);
-                        else
-                                LMIC_disableChannel(chnl);
-                }
+	/*
+	|| MCMD_LADR_CHP_125ON and MCMD_LADR_CHP_125OFF are special. The
+	|| channel map appllies to 500kHz (ch 64..71) and in addition
+	*/
+	u1_t base, top;
+
+	if (chpage < MCMD_LADR_CHP_USLIKE_SPECIAL) {
+		// operate on channels 0..15, 16..31, 32..47, 48..63
+		base = chpage << 4;
+		top = base + 16;
+		if (base == 64) {
+			if (chmap && 0xFF00) {
+				return 0;
+			}
+			top = 72;
+		}
+	} else if (chpage == MCMD_LADR_CHP_BANK) {
+		if (chmap & 0xFF00) {
+			// those are resreved bits, fail.
+			return 0;
+		}
+		// each bit enables a bank of channels
+		for (u1_t subband = 0; subband < 8; ++subband, chmap >>= 1) {
+			if (chmap & 1) {
+				LMIC_enableSubBand(subband);
+			} else {
+				LMIC_disableSubBand(subband);
+			}
+
+		// don't change any channels below
+		base = top = 0;
+		}
+	} else if (chpage == MCMD_LADR_CHP_125ON || chpage == MCMD_LADR_CHP_125OFF) {
+                u1_t const en125 = chpage == MCMD_LADR_CHP_125ON;
+
+		// enable or disable all 125kHz channels
+		for (u1_t chnl = 0; chnl < 64; ++chnl) {
+			if (en125)
+				LMIC_enableChannel(chnl);
+			else
+				LMIC_disableChannel(chnl);
+		}
+
+		// then apply mask to top 8 channels.
+		base = 64;
+		top = 72;
+	} else {
+		return 0;
+	}
+
+	// apply chmap to channels in [base..top-1].
+	// Use enable/disable channel to keep activeChannel counts in sync.
+	for (u1_t chnl = base; chnl < top; ++chnl, chmap >>= 1) {
+		if (chmap & 0x0001)
+			LMIC_enableChannel(chnl);
+		else
+			LMIC_disableChannel(chnl);
         }
         return 1;
 }
