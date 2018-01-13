@@ -5,7 +5,7 @@
 // gcc commandline. Since Arduino does not allow easily modifying the
 // compiler commandline, use this file instead.
 
-#define CFG_eu868 1
+#define CFG_us915 1
 //#define CFG_us915 1
 // This is the SX1272/SX1273 radio, which is also used on the HopeRF
 // RFM92 boards.
