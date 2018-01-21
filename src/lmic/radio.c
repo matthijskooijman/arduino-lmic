@@ -203,7 +203,7 @@
 #define SX127X_RSSI_ADJUST_LF   -164            // add to rssi value to get dB (LF)
 #define SX127X_RSSI_ADJUST_HF   -157            // add to rssi value to get dB (HF)
 
-// per datasheet 2.5.2 (but note that we ought to ask Semtech to confirm, because 
+// per datasheet 2.5.2 (but note that we ought to ask Semtech to confirm, because
 // datasheet is unclear).
 #define SX127X_RX_POWER_UP      us2osticks(500) // delay this long to let the receiver power up.
 
@@ -555,7 +555,39 @@ static void txlora () {
 
 // start transmitter (buf=LMIC.frame, len=LMIC.dataLen)
 static void starttx () {
+    oslmic_radio_rssi_t rssi;
+
     ASSERT( (readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP );
+
+    if (LMIC.lbt_ticks > 0) {
+        radio_monitor_rssi(LMIC.lbt_ticks, &rssi);
+
+        if (rssi.max_rssi >= LMIC.lbt_dbmax) {
+#if LMIC_DEBUG_LEVEL > 0
+            u1_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
+            u1_t bw = getBw(LMIC.rps);
+            u1_t cr = getCr(LMIC.rps);
+            LMIC_DEBUG_PRINTF("%lu: freq=%lu, SF=%d, BW=%d, CR=4/%d, interfering signal %d > %d dB\n",
+                os_getTime(), LMIC.freq, bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
+                cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)),
+                rssi.max_rssi,
+                LMIC.lbt_dbmax
+                )
+#endif
+        // complete the request by scheduling the job
+        os_setCallback(&LMIC.osjob, LMIC.osjob.func);
+        return;
+        }
+
+#if LMIC_DEBUG_LEVEL > 1
+        LMIC_DEBUG_PRINTF("%lu: freq=%lu, interfering signal %d < %d dB\n",
+            os_getTime(), LMIC.freq,
+            rssi.max_rssi,
+            LMIC.lbt_dbmax
+            )
+#endif
+    }
+
     if(getSf(LMIC.rps) == FSK) { // FSK modem
         txfsk();
     } else { // LoRa modem
@@ -798,9 +830,9 @@ u1_t radio_rssi () {
 }
 
 // monitor rssi for specified number of ostime_t ticks, and return statistics
-// This puts the radio into RX continuous mode, waits long enough for the 
+// This puts the radio into RX continuous mode, waits long enough for the
 // oscillators to start and the PLL to lock, and then measures for the specified
-// period of time.  The radio is then returned to idel.
+// period of time.  The radio is then returned to idle.
 //
 // RSSI returned is expressed in units of dB, and is offset according to the
 // current radio setting per section 5.5.5 of Semtech 1276 datasheet.
@@ -820,8 +852,7 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
     // band we're in and choose the base RSSI.
     if (LMIC.freq > SX127X_FREQ_LF_MAX) {
             rssiAdjust = SX127X_RSSI_ADJUST_LF;
-    }
-    else {
+    } else {
             rssiAdjust = SX127X_RSSI_ADJUST_HF;
     }
 
