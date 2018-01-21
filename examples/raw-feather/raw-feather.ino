@@ -119,19 +119,6 @@ static void tx_func (osjob_t* job);
 
 // Transmit the given string and call the given function afterwards
 void tx(const char *str, osjobcb_t func) {
-  oslmic_radio_rssi_t rssi;
-  os_radio(RADIO_RST); // Stop RX first
-  delay(1); // Wait a bit, without this os_radio below asserts, apparently because the state hasn't changed yet
-
-  // if requested, scan RSSI (LBT). On a Feather, it's about 42 us/sample.
-  if (RX_RSSI_INTERVAL > 0) {
-    radio_monitor_rssi(ms2osticks(RX_RSSI_INTERVAL), &rssi);
-    Serial.print("RSSI results (dB): min: "); Serial.print(rssi.min_rssi);
-    Serial.print(" max: "); Serial.print(rssi.max_rssi);
-    Serial.print(" mean: "); Serial.print(rssi.mean_rssi);
-    Serial.print(" n: "); Serial.println(rssi.n_rssi);
-  }
-
   LMIC.dataLen = 0;
   while (*str)
     LMIC.frame[LMIC.dataLen++] = *str++;
@@ -278,14 +265,39 @@ void setup() {
 
   // default tx power for US: 21 dBm
   LMIC.txpow = 21;
+#elif defined(CFG_as923)
+// make it easier for test, by pull the parameters up to the top of the
+// block. Ideally, we'd use the serial port to drive this; or have
+// a voting protocol where one side is elected the controller and
+// guides the responder through all the channels, powers, ramps
+// the transmit power from min to max, and measures the RSSI and SNR.
+// Even more amazing would be a scheme where the controller could
+// handle multiple nodes; in that case we'd have a way to do
+// production test and qualification. However, using an RWC5020A
+// is a much better use of development time.
+        const static uint8_t kChannel = 1;
+        uint32_t uBandwidth;
+
+        LMIC.freq = AS923_F1 + kChannel * 200000;
+        uBandwidth = 125;
+
+        // Use a suitable spreading factor
+        if (uBandwidth == 125)
+                LMIC.datarate = AS923_DR_SF7;         // DR7
+        else
+                LMIC.datarate = AS923_DR_SF7B;        // DR8
+
+        // default tx power for US: 21 dBm
+        LMIC.txpow = 16;
 #else
 # error Unsupported LMIC regional configuration.
 #endif
 
+
   // disable RX IQ inversion
   LMIC.noRXIQinversion = true;
 
-  // This sets CR 4/5, BW125 (except for EU DR_SF7B, which uses BW250)
+  // This sets CR 4/5, BW125 (except for EU/AS923 DR_SF7B, which uses BW250)
   LMIC.rps = updr2rps(LMIC.datarate);
 
   Serial.print("Frequency: "); Serial.print(LMIC.freq / 1000000);

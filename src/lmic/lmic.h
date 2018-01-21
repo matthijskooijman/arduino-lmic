@@ -207,6 +207,11 @@ struct lmic_t {
     // Radio settings TX/RX (also accessed by HAL)
     ostime_t    txend;
     ostime_t    rxtime;
+
+    // LBT info
+    ostime_t    lbt_ticks;      // ticks to listen
+    s1_t        lbt_dbmax;      // max permissible dB on our channle (eg -80) 
+
     u4_t        freq;
     s1_t        rssi;
     s1_t        snr;
