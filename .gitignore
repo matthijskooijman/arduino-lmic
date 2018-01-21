@@ -40,7 +40,5 @@ Release
 vs-readme.txt
 __vm
 .vs
-*.sln
-
-# files from vscode
 .vscode
+
