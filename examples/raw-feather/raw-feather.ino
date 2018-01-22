@@ -50,6 +50,9 @@ Revision history:
 #include <hal/hal.h>
 #include <SPI.h>
 
+#include <stdarg.h>
+#include <stdio.h>
+
 // we formerly would check this configuration; but now there is a flag,
 // in the LMIC, LMIC.noRXIQinversion;
 // if we set that during init, we get the same effect.  If
@@ -90,6 +93,26 @@ void os_getDevKey (u1_t* buf) { }
 // this gets callled by the library but we choose not to display any info;
 // and no action is required.
 void onEvent (ev_t ev) {
+}
+
+extern "C" {
+void lmic_printf(const char *fmt, ...);
+};
+
+void lmic_printf(const char *fmt, ...) {
+	if (! Serial.dtr())
+		return;
+
+	char buf[256];
+	va_list ap;
+
+	va_start(ap, fmt);
+	(void) vsnprintf(buf, sizeof(buf) - 1, fmt, ap);
+	va_end(ap);
+
+	// in case we overflowed:
+	buf[sizeof(buf) - 1] = '\0';
+	if (Serial.dtr()) Serial.print(buf);
 }
 
 osjob_t txjob;
