@@ -119,10 +119,20 @@ static void tx_func (osjob_t* job);
 
 // Transmit the given string and call the given function afterwards
 void tx(const char *str, osjobcb_t func) {
+  // the radio is probably in RX mode; stop it.
+  os_radio(RADIO_RST);
+  // wait a bit so the radio can come out of RX mode
+  delay(1);
+
+  // prepare data
   LMIC.dataLen = 0;
   while (*str)
     LMIC.frame[LMIC.dataLen++] = *str++;
+
+  // set completion function.
   LMIC.osjob.func = func;
+
+  // start the transmission
   os_radio(RADIO_TX);
   Serial.println("TX");
 }
