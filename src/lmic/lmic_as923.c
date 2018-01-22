@@ -179,13 +179,26 @@ void LMICas923_initDefaultChannels(bit_t join) {
         LMIC.bands[BAND_CENTI].txpow = AS923_TX_EIRP_MAX_DBM;
         LMIC.bands[BAND_CENTI].lastchnl = os_getRndU1() % MAX_CHANNELS;
         LMIC.bands[BAND_CENTI].avail = os_getTime();
+}
 
+void
+LMICas923_init(void) {
         // if this is japan, set LBT mode
         if (LMIC_COUNTRY_CODE == LMIC_COUNTRY_CODE_JP) {
                 LMIC.lbt_ticks = ms2osticks(AS923JP_LBT_MS);
                 LMIC.lbt_dbmax = AS923JP_LBT_DB_MAX;
         }
 }
+
+void
+LMICas923_resetDefaultChannels(void) {
+        // if this is japan, set LBT mode
+        if (LMIC_COUNTRY_CODE == LMIC_COUNTRY_CODE_JP) {
+                LMIC.lbt_ticks = ms2osticks(AS923JP_LBT_MS);
+                LMIC.lbt_dbmax = AS923JP_LBT_DB_MAX;
+        }
+}
+
 
 bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
         if (bandidx != BAND_CENTI) return 0;

@@ -1871,6 +1871,7 @@ void LMIC_reset (void) {
 
 void LMIC_init (void) {
     LMIC.opmode = OP_SHUTDOWN;
+    LMICbandplan_init();
 }
 
 
