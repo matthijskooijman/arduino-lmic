@@ -556,10 +556,28 @@ static void txlora () {
 // start transmitter (buf=LMIC.frame, len=LMIC.dataLen)
 static void starttx () {
     oslmic_radio_rssi_t rssi;
+    u1_t const rOpMode = readReg(RegOpMode);
 
-    ASSERT( (readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP );
+    // originally, this code ASSERT()ed, but asserts are both bad and
+    // blunt instruments. If we see that we're not in sleep mode, 
+    // force sleep (because we might have to switch modes)
+    if ((rOpMode & OPMODE_MASK) != OPMODE_SLEEP) {
+#if LMIC_DEBUG_LEVEL > 0
+        LMIC_DEBUG_PRINTF("?%s: OPMODE != OPMODE_SLEEP: %#02x\n", __func__, rOpMode);
+#endif
+        opmode(OPMODE_SLEEP);
+        ostime_t tBegin = os_getTime();
+        while (os_getTime() - tBegin < ms2osticks(1))
+            /* idle */;
+    }
 
     if (LMIC.lbt_ticks > 0) {
+#if LMIC_DEBUG_LEVEL > 1
+        LMIC_DEBUG_PRINTF("%lu: scan RSSI for %u osticks\n", 
+            os_getTime(),
+            LMIC.lbt_ticks
+            );
+#endif
         radio_monitor_rssi(LMIC.lbt_ticks, &rssi);
 
         if (rssi.max_rssi >= LMIC.lbt_dbmax) {
