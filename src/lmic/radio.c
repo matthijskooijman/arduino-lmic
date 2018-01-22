@@ -576,7 +576,7 @@ static void starttx () {
                 cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)),
                 rssi.max_rssi,
                 LMIC.lbt_dbmax
-                )
+                );
 #endif
         // complete the request by scheduling the job
         os_setCallback(&LMIC.osjob, LMIC.osjob.func);
