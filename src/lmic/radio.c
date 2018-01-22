@@ -588,7 +588,7 @@ static void starttx () {
             os_getTime(), LMIC.freq,
             rssi.max_rssi,
             LMIC.lbt_dbmax
-            )
+            );
 #endif
     }
 
