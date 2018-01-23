@@ -559,7 +559,6 @@ static void txlora () {
 
 // start transmitter (buf=LMIC.frame, len=LMIC.dataLen)
 static void starttx () {
-    oslmic_radio_rssi_t rssi;
     u1_t const rOpMode = readReg(RegOpMode);
 
     // originally, this code ASSERT()ed, but asserts are both bad and
@@ -570,12 +569,11 @@ static void starttx () {
         LMIC_DEBUG_PRINTF("?%s: OPMODE != OPMODE_SLEEP: %#02x\n", __func__, rOpMode);
 #endif
         opmode(OPMODE_SLEEP);
-        ostime_t tBegin = os_getTime();
-        while (os_getTime() - tBegin < ms2osticks(1))
-            /* idle */;
+        hal_waitUntil(os_getTime() + ms2osticks(1));
     }
 
     if (LMIC.lbt_ticks > 0) {
+        oslmic_radio_rssi_t rssi;
 #if LMIC_DEBUG_LEVEL > 1
         LMIC_DEBUG_PRINTF("%lu: scan RSSI for %u osticks\n", 
             os_getTime(),
@@ -590,7 +588,10 @@ static void starttx () {
             u1_t bw = getBw(LMIC.rps);
             u1_t cr = getCr(LMIC.rps);
             LMIC_DEBUG_PRINTF("%lu: freq=%lu, SF=%d, BW=%d, CR=4/%d, interfering signal %d > %d dB\n",
-                os_getTime(), LMIC.freq, bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
+                os_getTime(),
+                LMIC.freq,
+                sf,
+                bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
                 cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)),
                 rssi.max_rssi,
                 LMIC.lbt_dbmax
@@ -865,10 +866,9 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
 
     int rssiAdjust;
     ostime_t tBegin;
+    int notDone;
 
     rxlora(RXMODE_SCAN);
-
-    tBegin = os_getTime();
 
     // while we're waiting for the PLLs to spin up, determine which
     // band we're in and choose the base RSSI.
@@ -885,14 +885,14 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
     rssiN = 0;
 
     // wait for PLLs
-    while ((os_getTime() - tBegin) < SX127X_RX_POWER_UP) {
-        // nothing
-    }
+    hal_waitUntil(os_getTime() + SX127X_RX_POWER_UP);
 
     // scan for the desired time.
     tBegin = os_getTime();
     rssiMax = 0;
     do {
+        ostime_t now;
+
         u1_t rssiNow = readReg(LORARegRssiValue);
 
         if (rssiMax < rssiNow)
@@ -901,7 +901,13 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
                 rssiMin = rssiNow;
         rssiSum += rssiNow;
         ++rssiN;
-    } while ((os_getTime() - tBegin) < nTicks);
+        now = os_getTime();
+        notDone = now - (tBegin + nTicks) < 0;
+//        LMIC_DEBUG_PRINTF("%s: now: %d tBegin+nTicks: %ld notDone: %d\n",
+//                __func__,
+//                now, tBegin + nTicks, notDone
+//                );
+    } while (notDone);
 
     // put radio back to sleep
     opmode(OPMODE_SLEEP);
