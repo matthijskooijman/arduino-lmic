@@ -1,4 +1,4 @@
-/* raw-feather.ino	Sat Apr  1 2017 22:26:22 tmm */
+/* raw-feather.ino	Tue Jan 23 2018 10:25:50 chwon */
 
 /*
 
@@ -8,10 +8,10 @@ Function:
 	Slightly improved Raw test example, for Adafruit Feather M0 LoRa
 
 Version:
-	V0.5.0	Sat Apr  1 2017 22:26:22 tmm	Edit level 1
+	V0.7.0	Tue Jan 23 2018 10:25:50 chwon	Edit level 2
 
 Copyright notice:
-	This file copyright (C) 2017 by
+	This file copyright (C) 2017, 2018 by
 
 		MCCI Corporation
 		3520 Krums Corners Road
@@ -29,6 +29,9 @@ Author:
 Revision history:
    0.5.0  Sat Apr  1 2017 22:26:22  tmm
 	Module created.
+
+   0.7.0  Tue Jan 23 2018 10:25:50  chwon
+	Add Catena 4551 platform support.
 
 */
 
@@ -70,6 +73,7 @@ Revision history:
 
 #define TX_INTERVAL 2000        // milliseconds
 
+#ifdef ARDUINO_ARCH_SAMD
 // Pin mapping for Adafruit Feather M0 LoRa
 const lmic_pinmap lmic_pins = {
     .nss = 8,
@@ -77,6 +81,23 @@ const lmic_pinmap lmic_pins = {
     .rst = 4,
     .dio = {3, 6, LMIC_UNUSED_PIN},
 };
+#endif
+
+#ifdef ARDUINO_ARCH_STM32
+// Pin mapping for Catena 4551 Feather M0 LoRa
+const lmic_pinmap lmic_pins = {
+    .nss = D7,      // chip select is D7
+    .rxtx = D29, // RXTX is D29
+    .rst = D8,   // NRESET is D8
+    
+    .dio = {D25,    // DIO0 (IRQ) is D25
+            D26,    // DIO1 is D26
+            D27,    // DIO2 is D27
+           },
+    .rxtx_rx_active = 1,
+    .spi_freq = 8000000	/* 8MHz */
+};
+#endif
 
 
 // These callbacks are only used in over-the-air activation, so they are
@@ -186,6 +207,9 @@ void setup() {
   os_init();
 
   // Set up these settings once, and use them for both TX and RX
+#ifdef ARDUINO_ARCH_STM32
+  LMIC_setClockError(10*65536/100);
+#endif
 
 #if defined(CFG_eu868)
   // Use a frequency in the g3 which allows 10% duty cycling.
