@@ -869,9 +869,9 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
     // while we're waiting for the PLLs to spin up, determine which
     // band we're in and choose the base RSSI.
     if (LMIC.freq > SX127X_FREQ_LF_MAX) {
-            rssiAdjust = SX127X_RSSI_ADJUST_LF;
-    } else {
             rssiAdjust = SX127X_RSSI_ADJUST_HF;
+    } else {
+            rssiAdjust = SX127X_RSSI_ADJUST_LF;
     }
 
     // zero the results
