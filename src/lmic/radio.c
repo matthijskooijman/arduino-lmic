@@ -903,10 +903,6 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
         ++rssiN;
         now = os_getTime();
         notDone = now - (tBegin + nTicks) < 0;
-//        LMIC_DEBUG_PRINTF("%s: now: %d tBegin+nTicks: %ld notDone: %d\n",
-//                __func__,
-//                now, tBegin + nTicks, notDone
-//                );
     } while (notDone);
 
     // put radio back to sleep
