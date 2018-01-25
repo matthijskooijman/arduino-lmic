@@ -74,14 +74,33 @@ Revision history:
 #define TX_INTERVAL 2000        // milliseconds
 #define RX_RSSI_INTERVAL 100    // milliseconds
 
-// Pin mapping for Adafruit Feather M0 LoRa
+// Pin mapping for Adafruit Feather M0 LoRa, etc.
+#if defined(ARDUINO_SAMD_FEATHER_M0)
 const lmic_pinmap lmic_pins = {
     .nss = 8,
     .rxtx = LMIC_UNUSED_PIN,
     .rst = 4,
     .dio = {3, 6, LMIC_UNUSED_PIN},
+    .rxtx_rx_active = 0,
+    .rssi_cal = 8,              // LBT cal for the Adafruit Feather M0 LoRa, in dB
+    .spi_freq = 8000000,
 };
-
+#elif defined(ARDUINO_CATENA_4551)
+const lmic_pinmap lmic_pins = {
+        .nss = 7,
+        .rxtx = 29,
+        .rst = 8,
+        .dio = { 25,    // DIO0 (IRQ) is D25
+                 26,    // DIO1 is D26
+                 27,    // DIO2 is D27
+               },
+        .rxtx_rx_active = 1,
+        .rssi_cal = 10,
+        .spi_freq = 8000000     // 8MHz
+};
+#else
+# error "Unknown target"
+#endif
 
 // These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless

@@ -873,6 +873,7 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
     } else {
             rssiAdjust = SX127X_RSSI_ADJUST_LF;
     }
+    rssiAdjust += hal_getRssiCal();
 
     // zero the results
     rssiMax = 255;
