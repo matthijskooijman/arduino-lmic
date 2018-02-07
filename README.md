@@ -159,7 +159,7 @@ the following changes:
 If the library is configured for US915 operation, we make the following changes:
 - Add the APIs `LMIC_enableChannel()`,
 `LMIC_enableSubBand()`, `LMIC_disableSubBand()`, and `LMIC_selectSubBand()`.
-- Add the constants `MAX_XCHANNELS` and `MAX_TXPOW_125kHz`.
+- Add the constants `MAX_XCHANNELS`.
 - Add a number of additional `DR_...` symbols.
 
 ### Selecting the target radio transceiver
