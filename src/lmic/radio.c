@@ -423,15 +423,19 @@ static void configChannel () {
 
 static void configPower () {
 #ifdef CFG_sx1276_radio
-    // no boost used for now
+    // PA_BOOST output is assumed but not 20 dBm.
     s1_t pw = (s1_t)LMIC.txpow;
-    if(pw >= 17) {
-        pw = 15;
+    if(pw > 17) {
+        pw = 17;
     } else if(pw < 2) {
         pw = 2;
     }
-    // check board type for BOOST pin
-    writeReg(RegPaConfig, (u1_t)(0x80|(pw&0xf)));
+    // 0x80 forces use of PA_BOOST; but we don't 
+    //    turn on 20 dBm mode. So powers are:
+    //    0000 => 2dBm, 0001 => 3dBm, ... 1111 => 17dBm
+    // But we also enforce that the high-power mode
+    //    is off by writing RegPaDac.
+    writeReg(RegPaConfig, (u1_t)(0x80|(pw - 2)));
     writeReg(RegPaDac, readReg(RegPaDac)|0x4);
 
 #elif CFG_sx1272_radio
