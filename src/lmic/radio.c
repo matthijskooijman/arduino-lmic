@@ -134,8 +134,8 @@
 // #define RegAgcThresh2                              0x45 // common
 // #define RegAgcThresh3                              0x46 // common
 // #define RegPllHop                                  0x4B // common
+#define RegPaDac                                   0x4D // common
 // #define RegTcxo                                    0x58 // common
-#define RegPaDac                                   0x5A // common
 // #define RegPll                                     0x5C // common
 // #define RegPllLowPn                                0x5E // common
 // #define RegFormerTemp                              0x6C // common
