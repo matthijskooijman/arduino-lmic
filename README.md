@@ -497,7 +497,7 @@ const lmic_pinmap lmic_pins = {
     .rst = 8,
     .dio = {25, 26, 27},
     // the Murata module needs D29 high for RX, low for TX.
-    .rxtx_rx_polarity = 1,
+    .rxtx_rx_active = 1,
     // the Murata module is direct-wired, we can use 8 MHz for SPI.
     .spi_freq = 8000000
 };
