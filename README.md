@@ -3,8 +3,8 @@ Arduino-LMIC library
 
 This repository contains the IBM LMIC (LoraMAC-in-C) library, slightly
 modified to run in the Arduino environment, allowing using the SX1272,
-SX1276 tranceivers and compatible modules (such as some HopeRF RFM9x
-modules).
+SX1276 transceivers and compatible modules (such as some HopeRF RFM9x
+modules and the Murata LoRa modules).
 
 This library mostly exposes the functions defined by LMIC, it makes no
 attempt to wrap them in a higher level API that is more in the Arduino
@@ -16,6 +16,8 @@ The [MCCI arduino-lorawan](https://github.com/mcci-catena/arduino-lorawan) libra
 This library requires Arduino IDE version 1.6.6 or above, since it
 requires C99 mode to be enabled by default.
 
+[![GitHub release](https://img.shields.io/github/release/mcci-catena/arduino-lmic.svg)](./releases/latest) [![GitHub commits](https://img.shields.io/github/commits-since/mcci-catena/arduino-lmic/latest.svg)](./compare/v2.1.4...master)
+
 **Contents:**
 
 <!--
@@ -23,58 +25,48 @@ requires C99 mode to be enabled by default.
   We strongly recommend updating using VS Code, the markdown-toc extension and the
   bierner.markdown-preview-github-styles extension.
 -->
-<!-- TOC depthFrom:1 orderedList:true -->
+<!-- TOC depthFrom:1 -->
 
-1. [Installing](#installing)
-2. [Features](#features)
-3. [Configuration](#configuration)
-    1. [Selecting the LoRaWAN Region Configuration](#selecting-the-lorawan-region-configuration)
-        1. [eu868, as923, in866](#eu868-as923-in866)
-        2. [us915, au921](#us915-au921)
-    2. [Selecting the target radio transceiver](#selecting-the-target-radio-transceiver)
-        1. [`#define CFG_sx1272_radio 1`](#define-cfg_sx1272_radio-1)
-        2. [`#define CFG_sx1276_radio 1`](#define-cfg_sx1276_radio-1)
-    3. [Controlling use of interrupts](#controlling-use-of-interrupts)
-        1. [`#define LMIC_USE_INTERRUPTS`](#define-lmic_use_interrupts)
-    4. [Disabling PING](#disabling-ping)
-        1. [`#define DISABLE_PING`](#define-disable_ping)
-    5. [Disabling Beacons](#disabling-beacons)
-        1. [`#define DISABLE_BEACONS`](#define-disable_beacons)
-    6. [Rarely changed variables](#rarely-changed-variables)
-        1. [Changing debug output](#changing-debug-output)
-            1. [`#define LMIC_PRINTF_TO SerialLikeObject`](#define-lmic_printf_to-seriallikeobject)
-        2. [Getting debug from the RF library](#getting-debug-from-the-rf-library)
-            1. [`#define LMIC_DEBUG_LEVEL number /* 0, 1, or 2 */`](#define-lmic_debug_level-number--0-1-or-2-)
-        3. [Selecting the AES library](#selecting-the-aes-library)
-            1. [`#define USE_ORIGINAL_AES`](#define-use_original_aes)
-            2. [`#define USE_IDEETRON_AES`](#define-use_ideetron_aes)
-        4. [Defining the OS Tick Frequency](#defining-the-os-tick-frequency)
-            1. [`#define US_PER_OSTICK_EXPONENT number`](#define-us_per_ostick_exponent-number)
-        5. [Setting the SPI-bus frequency](#setting-the-spi-bus-frequency)
-            1. [`#define LMIC_SPI_FREQ floatNumber`](#define-lmic_spi_freq-floatnumber)
-        6. [Changing handling of runtime assertion failures](#changing-handling-of-runtime-assertion-failures)
-        7. [Disabling JOIN](#disabling-join)
-            1. [`#define DISABLE_JOIN`](#define-disable_join)
-        8. [Disabling Class A MAC commands](#disabling-class-a-mac-commands)
-        9. [Disabling Class B MAC commands](#disabling-class-b-mac-commands)
-        10. [Special purpose](#special-purpose)
-4. [Supported hardware](#supported-hardware)
-5. [Connections](#connections)
-    1. [Power](#power)
-    2. [SPI](#spi)
-    3. [DIO pins](#dio-pins)
-    4. [Reset](#reset)
-    5. [RXTX](#rxtx)
-    6. [Pin mapping](#pin-mapping)
-        1. [Adafruit Feather M0 LoRa](#adafruit-feather-m0-lora)
-        2. [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
-        3. [MCCI Catena 4450/4460](#mcci-catena-44504460)
-        4. [MCCI Catena 4551](#mcci-catena-4551)
-6. [Example Sketches](#example-sketches)
-7. [Timing](#timing)
-8. [Downlink datarate](#downlink-datarate)
-9. [Release History](#release-history)
-10. [License](#license)
+- [Installing](#installing)
+- [Features](#features)
+- [Configuration](#configuration)
+	- [Selecting the LoRaWAN Region Configuration](#selecting-the-lorawan-region-configuration)
+		- [eu868, as923, in866](#eu868-as923-in866)
+		- [us915, au921](#us915-au921)
+	- [Selecting the target radio transceiver](#selecting-the-target-radio-transceiver)
+	- [Controlling use of interrupts](#controlling-use-of-interrupts)
+	- [Disabling PING](#disabling-ping)
+	- [Disabling Beacons](#disabling-beacons)
+	- [Rarely changed variables](#rarely-changed-variables)
+		- [Changing debug output](#changing-debug-output)
+		- [Getting debug from the RF library](#getting-debug-from-the-rf-library)
+		- [Selecting the AES library](#selecting-the-aes-library)
+		- [Defining the OS Tick Frequency](#defining-the-os-tick-frequency)
+		- [Setting the SPI-bus frequency](#setting-the-spi-bus-frequency)
+		- [Changing handling of runtime assertion failures](#changing-handling-of-runtime-assertion-failures)
+		- [Disabling JOIN](#disabling-join)
+		- [Disabling Class A MAC commands](#disabling-class-a-mac-commands)
+		- [Disabling Class B MAC commands](#disabling-class-b-mac-commands)
+		- [Special purpose](#special-purpose)
+- [Supported hardware](#supported-hardware)
+- [Connections](#connections)
+	- [Power](#power)
+	- [SPI](#spi)
+	- [DIO pins](#dio-pins)
+	- [Reset](#reset)
+	- [RXTX](#rxtx)
+	- [RXTX Polarity](#rxtx-polarity)
+	- [Pin mapping](#pin-mapping)
+		- [Adafruit Feather M0 LoRa](#adafruit-feather-m0-lora)
+		- [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
+		- [MCCI Catena 4450/4460](#mcci-catena-44504460)
+		- [MCCI Catena 4551](#mcci-catena-4551)
+- [Example Sketches](#example-sketches)
+- [Timing](#timing)
+- [Downlink datarate](#downlink-datarate)
+- [Release History](#release-history)
+- [Trademark Acknowledgements](#trademark-acknowledgements)
+- [License](#license)
 
 <!-- /TOC -->
 
@@ -97,19 +89,20 @@ The LMIC library provides a fairly complete LoRaWAN Class A and Class B
 implementation, supporting the EU-868, US-915, AU-921, AS-923, and IN-866 bands. Only a limited
 number of features was tested using this port on Arduino hardware, so be careful when using any of the untested features.
 
-The libary has only been tested with LoRaWAN 1.0.2 networks and does not have the separated key structure defined by LoRaWAN 1.1.
+The library has only been tested with LoRaWAN 1.0.2 networks and does not have the separated key structure defined by LoRaWAN 1.1.
 
 What certainly works:
+
  - Sending packets uplink, taking into account duty cycling.
  - Encryption and message integrity checking.
  - Receiving downlink packets in the RX2 window.
  - Custom frequencies and datarate settings.
  - Over-the-air activation (OTAA / joining).
- - Receiving downlink packets in the RX1 window.
+ - Receiving downlink packets in the RX1 and RX2 windows.
  - Some MAC command processing.
 
 What has not been tested:
- - Receiving downlink packets in the RX1 window.
+
  - Receiving and processing all MAC commands.
  - Class B operation.
  - FSK has not been extensively tested.
@@ -149,6 +142,7 @@ the library assumes `CFG_eu868`. The library changes configuration pretty substa
 according to the region. Some of the differences are listed below.
 
 #### eu868, as923, in866
+
 If the library is configured for EU868, AS923, or IN866 operation, we make
 the following changes:
 - Add the API `LMIC_setupBand()`.
@@ -156,6 +150,7 @@ the following changes:
 `BAND_CENTI`, `BAND_DECI`, and `BAND_AUX`.
 
 #### us915, au921
+
 If the library is configured for US915 operation, we make the following changes:
 - Add the APIs `LMIC_enableChannel()`,
 `LMIC_enableSubBand()`, `LMIC_disableSubBand()`, and `LMIC_selectSubBand()`.
@@ -168,39 +163,52 @@ You should define one of the following variables. If you don't, the library assu
 sx1276. There is a runtime check to make sure the actual transceiver matches the library
 configuration.
 
-#### `#define CFG_sx1272_radio 1`
+`#define CFG_sx1272_radio 1`
+
 Configures the library for use with an sx1272 transceiver.
 
-#### `#define CFG_sx1276_radio 1`
+`#define CFG_sx1276_radio 1`
+
 Configures the library for use with an sx1276 transceiver.
 
 ### Controlling use of interrupts
-#### `#define LMIC_USE_INTERRUPTS`
+
+`#define LMIC_USE_INTERRUPTS`
+
 If defined, configures the library to use interrupts for detecting events from the transceiver. If left undefined, the library will poll for events from the transceiver.  `LMIC_USE_INTERRUPTS` is not currently tested.
 
 ### Disabling PING
-#### `#define DISABLE_PING`
+
+`#define DISABLE_PING`
+
 If defined, removes all code needed for PING.  Removes the APIs `LMIC_setPingable()` and `LMIC_stopPingable()`.
 Class A devices don't support PING, so defining `DISABLE_PING` is often a good idea.
 
 By default, PING support is included in the library.
 
 ### Disabling Beacons
-#### `#define DISABLE_BEACONS`
+
+`#define DISABLE_BEACONS`
+
 If defined, removes all code needed for handling beacons. Removes the APIs `LMIC_enableTracking()` and `LMIC_disableTracking()`.
 Class A devices don't support beacons, so defining `DISABLE_BEACONS` might be a good idea.
 
 
 ### Rarely changed variables ###
+
 The remaining variables are rarely used, but we list them here for completeness.
 
 #### Changing debug output
-##### `#define LMIC_PRINTF_TO SerialLikeObject`
+
+`#define LMIC_PRINTF_TO SerialLikeObject`
+
 This variable should be set to the name of a `Serial`-like object, used for printing messages. If not defined, `Serial`
 is assumed.
 
 #### Getting debug from the RF library
-##### `#define LMIC_DEBUG_LEVEL number /* 0, 1, or 2 */`
+
+`#define LMIC_DEBUG_LEVEL number /* 0, 1, or 2 */`
+
 This variable determines the amount of debug output to be produced by the library. The default is `0`.
 
 If `LMIC_DEBUG_LEVEL` is zero, no output is produced. If `1`, limited output is produced. If `2`, more extensive
@@ -208,45 +216,60 @@ output is produced.  If non-zero, printf() is used, and the Arduino environment 
 otherwise the sketch will crash at runtime.
 
 #### Selecting the AES library
+
 The library comes with two AES implementations. The original implementation is better on
 ARM processors becasue it's faster, but it's larger. For smaller AVR8 processors, a
 second library ("IDEETRON") is provided that has a smaller code footprint.
 You may define one of the following variables to choose the AES implementation. If you don't,
 the library uses the IDEETRON version.
-##### `#define USE_ORIGINAL_AES`
+
+`#define USE_ORIGINAL_AES`
+
 If defined, the original AES implementation is used.
-##### `#define USE_IDEETRON_AES`
+
+`#define USE_IDEETRON_AES`
+
 If defined, the IDEETRON AES implementation is used.
 
 #### Defining the OS Tick Frequency
-##### `#define US_PER_OSTICK_EXPONENT number`
+
+`#define US_PER_OSTICK_EXPONENT number`
+
 This variable should be set to the base-2 logarithm of the number of microseconds per OS tick. The default is 4,
 which indicates that each tick corresponds to 16 microseconds (because 16 == 2^4).
 
 #### Setting the SPI-bus frequency
-##### `#define LMIC_SPI_FREQ floatNumber`
+
+`#define LMIC_SPI_FREQ floatNumber`
+
 This variable sets the default frequency for the SPI bus connection to the transceiver. The default is `1E6`, meaning 1 MHz. However, this can be overridden by the contents of the `lmic_pinmap` structure, and we recommend that you use that approach rather than editing the `project_settings/lmic_project_config.h` file.
 
 ####  Changing handling of runtime assertion failures
+
 The variables `LMIC_FAILURE_TO` and `DISABLE_LMIC_FAILURE_TO`
 control the handling of runtime assertion failures. By default, assertion messages are displayed using
 the `Serial` object. You can define LMIC_FAILURE_TO to be the name of some other `Print`-like obect. You can
 also define `DISABLE_LMIC_FAILURE_TO` to any value, in which case assert failures will silently halt execution.
 
 #### Disabling JOIN
-##### `#define DISABLE_JOIN`
+
+`#define DISABLE_JOIN`
+
 If defined, removes code needed for OTAA activation. Removes the APIs `LMIC_startJoining()` and `LMIC_tryRejoin()`.
 
 #### Disabling Class A MAC commands
+
 `DISABLE_MCMD_DCAP_REQ`, `DISABLE_MCMD_DN2P_SET`, and `DISABLE_MCMD_SNCH_REQ` respectively disable code for various Class A MAC
 commands.
 
 #### Disabling Class B MAC commands
+
 `DISABLE_MCMD_PING_SET` disables the PING_SET MAC commands. It's implied by `DISABLE_PING`.
 
 `DISABLE_MCMD_BCNI_ANS` disables the next-beacon start command. I'ts implied by `DISABLE_BEACON'
 
 #### Special purpose
+
 `#define DISABLE_INVERT_IQ_ON_RX` disables the inverted Q-I polarity on RX. If this is defined, end-devices will be able
 to receive messages from each other, but will not be able to hear the gateway.
 
@@ -302,6 +325,7 @@ series with all data lines that might prevent damage, but I would not
 count on that.
 
 ### Power
+
 > If you're using a pre-integrated board, you can skip this section.
 
 The SX127x transceivers need a supply voltage between 1.8V and 3.9V.
@@ -312,6 +336,7 @@ pins for different parts (like the Semtech evaluation board that has
 Any *GND* pins need to be connected to the Arduino *GND* pin(s).
 
 ### SPI
+
 > If you're using a pre-integrated board, you can skip this section, and instead refer to your board's documentation on the pins to be used.
 
 The primary way of communicating with the transceiver is through SPI
@@ -327,11 +352,12 @@ slave side (the transceiver), this must be connect to the pin
 can connect to any I/O pin. Most Arduinos also have a pin labeled "SS",
 but this is only relevant when the Arduino works as an SPI slave, which
 is not the case here. Whatever pin you pick, you need to tell the
-library what pin you used through the pin mapping (see below).
+library what pin you used through the pin mapping (see [below](#pin-mapping)).
 
 [SPI]: https://www.arduino.cc/en/Reference/SPI
 
 ### DIO pins
+
 > If you're using a pre-integrated board, you can ignore this section; refer to your board's documentation for information on what DIO pins need to be used.
 
 The DIO (digital I/O) pins on the SX127x can be configured
@@ -355,25 +381,26 @@ In FSK mode they are used as follows::
  * DIO0: PayloadReady and PacketSent
  * DIO2: TimeOut
 
-Both modes need only 2 pins, but the tranceiver does not allow mapping
+Both modes need only 2 pins, but the transceiver does not allow mapping
 them in such a way that all needed interrupts map to the same 2 pins.
 So, if both LoRa and FSK modes are used, all three pins must be
 connected.
 
 The pins used on the Arduino side should be configured in the pin
-mapping in your sketch (see below).
+mapping in your sketch, by setting the values of `lmic_pinmap::dio[0]`, `[1]`, and `[2]` (see [below](#pin-mapping)).
 
 ### Reset
+
 > If you're using a pre-configured module, refer to the documentation for your board.
 
-The transceiver has a reset pin that can be used to explicitely reset
+The transceiver has a reset pin that can be used to explicitly reset
 it. The LMIC library uses this to ensure the chip is in a consistent
 state at startup. In practice, this pin can be left disconnected, since
 the transceiver will already be in a sane state on power-on, but
 connecting it might prevent problems in some cases.
 
 On the Arduino side, any I/O pin can be used. The pin number used must
-be configured in the pin mapping (see below).
+be configured in the pin mapping `lmic_pinmap::rst` field (see [below(#pin-mapping)]).
 
 ### RXTX
 
@@ -400,9 +427,15 @@ Alternatively, or if the SX127x *RXTX* pin is not available, LMIC can be
 configured to control the antenna switch. Connect the antenna switch
 control pin (e.g. *FEM_CTX* on the Semtech evaluation board) to any I/O
 pin on the Arduino side, and configure the pin used in the pin map (see
-below).
+[below](#pin-mapping)).
 
-If an external switch is used, you also must specify the polarity. Some modules want RX/TX to be high for transmit, others want it to be low. The Murata module, for example, requires that RX/TX be *low* for transmit.
+The configuration entry `lmic_pinmap::rxtx` configures the pin to be used for the *RXTX* control function, in terms of the Arduino `wire.h` digital pin number. If set to `LMIC_UNUSED_PIN`, then the library assumes that software does not need to control the antenna switch.
+
+### RXTX Polarity
+
+If an external switch is used, you also must specify the polarity. Some modules want *RXTX* to be high for transmit, low for receive; Others want it to be low for transmit, high for receive. The Murata module, for example, requires that *RXTX* be *high* for receive, *low* for transmit.
+
+The configuration entry `lmic_pinmap::rxtx_rx_active` should be set to the state to be written to the *RXTX* pin to make the receiver active. The opposite state is written to make the transmitter active. If `lmic_pinmap::rxtx` is `LMIC_UNUSED_PIN`, then the value of `lmic_pinmap::rxtx_rx_active` is ignored.
 
 ### Pin mapping
 
@@ -417,6 +450,7 @@ If you don't have the board documentation, you need to provide your own `lmic_pi
 is used in the sketch file.
 
 For example, this could look like this:
+
 ```c++
   lmic_pinmap lmic_pins = {
     .nss = 6,
@@ -429,6 +463,7 @@ For example, this could look like this:
     .spi_freq = 0,
   };
 ```
+
 The names refer to the pins on the transceiver side, the numbers refer
 to the Arduino pin numbers (to use the analog pins, use constants like
 `A0`). For the DIO pins, the three numbers refer to DIO0, DIO1 and DIO2
@@ -441,6 +476,7 @@ The name of this struct must always be `lmic_pins`, which is a special name
 recognized by the library.
 
 #### Adafruit Feather M0 LoRa
+
 See [Feather M0 LoRa](https://www.adafruit.com/product/3178).
 This board uses the following pin mapping, as shown in the various "...-feather"
 sketches.
@@ -461,7 +497,9 @@ const lmic_pinmap lmic_pins = {
 ```
 
 #### LoRa Nexus by Ideetron
+
 This board uses the following pin mapping:
+
 ```c++
   const lmic_pinmap lmic_pins = {
       .nss = 10,
@@ -472,6 +510,7 @@ This board uses the following pin mapping:
 ```
 
 #### MCCI Catena 4450/4460
+
 See [MCCI Catena 4450](https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4450-lorawan-iot-device) and [MCCI Catena 4460](https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4460-sensor-wing-w-bme680).
 
 These modules are based on the [Feather M0 LoRa](https://www.adafruit.com/product/3178). Since they include an extra Feather wing for the sensors, the Feather wing includes the trace connecting DIO1 to Arduino D6. No user wiring is needed on the Feather M0.
@@ -485,11 +524,11 @@ const lmic_pinmap lmic_pins = {
 };
 ```
 
-
 #### MCCI Catena 4551
 
 See [MCCI Catena 4551](https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4551-integrated-lorawan-node).
-This board uses a Murata LoRaWAN module and has the following pin mapping:
+This board uses a Murata LoRa module and has the following pin mapping:
+
 ```c++
 const lmic_pinmap lmic_pins = {
     .nss = 7,
@@ -540,7 +579,7 @@ This library currently provides several examples:
 
 ## Timing
 
-Unfortunately, the SX127x tranceivers do not support accurate
+Unfortunately, the SX127x transceivers do not support accurate
 timekeeping themselves (there is a sequencer that is *almost* sufficient
 for timing the RX1 and RX2 downlink windows, but that is only available
 in FSK mode, not in LoRa mode). This means that the microcontroller is
@@ -550,7 +589,7 @@ receive windows at a fixed time after the end of transmission.
 
 This timing uses the Arduino `micros()` timer, which has a granularity
 of 4μs and is based on the primary microcontroller clock.  For timing
-events, the tranceiver uses its DIOx pins as interrupt outputs. In the
+events, the transceiver uses its DIOx pins as interrupt outputs. In the
 current implementation, these pins are handled by an interrupt handler,
 but only to set a flag - actual processing is done once every LMIC loop,
 resulting in a bit inaccuracy in the timestamping. Also, running
@@ -563,10 +602,10 @@ receiver, a preamble is first transmitted. Using LoRaWAN, this preamble
 consists of 8 symbols, of which the receiver needs to see 4 symbols to
 lock on. The current implementation tries to enable the receiver for 5
 symbol times at 1.5 symbol after the start of the receive window,
-meaning that a inacurracy of plus or minus 2.5 symbol times should be
+meaning that a inaccuracy of plus or minus 2.5 symbol times should be
 acceptable.
 
-At the fastest LoRa setting supported by the tranceiver (SF5BW500) a
+At the fastest LoRa setting supported by the transceiver (SF5BW500) a
 single preamble symbol takes 64μs, so the receive window timing should
 be accurate within 160μs (for LoRaWAN this is SF7BW250, needing accuracy
 within 1280μs). This is certainly within a crystal's accuracy, but using
@@ -616,23 +655,23 @@ experiments.
 
 ## Downlink datarate
 
-Note that the datarate used for downlink packets in the RX2 window
-defaults to SF12BW125 according to the specification, but some networks
-use different values (iot.semtech.com and The Things Network both use
-SF9BW). When using personalized activate (ABP), it is your
+Note that the datarate used for downlink packets in the RX2 window varies by region. Consult your network's manual for any divergences from the LoRaWAN Regional Parameters. This library assumes that the network follows the regional default.
+
+Some networks
+use different values than the specification. For example, in Europe, the specification default is DR0 (SF12, 125 kHz bandwidth). However, iot.semtech.com and The Things Network both used SF9 / 125 kHz or DR3). When using personalized activate (ABP), it is your
 responsibility to set the right settings, e.g. by adding this to your
 sketch (after calling `LMIC_setSession`). `ttn-abp.ino` already does
 this.
 
-     LMIC.dn2Dr = DR_SF9;
+```c++
+LMIC.dn2Dr = DR_SF9;
+```
 
-When using OTAA, the network communicates the RX2 settings in the
-join accept message, but the LMIC library does not currently process
-these settings. Until that is solved (see issue [#20](https://github.com/matthijskooijman/arduino-lmic/issues/20)), you should
-manually set the RX2 rate, *after* joining (see the handling of
-`EV_JOINED` in the `ttn-otaa.ino` for an example.
+When using OTAA, the network communicates the RX2 settings in the join accept message. This version of the LMIC library captures those settings. Therefore, you should not change the RX2 rate after joining.
 
 ## Release History
+
+- V2.1.5 fixes issue [#56] (a documentation bug). Documentation was quickly reviewed and other issues were corrected. The OTAA examples were also updated slightly.
 
 - V2.1.4 fixes issues [#47](https://github.com/mcci-catena/arduino-lmic/issues/47) and [#50](https://github.com/mcci-catena/arduino-lmic/issues/50) in the radio driver for the SX1276 (both related to handling of output power control bits).
 
@@ -645,6 +684,14 @@ manually set the RX2 rate, *after* joining (see the handling of
 - V2.1.0 adds support for the Murata LoRaWAN module.
 
 - V2.0.2 adds support for the extended bandplans.
+
+## Trademark Acknowledgements
+
+LoRa is a registered trademark of the LoRa Alliance. LoRaWAN is a trademark of the LoRa Alliance.
+
+MCCI and MCCI Catena are registered trademarks of MCCI Corporation.
+
+All other trademarks are the properties of their respective owners.
 
 ## License
 
