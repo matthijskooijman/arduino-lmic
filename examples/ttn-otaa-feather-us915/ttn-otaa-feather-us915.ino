@@ -117,11 +117,10 @@ void onEvent (ev_t ev) {
                       Serial.print(nwkKey[i], HEX);
               }
               Serial.println("");
-
-              LMIC_setSeqnoUp(140);
             }
             // Disable link check validation (automatically enabled
-            // during join, but not supported by TTN at this time).
+            // during join, but because slow data rates change max TX
+	    // size, we don't use it in this example.
             LMIC_setLinkCheckMode(0);
             break;
         case EV_RFU1:
