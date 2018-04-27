@@ -1,0 +1,28 @@
+# Travis script for test-building this library.
+language: c
+sudo: false
+
+before_install:
+  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
+  - sleep 3
+  - export DISPLAY=:1.0
+  - wget http://downloads.arduino.cc/arduino-1.8.5-linux64.tar.xz
+  - tar xf arduino-1.8.5-linux64.tar.xz
+  - mv arduino-1.8.5 $HOME/arduino_ide
+  - ln -s $PWD $HOME/arduino_ide/libraries/Test_Library
+  - export PATH="$HOME/arduino_ide:$PATH"
+ - arduino --pref "boardsmanager.additional.urls=https://github.com/mcci-catena/arduino-boards/raw/master/BoardManagerFiles/package_mcci_index.json" --save-prefs
+
+install:
+ - arduino --install-boards mcci:samd
+ - arduino --install-boards mcci:stm32
+
+script:
+ - arduino --verify --board mcci:samd:Catena4450 $PWD/examples/raw-feather/raw-feather.ino
+ - arduino --verify --board mcci:stm32:Catena4551 $PWD/examples/raw-feather/raw-feather.ino
+
+# notifications:
+# email:
+#  on_success: change
+#  on_failure: change
+
