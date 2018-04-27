@@ -20,6 +20,6 @@ install:
 
 script:
  - arduino --verify --board mcci:samd:mcci_catena_4450 $PWD/examples/raw-feather/raw-feather.ino
- - printf '#define COMPILE_REGRESSION_TEST 1\n#define CFG_SX1276_RADIO 1\n#define CFG_us915 1\n' > $PWD/project_config/lmic_project_config.h && arduino --verify --board mcci:samd:mcci_catena_4450 $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+ - printf '#define COMPILE_REGRESSION_TEST 1\n#define CFG_sx1276_radio 1\n#define CFG_us915 1\n' > $PWD/project_config/lmic_project_config.h && arduino --verify --board mcci:samd:mcci_catena_4450 $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
 
 # - arduino --pref "build.verbose=true" --verify --board mcci:stm32:Catena:pnum=CATENA_4551 $PWD/examples/raw-feather/raw-feather.ino
