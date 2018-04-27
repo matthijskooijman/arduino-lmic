@@ -20,4 +20,4 @@ install:
 
 script:
  - arduino --verify --board mcci:samd:mcci_catena_4450 $PWD/examples/raw-feather/raw-feather.ino
- - arduino --verify --board mcci:stm32:Catena:pnum=CATENA_4551 $PWD/examples/raw-feather/raw-feather.ino
+ - arduino --pref "build.verbose=true" --verify --board mcci:stm32:Catena:pnum=CATENA_4551 $PWD/examples/raw-feather/raw-feather.ino
