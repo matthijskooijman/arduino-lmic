@@ -1,5 +1,6 @@
 # Travis script for test-building this library.
 language: c
+dist: trusty
 sudo: false
 
 before_install:
@@ -11,7 +12,7 @@ before_install:
   - mv arduino-1.8.5 $HOME/arduino_ide
   - ln -s $PWD $HOME/arduino_ide/libraries/Test_Library
   - export PATH="$HOME/arduino_ide:$PATH"
- - arduino --pref "boardsmanager.additional.urls=https://github.com/mcci-catena/arduino-boards/raw/master/BoardManagerFiles/package_mcci_index.json" --save-prefs
+  - arduino --pref "boardsmanager.additional.urls=https://github.com/mcci-catena/arduino-boards/raw/master/BoardManagerFiles/package_mcci_index.json" --save-prefs
 
 install:
  - arduino --install-boards mcci:samd
@@ -20,9 +21,3 @@ install:
 script:
  - arduino --verify --board mcci:samd:Catena4450 $PWD/examples/raw-feather/raw-feather.ino
  - arduino --verify --board mcci:stm32:Catena4551 $PWD/examples/raw-feather/raw-feather.ino
-
-# notifications:
-# email:
-#  on_success: change
-#  on_failure: change
-
