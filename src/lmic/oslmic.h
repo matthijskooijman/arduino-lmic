@@ -17,7 +17,13 @@
 // These settings can be adapted to the underlying system.
 // You should not, however, change the lmic.[hc]
 
-#include "config.h"
+// Allows the user to provide custom config.h
+#ifdef LMIC_CONFIG_H
+  #include LMIC_CONFIG_H
+#else
+  #include "config.h"
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
 
