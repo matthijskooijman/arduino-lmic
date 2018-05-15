@@ -73,6 +73,8 @@ typedef   struct rxsched_t rxsched_t;
 typedef   struct bcninfo_t bcninfo_t;
 typedef        const u1_t* xref2cu1_t;
 typedef              u1_t* xref2u1_t;
+typedef              s4_t  ostime_t;
+
 #define TYPEDEF_xref2rps_t     typedef         rps_t* xref2rps_t
 #define TYPEDEF_xref2rxsched_t typedef     rxsched_t* xref2rxsched_t
 #define TYPEDEF_xref2chnldef_t typedef     chnldef_t* xref2chnldef_t
@@ -96,6 +98,15 @@ u1_t radio_rand1 (void);
 #define DEFINE_LMIC  struct lmic_t LMIC
 #define DECLARE_LMIC extern struct lmic_t LMIC
 
+typedef struct oslmic_radio_rssi_s oslmic_radio_rssi_t;
+
+struct oslmic_radio_rssi_s {
+        s2_t    min_rssi;
+        s2_t    max_rssi;
+        s2_t    mean_rssi;
+        u2_t    n_rssi;
+};
+
 int radio_init (void);
 void radio_irq_handler (u1_t dio);
 void os_init (void);
@@ -103,6 +114,7 @@ int os_init_ex (const void *pPinMap);
 void os_runloop (void);
 void os_runloop_once (void);
 u1_t radio_rssi (void);
+void radio_monitor_rssi(ostime_t n, oslmic_radio_rssi_t *pRssi);
 
 //================================================================================
 
@@ -119,8 +131,6 @@ u1_t radio_rssi (void);
 #elif OSTICKS_PER_SEC < 10000 || OSTICKS_PER_SEC > 64516
 #error Illegal OSTICKS_PER_SEC - must be in range [10000:64516]. One tick must be 15.5us .. 100us long.
 #endif
-
-typedef s4_t  ostime_t;
 
 #if !HAS_ostick_conv
 #define us2osticks(us)   ((ostime_t)( ((int64_t)(us) * OSTICKS_PER_SEC) / 1000000))

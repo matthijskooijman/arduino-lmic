@@ -140,6 +140,9 @@
 # error "LMICbandplan_nextJoinTime() not defined by bandplan"
 #endif
 
+#if !defined(LMICbandplan_init)
+# error "LMICbandplan_init() not defined by bandplan"
+#endif
 //
 // Things common to lmic.c code
 //

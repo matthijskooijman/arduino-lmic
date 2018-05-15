@@ -72,6 +72,16 @@ Revision history:
 #define LMIC_REGION_kr921    8
 #define LMIC_REGION_in866    9
 
+// country codes for comparison. These values are chosen from the 2-letter domain suffixes (which
+// I think are ISO standardized)
+#define LMIC_COUNTRY_CODE_C(c1, c2)     ((c1) * 256 + (c2))
+
+// this special code means "no country code defined"
+#define LMIC_COUNTRY_CODE_NONE  0
+
+// specific countries. Only the ones that are known in the code are defined.
+#define LMIC_COUNTRY_CODE_JP    LMIC_COUNTRY_CODE_C('j', 'p')
+
 // include the file that the user is really supposed to edit. But for really strange
 // ports, this can be suppressed
 #ifndef ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS

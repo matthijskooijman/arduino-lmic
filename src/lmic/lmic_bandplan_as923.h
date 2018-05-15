@@ -52,6 +52,22 @@ LMICas923_isValidBeacon1(const uint8_t *d) {
 #undef LMICbandplan_isValidBeacon1
 #define LMICbandplan_isValidBeacon1(pFrame) LMICas923_isValidBeacon1(pFrame)
 
+// override default for LMICbandplan_resetDefaultChannels
+void
+LMICas923_resetDefaultChannels(void);
+
+#undef LMICbandplan_resetDefaultChannels
+#define LMICbandplan_resetDefaultChannels()     \
+        LMICas923_resetDefaultChannels()
+
+// override default for LMICbandplan_init
+void LMICas923_init(void);
+
+#undef LMICbandplan_init
+#define LMICbandplan_init()     \
+        LMICas923_init()
+
+
 // override default for LMICbandplan_isFSK()
 #undef LMICbandplan_isFSK
 #define LMICbandplan_isFSK()    (/* TX datarate */LMIC.rxsyms == AS923_DR_FSK)

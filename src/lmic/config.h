@@ -35,6 +35,15 @@
 # error The selected CFG_... region is not supported yet.
 #endif
 
+#ifndef LMIC_COUNTRY_CODE
+# define LMIC_COUNTRY_CODE      LMIC_COUNTRY_CODE_NONE
+#endif
+
+// if the country code is japan, then the region must be AS923
+#if LMIC_COUNTRY_CODE == LMIC_COUNTRY_CODE_JP && CFG_region != LMIC_REGION_as923
+# error "If country code is JP, then region must be AS923"
+#endif
+
 #if !(CFG_LMIC_EU_like || CFG_LMIC_US_like)
 # error "Internal error: Neither EU-like nor US-like!"
 #endif

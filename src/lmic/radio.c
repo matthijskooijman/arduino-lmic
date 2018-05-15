@@ -195,7 +195,17 @@
 #define RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2 0x74
 #endif
 
+//-----------------------------------------
+// Parameters for RSSI monitoring
+#define SX127X_FREQ_LF_MAX      525000000       // per datasheet 6.3
+ 
+// per datasheet 5.5.3:
+#define SX127X_RSSI_ADJUST_LF   -164            // add to rssi value to get dB (LF)
+#define SX127X_RSSI_ADJUST_HF   -157            // add to rssi value to get dB (HF)
 
+// per datasheet 2.5.2 (but note that we ought to ask Semtech to confirm, because
+// datasheet is unclear).
+#define SX127X_RX_POWER_UP      us2osticks(500) // delay this long to let the receiver power up.
 
 // ----------------------------------------
 // Constants for radio registers
@@ -549,7 +559,27 @@ static void txlora () {
 
 // start transmitter (buf=LMIC.frame, len=LMIC.dataLen)
 static void starttx () {
-    ASSERT( (readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP );
+    u1_t const rOpMode = readReg(RegOpMode);
+
+    // originally, this code ASSERT()ed, but asserts are both bad and
+    // blunt instruments. If we see that we're not in sleep mode, 
+    // force sleep (because we might have to switch modes)
+    if ((rOpMode & OPMODE_MASK) != OPMODE_SLEEP) {
+        opmode(OPMODE_SLEEP);
+        hal_waitUntil(os_getTime() + ms2osticks(1));
+    }
+
+    if (LMIC.lbt_ticks > 0) {
+        oslmic_radio_rssi_t rssi;
+        radio_monitor_rssi(LMIC.lbt_ticks, &rssi);
+
+        if (rssi.max_rssi >= LMIC.lbt_dbmax) {
+        // complete the request by scheduling the job
+        os_setCallback(&LMIC.osjob, LMIC.osjob.func);
+        return;
+        }
+    }
+
     if(getSf(LMIC.rps) == FSK) { // FSK modem
         txfsk();
     } else { // LoRa modem
@@ -789,6 +819,70 @@ u1_t radio_rssi () {
     u1_t r = readReg(LORARegRssiValue);
     hal_enableIRQs();
     return r;
+}
+
+// monitor rssi for specified number of ostime_t ticks, and return statistics
+// This puts the radio into RX continuous mode, waits long enough for the
+// oscillators to start and the PLL to lock, and then measures for the specified
+// period of time.  The radio is then returned to idle.
+//
+// RSSI returned is expressed in units of dB, and is offset according to the
+// current radio setting per section 5.5.5 of Semtech 1276 datasheet.
+void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
+    uint8_t rssiMax, rssiMin;
+    uint16_t rssiSum;
+    uint16_t rssiN;
+
+    int rssiAdjust;
+    ostime_t tBegin;
+    int notDone;
+
+    rxlora(RXMODE_SCAN);
+
+    // while we're waiting for the PLLs to spin up, determine which
+    // band we're in and choose the base RSSI.
+    if (LMIC.freq > SX127X_FREQ_LF_MAX) {
+            rssiAdjust = SX127X_RSSI_ADJUST_HF;
+    } else {
+            rssiAdjust = SX127X_RSSI_ADJUST_LF;
+    }
+    rssiAdjust += hal_getRssiCal();
+
+    // zero the results
+    rssiMax = 255;
+    rssiMin = 0;
+    rssiSum = 0;
+    rssiN = 0;
+
+    // wait for PLLs
+    hal_waitUntil(os_getTime() + SX127X_RX_POWER_UP);
+
+    // scan for the desired time.
+    tBegin = os_getTime();
+    rssiMax = 0;
+    do {
+        ostime_t now;
+
+        u1_t rssiNow = readReg(LORARegRssiValue);
+
+        if (rssiMax < rssiNow)
+                rssiMax = rssiNow;
+        if (rssiNow < rssiMin)
+                rssiMin = rssiNow;
+        rssiSum += rssiNow;
+        ++rssiN;
+        now = os_getTime();
+        notDone = now - (tBegin + nTicks) < 0;
+    } while (notDone);
+
+    // put radio back to sleep
+    opmode(OPMODE_SLEEP);
+
+    // compute the results
+    pRssi->max_rssi = (s2_t) (rssiMax + rssiAdjust);
+    pRssi->min_rssi = (s2_t) (rssiMin + rssiAdjust);
+    pRssi->mean_rssi = (s2_t) (rssiAdjust + ((rssiSum + (rssiN >> 1)) / rssiN));
+    pRssi->n_rssi = rssiN;
 }
 
 static CONST_TABLE(u2_t, LORA_RXDONE_FIXUP)[] = {

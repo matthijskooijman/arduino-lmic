@@ -18,6 +18,9 @@ struct lmic_pinmap {
     u1_t rst;
     u1_t dio[NUM_DIO];
     u1_t rxtx_rx_active;
+    s1_t rssi_cal;              // byte 7: cal in dB -- added to RSSI
+                                //   measured prior to decision.
+                                //   Must include noise guardband!
     u4_t spi_freq;
 };
 
