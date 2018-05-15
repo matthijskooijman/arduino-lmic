@@ -557,6 +557,8 @@ static void txlora () {
 #endif
 }
 
+static oslmic_radio_rssi_t xRssi;
+
 // start transmitter (buf=LMIC.frame, len=LMIC.dataLen)
 static void starttx () {
     u1_t const rOpMode = readReg(RegOpMode);
@@ -570,13 +572,12 @@ static void starttx () {
     }
 
     if (LMIC.lbt_ticks > 0) {
-        oslmic_radio_rssi_t rssi;
-        radio_monitor_rssi(LMIC.lbt_ticks, &rssi);
+        radio_monitor_rssi(LMIC.lbt_ticks, &xRssi);
 
-        if (rssi.max_rssi >= LMIC.lbt_dbmax) {
-        // complete the request by scheduling the job
-        os_setCallback(&LMIC.osjob, LMIC.osjob.func);
-        return;
+        if (xRssi.max_rssi >= LMIC.lbt_dbmax) {
+            // complete the request by scheduling the job
+            os_setCallback(&LMIC.osjob, LMIC.osjob.func);
+            return;
         }
     }
 
