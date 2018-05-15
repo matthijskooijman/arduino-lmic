@@ -25,6 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if LMIC_X_DEBUG_LEVEL > 0
+#include <Arduino.h>
+#endif
+
 #define LMIC_DR_LEGACY 0
 
 #include "lmic.h"
@@ -557,8 +561,6 @@ static void txlora () {
 #endif
 }
 
-static oslmic_radio_rssi_t xRssi;
-
 // start transmitter (buf=LMIC.frame, len=LMIC.dataLen)
 static void starttx () {
     u1_t const rOpMode = readReg(RegOpMode);
@@ -572,9 +574,13 @@ static void starttx () {
     }
 
     if (LMIC.lbt_ticks > 0) {
-        radio_monitor_rssi(LMIC.lbt_ticks, &xRssi);
+        oslmic_radio_rssi_t rssi;
+        radio_monitor_rssi(LMIC.lbt_ticks, &rssi);
+#if LMIC_X_DEBUG_LEVEL > 0
+	LMIC_X_DEBUG_PRINTF("rssi max:min=%d:%d %d times in %d\n", rssi.max_rssi, rssi.min_rssi, rssi.n_rssi, LMIC.lbt_ticks);
+#endif
 
-        if (xRssi.max_rssi >= LMIC.lbt_dbmax) {
+        if (rssi.max_rssi >= LMIC.lbt_dbmax) {
             // complete the request by scheduling the job
             os_setCallback(&LMIC.osjob, LMIC.osjob.func);
             return;
@@ -861,6 +867,9 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
     // scan for the desired time.
     tBegin = os_getTime();
     rssiMax = 0;
+
+    // XXX duty hack. any other solutions ?
+    int sentry = 0; //xxx
     do {
         ostime_t now;
 
@@ -872,8 +881,15 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
                 rssiMin = rssiNow;
         rssiSum += rssiNow;
         ++rssiN;
+        hal_enableIRQs(); //xxx
         now = os_getTime();
+        hal_disableIRQs(); //xxx
         notDone = now - (tBegin + nTicks) < 0;
+#if LMIC_X_DEBUG_LEVEL > 0
+	LMIC_X_DEBUG_PRINTF("notDone:%d\n", notDone); //xxx
+#endif
+        if (sentry++ > 20) //xxx
+            break; //xxx
     } while (notDone);
 
     // put radio back to sleep
