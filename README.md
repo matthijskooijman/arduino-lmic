@@ -29,7 +29,7 @@ For more info, see https://www.arduino.cc/en/Guide/Libraries
 Features
 --------
 The LMIC library provides a fairly complete LoRaWAN Class A and Class B
-implementation, supporting the EU-868 and US-915 bands. Only a limited
+implementation, supporting the EU-868, US-915 and AU-915 bands. Only a limited
 number of features was tested using this port on Arduino hardware, so be
 careful when using any of the untested features.
 
@@ -235,6 +235,24 @@ This board uses the following pin mapping:
         .rst = LMIC_UNUSED_PIN, // hardwired to AtMega RESET
         .dio = {4, 5, 7},
     };
+
+#### Adfruit Feather 32u4 RFM95W loRa Radio 900MHz
+This board uses the following pin mapping:
+
+    const lmic_pinmap lmic_pins = {
+    	.nss = 8,
+    	.rxtx = LMIC_UNUSED_PIN,
+    	.rst = 4,
+    	.dio = {7, 6, LMIC_UNUSED_PIN},
+	};
+
+**PIN6** and **IO1** from the Adafruit boadr need to be connected before uploading the code.
+
+A suitable length [antenna](https://learn.adafruit.com/adafruit-feather-32u4-radio-with-lora-radio-module/antenna-options) is also required to ensure good connection qualities.
+
+- 433 MHz - 6.5 inches, or 16.5 cm
+- 868 MHz - 3.25 inches or 8.2 cm
+- 915 MHz - 3 inches or 7.8 cm
 
 Examples
 --------

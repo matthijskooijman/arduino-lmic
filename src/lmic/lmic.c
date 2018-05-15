@@ -758,7 +758,11 @@ static void initDefaultChannels (void) {
 
 static u4_t convFreq (xref2u1_t ptr) {
     u4_t freq = (os_rlsbf4(ptr-1) >> 8) * 100;
+    #if defined(CFG_au915)
+    if( freq < AU915_FREQ_MIN || freq > AU915_FREQ_MAX )
+    #else
     if( freq < US915_FREQ_MIN || freq > US915_FREQ_MAX )
+    #endif
         freq = 0;
     return freq;
 }
@@ -821,6 +825,29 @@ static u1_t mapChannels (u1_t chpage, u2_t chmap) {
     return 1;
 }
 
+#if defined(CFG_au915)
+static void updateTx (ostime_t txbeg) {
+    u1_t chnl = LMIC.txChnl;
+    if( chnl < 64 ) {
+        LMIC.freq = AU915_125kHz_UPFBASE + (chnl % 8) * AU915_125kHz_UPFSTEP;
+        LMIC.txpow = 30;
+        return;
+    }
+    LMIC.txpow = 26;
+    if( chnl < 64+8 ) {
+        LMIC.freq = AU915_500kHz_UPFBASE;
+    } else {
+        ASSERT(chnl < 64+8+MAX_XCHANNELS);
+        LMIC.freq = LMIC.xchFreq[chnl-72];
+    }
+
+    // Update global duty cycle stats
+    if( LMIC.globalDutyRate != 0 ) {
+        ostime_t airtime = calcAirTime(LMIC.rps, LMIC.dataLen);
+        LMIC.globalDutyAvail = txbeg + (airtime<<LMIC.globalDutyRate);
+    }
+}
+#else
 static void updateTx (ostime_t txbeg) {
     u1_t chnl = LMIC.txChnl;
     if( chnl < 64 ) {
@@ -842,6 +869,7 @@ static void updateTx (ostime_t txbeg) {
         LMIC.globalDutyAvail = txbeg + (airtime<<LMIC.globalDutyRate);
     }
 }
+#endif
 
 // US does not have duty cycling - return now as earliest TX time
 #define nextTx(now) (_nextTx(),(now))
@@ -871,11 +899,25 @@ static void _nextTx (void) {
 #if !defined(DISABLE_BEACONS)
 static void setBcnRxParams (void) {
     LMIC.dataLen = 0;
+    #if defined(CFG_au915)
+    LMIC.freq = AU915_500kHz_DNFBASE + LMIC.bcnChnl * AU915_500kHz_DNFSTEP;
+    #else
     LMIC.freq = US915_500kHz_DNFBASE + LMIC.bcnChnl * US915_500kHz_DNFSTEP;
+    #endif
     LMIC.rps  = setIh(setNocrc(dndr2rps((dr_t)DR_BCN),1),LEN_BCN);
 }
 #endif // !DISABLE_BEACONS
 
+#if defined(CFG_au915)
+#define setRx1Params() {                                                \
+    LMIC.freq = AU915_500kHz_DNFBASE + (LMIC.txChnl & 0x7) * AU915_500kHz_DNFSTEP; \
+    if( /* TX datarate */LMIC.dndr < DR_SF8C )                          \
+        LMIC.dndr += DR_SF10CR - DR_SF10;                               \
+    else if( LMIC.dndr == DR_SF8C )                                     \
+        LMIC.dndr = DR_SF7CR;                                           \
+    LMIC.rps = dndr2rps(LMIC.dndr);                                     \
+}
+#else
 #define setRx1Params() {                                                \
     LMIC.freq = US915_500kHz_DNFBASE + (LMIC.txChnl & 0x7) * US915_500kHz_DNFSTEP; \
     if( /* TX datarate */LMIC.dndr < DR_SF8C )                          \
@@ -884,6 +926,7 @@ static void setBcnRxParams (void) {
         LMIC.dndr = DR_SF7CR;                                           \
     LMIC.rps = dndr2rps(LMIC.dndr);                                     \
 }
+#endif
 
 #if !defined(DISABLE_JOIN)
 static void initJoinLoop (void) {

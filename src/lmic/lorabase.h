@@ -114,6 +114,30 @@ enum _dr_us915_t { DR_SF10=0, DR_SF9, DR_SF8, DR_SF7, DR_SF8C, DR_NONE,
 enum { DR_DFLTMIN = DR_SF8C };
 enum { DR_PAGE = DR_PAGE_US915 };
 
+#if defined(CFG_au915)
+
+// Default frequency plan for AU 915MHz
+enum { AU915_125kHz_UPFBASE = 916800000,
+       AU915_125kHz_UPFSTEP =    200000,
+       AU915_500kHz_UPFBASE = 917500000,
+     //AU915_500kHz_UPFSTEP =         0,
+       AU915_500kHz_DNFBASE = 923300000,
+       AU915_500kHz_DNFSTEP =    600000
+};
+enum { AU915_FREQ_MIN = 915000000,
+       AU915_FREQ_MAX = 928000000 };
+
+enum { CHNL_PING         = 0 }; // used only for default init of state (follows beacon - rotating)
+enum { FREQ_PING         = AU915_125kHz_UPFBASE + CHNL_PING*AU915_125kHz_UPFSTEP };  // default ping freq
+enum { DR_PING           = DR_SF10CR };       // default ping DR
+enum { CHNL_DNW2         = 0 };
+enum { FREQ_DNW2         = AU915_500kHz_DNFBASE + CHNL_DNW2*AU915_500kHz_DNFSTEP };
+enum { DR_DNW2           = DR_SF12CR };
+enum { CHNL_BCN          = 0 }; // used only for default init of state (rotating beacon scheme)
+enum { FREQ_BCN          = AU915_500kHz_UPFBASE };
+enum { DR_BCN            = DR_SF8C };
+enum { AIRTIME_BCN       = 72192 };  // micros
+#else
 // Default frequency plan for US 915MHz
 enum { US915_125kHz_UPFBASE = 902300000,
        US915_125kHz_UPFSTEP =    200000,
@@ -134,6 +158,7 @@ enum { DR_DNW2           = DR_SF12CR };
 enum { CHNL_BCN          = 0 }; // used only for default init of state (rotating beacon scheme)
 enum { DR_BCN            = DR_SF10CR };
 enum { AIRTIME_BCN       = 72192 };  // micros
+#endif
 
 enum {
     // Beacon frame format US SF10
