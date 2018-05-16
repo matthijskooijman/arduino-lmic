@@ -74,11 +74,13 @@
 #  ifdef LMIC_DEBUG_PRINTF_FN
      extern void LMIC_DEBUG_PRINTF_FN(const char *f, ...);
 #    define LMIC_X_DEBUG_PRINTF(f, ...) LMIC_DEBUG_PRINTF_FN(f, ## __VA_ARGS__)
+#    define LMIC_X_DEBUG_PRINTS(s) Serial.println(F(s))
 #  else
 #    error "LMIC_DEBUG_PRINTF_FN must be defined."
 #  endif
 #else
 #  define LMIC_X_DEBUG_PRINTF(f, ...)  do {;} while(0)
+#  define LMIC_X_DEBUG_PRINTS(s) do {;} while(0)
 #endif
 
 #ifdef __cplusplus
