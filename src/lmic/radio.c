@@ -885,9 +885,6 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
         now = os_getTime();
         hal_disableIRQs(); //xxx
         notDone = now - (tBegin + nTicks) < 0;
-#if LMIC_X_DEBUG_LEVEL > 0
-	LMIC_X_DEBUG_PRINTF("notDone:%d\n", notDone); //xxx
-#endif
         if (sentry++ > 20) //xxx
             break; //xxx
     } while (notDone);
