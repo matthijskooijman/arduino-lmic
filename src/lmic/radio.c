@@ -868,9 +868,17 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
     tBegin = os_getTime();
     rssiMax = 0;
 
-    // XXX duty hack. any other solutions ?
-    int sentry = 0; //xxx
+    /* XXX
+     * In this loop, micros() in os_getTime() returns a past time sometimes.
+     * At least, it happens on Dragino LoRa Mini.
+     * the return value of micros() looks not to be stable in IRQ disabled.
+     * Once it happens, this loop never exit infinitely.
+     * In order to prevent it, it enables IRQ before calling os_getTime(),
+     * disable IRQ again after that.  in addition to, a sentry checks the
+     * number of loop for sure.
+     */
     do {
+	int sentry = 0;
         ostime_t now;
 
         u1_t rssiNow = readReg(LORARegRssiValue);
@@ -881,12 +889,12 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
                 rssiMin = rssiNow;
         rssiSum += rssiNow;
         ++rssiN;
-        hal_enableIRQs(); //xxx
+        hal_enableIRQs();
         now = os_getTime();
-        hal_disableIRQs(); //xxx
+        hal_disableIRQs();
         notDone = now - (tBegin + nTicks) < 0;
-        if (sentry++ > 20) //xxx
-            break; //xxx
+        if (sentry++ > 20)
+            break;
     } while (notDone);
 
     // put radio back to sleep
