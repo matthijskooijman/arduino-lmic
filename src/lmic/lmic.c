@@ -1130,7 +1130,6 @@ static bit_t processJoinAccept (void) {
 
 
 static void processRx2Jacc (xref2osjob_t osjob) {
-    LMIC_X_DEBUG_PRINTF("%lu: Jacc Rx2\n", os_getTime());
     if( LMIC.dataLen == 0 ) {
         initTxrxFlags(__func__, 0);  // nothing in 1st/2nd DN slot
     }
@@ -1145,7 +1144,6 @@ static void setupRx2Jacc (xref2osjob_t osjob) {
 
 
 static void processRx1Jacc (xref2osjob_t osjob) {
-    LMIC_X_DEBUG_PRINTF("%lu: Jacc Rx1\n", os_getTime());
     if( LMIC.dataLen == 0 || !processJoinAccept() )
         schedRx12(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc), LMIC.dn2Dr);
 }
@@ -1816,6 +1814,7 @@ static void engineUpdate (void) {
                        e_.eui    = MAIN::CDEV->getEui(),
                        e_.info   = osticks2ms(txbeg-now),
                        e_.info2  = LMIC.seqnoUp-1));
+    LMIC_X_DEBUG_PRINTF("%lu: next engine update in %lu\n", now, txbeg-TX_RAMPUP);
     os_setTimedCallback(&LMIC.osjob, txbeg-TX_RAMPUP, FUNC_ADDR(runEngineUpdate));
 }
 
