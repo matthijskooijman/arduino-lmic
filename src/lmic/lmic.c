@@ -971,6 +971,7 @@ static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
     // (again note that hsym is half a sumbol time, so no /2 needed)
     LMIC.rxtime = LMIC.txend + delay + PAMBL_SYMS * hsym - LMIC.rxsyms * hsym;
 
+    LMIC_X_DEBUG_PRINTF("%lu: sched Rx12 %lu\n", os_getTime(), LMIC.rxtime - RX_RAMPUP);
     os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
 }
 
@@ -1129,6 +1130,7 @@ static bit_t processJoinAccept (void) {
 
 
 static void processRx2Jacc (xref2osjob_t osjob) {
+    LMIC_X_DEBUG_PRINTF("%lu: Jacc Rx2\n", os_getTime());
     if( LMIC.dataLen == 0 ) {
         initTxrxFlags(__func__, 0);  // nothing in 1st/2nd DN slot
     }
@@ -1143,6 +1145,7 @@ static void setupRx2Jacc (xref2osjob_t osjob) {
 
 
 static void processRx1Jacc (xref2osjob_t osjob) {
+    LMIC_X_DEBUG_PRINTF("%lu: Jacc Rx1\n", os_getTime());
     if( LMIC.dataLen == 0 || !processJoinAccept() )
         schedRx12(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc), LMIC.dn2Dr);
 }
