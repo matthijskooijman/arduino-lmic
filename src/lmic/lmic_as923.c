@@ -174,8 +174,7 @@ void LMICas923_initDefaultChannels(bit_t join) {
                 LMIC.channelDrMap[fu] = DR_RANGE_MAP(AS923_DR_SF12, AS923_DR_SF7B);
         }
 
-	// all channels face a 1% duty cycle.
-        LMIC.bands[BAND_CENTI].txcap = 100;   // 1%
+        LMIC.bands[BAND_CENTI].txcap = AS923_TX_CAP;
         LMIC.bands[BAND_CENTI].txpow = AS923_TX_EIRP_MAX_DBM;
         LMIC.bands[BAND_CENTI].lastchnl = os_getRndU1() % MAX_CHANNELS;
         LMIC.bands[BAND_CENTI].avail = os_getTime();
