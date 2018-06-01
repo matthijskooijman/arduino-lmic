@@ -263,9 +263,21 @@ void setup() {
   // handle multiple nodes; in that case we'd have a way to do
   // production test and qualification. However, using an RWC5020A
   // is a much better use of development time.
+
+  // set fDownlink true to use a downlink channel; false
+  // to use an uplink channel. Generally speaking, uplink
+  // is more interesting, because you can prove that gateways
+  // *should* be able to hear you.
   const static bool fDownlink = false;
+
+  // the downlink channel to be used.
   const static uint8_t kDownlinkChannel = 3;
+
+  // the uplink channel to be used.
   const static uint8_t kUplinkChannel = 8 + 3;
+
+  // this is automatically set to the proper bandwidth in kHz,
+  // based on the selected channel.
   uint32_t uBandwidth;
 
   if (! fDownlink)
