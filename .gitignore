@@ -36,6 +36,8 @@
 Release
 *.vcxproj
 *.vcxproj.filters
+*.vcxitems
+vs-readme.txt
 __vm
 .vs
 *.sln
