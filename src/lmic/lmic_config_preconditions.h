@@ -72,15 +72,19 @@ Revision history:
 #define LMIC_REGION_kr921    8
 #define LMIC_REGION_in866    9
 
-// country codes for comparison. These values are chosen from the 2-letter domain suffixes (which
-// I think are ISO standardized)
+// Some regions have country-specific overrides. For generality, we specify
+// country codes using the LMIC_COUNTY_CODE_C() macro These values are chosen
+// from the 2-letter domain suffixes standardized by ISO-3166-1 alpha2 (see
+// https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2). They are therefore
+// 16-bit constants. By convention, we use UPPER-CASE letters, thus
+// LMIC_COUNTRY_CODE('J', 'P'), not ('j', 'p').
 #define LMIC_COUNTRY_CODE_C(c1, c2)     ((c1) * 256 + (c2))
 
 // this special code means "no country code defined"
 #define LMIC_COUNTRY_CODE_NONE  0
 
-// specific countries. Only the ones that are known in the code are defined.
-#define LMIC_COUNTRY_CODE_JP    LMIC_COUNTRY_CODE_C('j', 'p')
+// specific countries. Only the ones that are needed by the code are defined.
+#define LMIC_COUNTRY_CODE_JP    LMIC_COUNTRY_CODE_C('J', 'P')
 
 // include the file that the user is really supposed to edit. But for really strange
 // ports, this can be suppressed
