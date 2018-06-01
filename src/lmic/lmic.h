@@ -210,7 +210,7 @@ struct lmic_t {
 
     // LBT info
     ostime_t    lbt_ticks;      // ticks to listen
-    s1_t        lbt_dbmax;      // max permissible dB on our channle (eg -80) 
+    s1_t        lbt_dbmax;      // max permissible dB on our channel (eg -80)
 
     u4_t        freq;
     s1_t        rssi;

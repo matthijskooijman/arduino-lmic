@@ -562,7 +562,7 @@ static void starttx () {
     u1_t const rOpMode = readReg(RegOpMode);
 
     // originally, this code ASSERT()ed, but asserts are both bad and
-    // blunt instruments. If we see that we're not in sleep mode, 
+    // blunt instruments. If we see that we're not in sleep mode,
     // force sleep (because we might have to switch modes)
     if ((rOpMode & OPMODE_MASK) != OPMODE_SLEEP) {
 #if LMIC_DEBUG_LEVEL > 0
@@ -575,7 +575,7 @@ static void starttx () {
     if (LMIC.lbt_ticks > 0) {
         oslmic_radio_rssi_t rssi;
 #if LMIC_DEBUG_LEVEL > 1
-        LMIC_DEBUG_PRINTF("%lu: scan RSSI for %u osticks\n", 
+        LMIC_DEBUG_PRINTF("%lu: scan RSSI for %u osticks\n",
             os_getTime(),
             LMIC.lbt_ticks
             );
