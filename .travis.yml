@@ -15,8 +15,8 @@ before_install:
   # keep args for these aligned for any common options. first is board name, second is region.
   - "function _samdopts { echo mcci:samd:${1:-mcci_catena_4450}:lorawan_region=${2:-us915} ; }"
   - "function _stm32l0opts { echo mcci:stm32:pnum=${1:-CATENA_4551}:opt=${3:-osstd}:xserial=${4:-generic}:usb=${5:-none}:upload_method=${6:-STLink} ; }"
-  - function _projcfg { printf '#define COMPILE_REGRESSION_TEST 1\n#define CFG_%s 1\n#define CFG_sx1276_radio 1\n' ${1:-us915} ${2:-sx1276} > $PWD/project_config/lmic_project_config.h  ; }
-  - 'function _expect_failure { if [ $? -eq 0 ]; then echo "Suceeded, but should have failed!" ; return 1 ; else echo "Failed, as expected"; return 0 ; fi ; }'
+  - function _projcfg { for i in "$@" ; do printf '#define %s 1\n' "$i" ; done  > $PWD/project_config/lmic_project_config.h ; }
+  - 'function _expect_failure { if [ $? -eq 0 ]; then echo "Suceeded, but should have failed!" ; echo project_config/lmic_project_config.h ; cat $PWD/project_config/lmic_project_config.h ; return 1 ; else echo "Failed, as expected"; return 0 ; fi ; }'
   - arduino --pref "boardsmanager.additional.urls=https://github.com/mcci-catena/arduino-boards/raw/master/BoardManagerFiles/package_mcci_index.json" --save-prefs
 
 install:
@@ -27,8 +27,13 @@ script:
  - "echo $(_stm32l0opts) $(_stm32l0opts '' projcfg)"
  - "echo $(_samdopts) $(_samdopts '' projcfg)"
  - arduino --verify --board $(_samdopts '' us915) $PWD/examples/raw-feather/raw-feather.ino
- - _projcfg us915 sx1276 && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
- - _projcfg us915 sx1272 && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
- - _projcfg us915 sx1234 && if arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; then echo "should have failed!" ; false ; else echo "error (as expected) - passed" ; fi
- - _projcfg us915 sx1234 && { arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; _expect_failure ; }
+#
+# some tests using the projcfg file that should pass
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1272_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+#
+# some tests that should fail.
+ - _projcfg CFG_us915 CFG_sx1272_radio && { arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; _expect_failure; }
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1272_radio CFG_sx1276_radio && { arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; _expect_failure; }
+# 
 # - arduino --pref "build.verbose=true" --verify --board $(_stm32l0opts) $PWD/examples/raw-feather/raw-feather.ino
