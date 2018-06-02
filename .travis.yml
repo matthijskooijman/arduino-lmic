@@ -12,6 +12,9 @@ before_install:
   - mv arduino-1.8.5 $HOME/arduino_ide
   - ln -s $PWD $HOME/arduino_ide/libraries/Test_Library
   - export PATH="$HOME/arduino_ide:$PATH"
+  # keep args for these aligned for any common options. first is board name, second is region.
+  - "function _samdopts { echo mcci:samd:${1:-mcci_catena_4450}:lorawan_region=${2:-us915} ; }"
+  - "function _stm32l0opts { echo mcci:stm32:pnum=${1:-CATENA_4551}:opt=${3:-osstd}:xserial=${4:-generic}:usb=${5:-none}:upload_method=${6:-STLink} ; }"
   - arduino --pref "boardsmanager.additional.urls=https://github.com/mcci-catena/arduino-boards/raw/master/BoardManagerFiles/package_mcci_index.json" --save-prefs
 
 install:
@@ -19,7 +22,11 @@ install:
 # - arduino --install-boards mcci:stm32
 
 script:
- - arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=us915 $PWD/examples/raw-feather/raw-feather.ino
+ - "echo $(_stm32l0opts) $(_stm32l0opts '' projcfg)"
+ - "echo $(_samdopts) $(_samdopts '' projcfg)"
+ - arduino --verify --board $(_samdopts '' us915) $PWD/examples/raw-feather/raw-feather.ino
  - printf '#define COMPILE_REGRESSION_TEST 1\n#define CFG_sx1276_radio 1\n#define CFG_us915 1\n' > $PWD/project_config/lmic_project_config.h && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
-
-# - arduino --pref "build.verbose=true" --verify --board mcci:stm32:Catena:pnum=CATENA_4551 $PWD/examples/raw-feather/raw-feather.ino
+ - arduino --board $(_samdopts) --save-prefs
+ - arduino --verify $PWD/examples/raw-feather/raw-feather.ino
+ - printf '#define COMPILE_REGRESSION_TEST 1\n#define CFG_sx1276_radio 1\n#define CFG_us915 1\n' > $PWD/project_config/lmic_project_config.h && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+# - arduino --pref "build.verbose=true" --verify --board $(_stm32l0opts) $PWD/examples/raw-feather/raw-feather.ino
