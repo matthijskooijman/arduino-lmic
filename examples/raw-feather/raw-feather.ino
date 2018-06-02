@@ -5,33 +5,33 @@
 Module:  raw-feather.ino
 
 Function:
-	Slightly improved Raw test example, for Adafruit Feather M0 LoRa
+        Slightly improved Raw test example, for Adafruit Feather M0 LoRa
 
 Version:
-	V0.7.0	Tue Jan 23 2018 10:25:50 chwon	Edit level 2
+        V0.7.0	Tue Jan 23 2018 10:25:50 chwon	Edit level 2
 
 Copyright notice:
-	This file copyright (C) 2017, 2018 by
+        This file copyright (C) 2017, 2018 by
 
-		MCCI Corporation
-		3520 Krums Corners Road
-		Ithaca, NY  14850
+                MCCI Corporation
+                3520 Krums Corners Road
+                Ithaca, NY  14850
 
-	An unpublished work.  All rights reserved.
+        An unpublished work.  All rights reserved.
 
-	This file is proprietary information, and may not be disclosed or
-	copied without the prior permission of MCCI Corporation.
+        This file is proprietary information, and may not be disclosed or
+        copied without the prior permission of MCCI Corporation.
 
 Author:
-	Matthijs Kooijman  2015
-	Terry Moore, MCCI Corporation	April 2017
+        Matthijs Kooijman  2015
+        Terry Moore, MCCI Corporation	April 2017
 
 Revision history:
    0.5.0  Sat Apr  1 2017 22:26:22  tmm
-	Module created.
+        Module created.
 
    0.7.0  Tue Jan 23 2018 10:25:50  chwon
-	Add Catena 4551 platform support.
+        Add Catena 4551 platform support.
 
 */
 
@@ -122,19 +122,19 @@ void lmic_printf(const char *fmt, ...);
 };
 
 void lmic_printf(const char *fmt, ...) {
-	if (! Serial.dtr())
-		return;
+        if (! Serial.dtr())
+                return;
 
-	char buf[256];
-	va_list ap;
+        char buf[256];
+        va_list ap;
 
-	va_start(ap, fmt);
-	(void) vsnprintf(buf, sizeof(buf) - 1, fmt, ap);
-	va_end(ap);
+        va_start(ap, fmt);
+        (void) vsnprintf(buf, sizeof(buf) - 1, fmt, ap);
+        va_end(ap);
 
-	// in case we overflowed:
-	buf[sizeof(buf) - 1] = '\0';
-	if (Serial.dtr()) Serial.print(buf);
+        // in case we overflowed:
+        buf[sizeof(buf) - 1] = '\0';
+        if (Serial.dtr()) Serial.print(buf);
 }
 
 osjob_t txjob;
@@ -281,27 +281,27 @@ void setup() {
   uint32_t uBandwidth;
 
   if (! fDownlink)
-	{
-	if (kUplinkChannel < 64)
-		{
-		LMIC.freq = US915_125kHz_UPFBASE +
-			    kUplinkChannel * US915_125kHz_UPFSTEP;
-		uBandwidth = 125;
-		}
-	else
-		{
-		LMIC.freq = US915_500kHz_UPFBASE +
-			    (kUplinkChannel - 64) * US915_500kHz_UPFSTEP;
-		uBandwidth = 500;
-		}
-	}
+        {
+        if (kUplinkChannel < 64)
+                {
+                LMIC.freq = US915_125kHz_UPFBASE +
+                            kUplinkChannel * US915_125kHz_UPFSTEP;
+                uBandwidth = 125;
+                }
+        else
+                {
+                LMIC.freq = US915_500kHz_UPFBASE +
+                            (kUplinkChannel - 64) * US915_500kHz_UPFSTEP;
+                uBandwidth = 500;
+                }
+        }
   else
-	{
-	// downlink channel
-	LMIC.freq = US915_500kHz_DNFBASE +
-		    kDownlinkChannel * US915_500kHz_DNFSTEP;
-	uBandwidth = 500;
-	}
+        {
+        // downlink channel
+        LMIC.freq = US915_500kHz_DNFBASE +
+                    kDownlinkChannel * US915_500kHz_DNFSTEP;
+        uBandwidth = 500;
+        }
 
   // Use a suitable spreading factor
   if (uBandwidth < 500)
@@ -339,27 +339,27 @@ void setup() {
   uint32_t uBandwidth;
 
   if (! fDownlink)
-	{
-	if (kUplinkChannel < 64)
-		{
-		LMIC.freq = AU921_125kHz_UPFBASE +
-			    kUplinkChannel * AU921_125kHz_UPFSTEP;
-		uBandwidth = 125;
-		}
-	else
-		{
-		LMIC.freq = AU921_500kHz_UPFBASE +
-			    (kUplinkChannel - 64) * AU921_500kHz_UPFSTEP;
-		uBandwidth = 500;
-		}
-	}
+        {
+        if (kUplinkChannel < 64)
+                {
+                LMIC.freq = AU921_125kHz_UPFBASE +
+                            kUplinkChannel * AU921_125kHz_UPFSTEP;
+                uBandwidth = 125;
+                }
+        else
+                {
+                LMIC.freq = AU921_500kHz_UPFBASE +
+                            (kUplinkChannel - 64) * AU921_500kHz_UPFSTEP;
+                uBandwidth = 500;
+                }
+        }
   else
-	{
-	// downlink channel
-	LMIC.freq = AU921_500kHz_DNFBASE +
-		    kDownlinkChannel * AU921_500kHz_DNFSTEP;
-	uBandwidth = 500;
-	}
+        {
+        // downlink channel
+        LMIC.freq = AU921_500kHz_DNFBASE +
+                    kDownlinkChannel * AU921_500kHz_DNFSTEP;
+        uBandwidth = 500;
+        }
 
   // Use a suitable spreading factor
   if (uBandwidth < 500)
@@ -394,11 +394,11 @@ void setup() {
         // default tx power for AS: 21 dBm
         LMIC.txpow = 16;
 
-	if (LMIC_COUNTRY_CODE == LMIC_COUNTRY_CODE_JP)
-		{
-		LMIC.lbt_ticks = us2osticks(AS923JP_LBT_US);
+        if (LMIC_COUNTRY_CODE == LMIC_COUNTRY_CODE_JP)
+                {
+                LMIC.lbt_ticks = us2osticks(AS923JP_LBT_US);
                 LMIC.lbt_dbmax = AS923JP_LBT_DB_MAX;
-		}
+                }
 #elif defined(CFG_in866)
 // make it easier for test, by pull the parameters up to the top of the
 // block. Ideally, we'd use the serial port to drive this; or have
@@ -415,7 +415,7 @@ void setup() {
         LMIC.freq = IN866_F1 + kChannel * 200000;
         uBandwidth = 125;
 
-	LMIC.datarate = IN866_DR_SF7;         // DR7
+        LMIC.datarate = IN866_DR_SF7;         // DR7
         // default tx power for IN: 30 dBm
         LMIC.txpow = IN866_TX_EIRP_MAX_DBM;
 #else
