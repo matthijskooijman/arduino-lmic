@@ -32,7 +32,7 @@ before_install:
 
 install:
  - arduino --install-boards mcci:samd
- - arduino --install-boards mcci:stm32
+# - arduino --install-boards mcci:stm32
 
 script:
 #
@@ -70,6 +70,6 @@ script:
 # *** TESTS FOR STM32L0 / Catena 4551 ****
 #  make sure you install the BSP above.
 #
- - arduino --verify --board $(_stm32l0opts) $PWD/examples/raw-feather/raw-feather.ino
+# - arduino --verify --board $(_stm32l0opts) $PWD/examples/raw-feather/raw-feather.ino
 
 ### end of file ###
