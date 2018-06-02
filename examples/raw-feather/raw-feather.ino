@@ -5,33 +5,33 @@
 Module:  raw-feather.ino
 
 Function:
-	Slightly improved Raw test example, for Adafruit Feather M0 LoRa
+        Slightly improved Raw test example, for Adafruit Feather M0 LoRa
 
 Version:
-	V0.7.0	Tue Jan 23 2018 10:25:50 chwon	Edit level 2
+        V0.7.0	Tue Jan 23 2018 10:25:50 chwon	Edit level 2
 
 Copyright notice:
-	This file copyright (C) 2017, 2018 by
+        This file copyright (C) 2017, 2018 by
 
-		MCCI Corporation
-		3520 Krums Corners Road
-		Ithaca, NY  14850
+                MCCI Corporation
+                3520 Krums Corners Road
+                Ithaca, NY  14850
 
-	An unpublished work.  All rights reserved.
+        An unpublished work.  All rights reserved.
 
-	This file is proprietary information, and may not be disclosed or
-	copied without the prior permission of MCCI Corporation.
+        This file is proprietary information, and may not be disclosed or
+        copied without the prior permission of MCCI Corporation.
 
 Author:
-	Matthijs Kooijman  2015
-	Terry Moore, MCCI Corporation	April 2017
+        Matthijs Kooijman  2015
+        Terry Moore, MCCI Corporation	April 2017
 
 Revision history:
    0.5.0  Sat Apr  1 2017 22:26:22  tmm
-	Module created.
+        Module created.
 
    0.7.0  Tue Jan 23 2018 10:25:50  chwon
-	Add Catena 4551 platform support.
+        Add Catena 4551 platform support.
 
 */
 
@@ -53,6 +53,9 @@ Revision history:
 #include <hal/hal.h>
 #include <SPI.h>
 
+#include <stdarg.h>
+#include <stdio.h>
+
 // we formerly would check this configuration; but now there is a flag,
 // in the LMIC, LMIC.noRXIQinversion;
 // if we set that during init, we get the same effect.  If
@@ -72,33 +75,35 @@ Revision history:
 // https://docs.google.com/spreadsheets/d/1voGAtQAjC1qBmaVuP1ApNKs1ekgUjavHuVQIXyYSvNc
 
 #define TX_INTERVAL 2000        // milliseconds
+#define RX_RSSI_INTERVAL 100    // milliseconds
 
-#ifdef ARDUINO_ARCH_SAMD
-// Pin mapping for Adafruit Feather M0 LoRa
+// Pin mapping for Adafruit Feather M0 LoRa, etc.
+#if defined(ARDUINO_SAMD_FEATHER_M0)
 const lmic_pinmap lmic_pins = {
     .nss = 8,
     .rxtx = LMIC_UNUSED_PIN,
     .rst = 4,
     .dio = {3, 6, LMIC_UNUSED_PIN},
+    .rxtx_rx_active = 0,
+    .rssi_cal = 8,              // LBT cal for the Adafruit Feather M0 LoRa, in dB
+    .spi_freq = 8000000,
 };
-#endif
-
-#ifdef ARDUINO_ARCH_STM32
-// Pin mapping for Catena 4551 Feather M0 LoRa
+#elif defined(ARDUINO_CATENA_4551)
 const lmic_pinmap lmic_pins = {
-    .nss = D7,      // chip select is D7
-    .rxtx = D29, // RXTX is D29
-    .rst = D8,   // NRESET is D8
-    
-    .dio = {D25,    // DIO0 (IRQ) is D25
-            D26,    // DIO1 is D26
-            D27,    // DIO2 is D27
-           },
-    .rxtx_rx_active = 1,
-    .spi_freq = 8000000	/* 8MHz */
+        .nss = 7,
+        .rxtx = 29,
+        .rst = 8,
+        .dio = { 25,    // DIO0 (IRQ) is D25
+                 26,    // DIO1 is D26
+                 27,    // DIO2 is D27
+               },
+        .rxtx_rx_active = 1,
+        .rssi_cal = 10,
+        .spi_freq = 8000000     // 8MHz
 };
+#else
+# error "Unknown target"
 #endif
-
 
 // These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless
@@ -112,18 +117,46 @@ void os_getDevKey (u1_t* buf) { }
 void onEvent (ev_t ev) {
 }
 
+extern "C" {
+void lmic_printf(const char *fmt, ...);
+};
+
+void lmic_printf(const char *fmt, ...) {
+        if (! Serial.dtr())
+                return;
+
+        char buf[256];
+        va_list ap;
+
+        va_start(ap, fmt);
+        (void) vsnprintf(buf, sizeof(buf) - 1, fmt, ap);
+        va_end(ap);
+
+        // in case we overflowed:
+        buf[sizeof(buf) - 1] = '\0';
+        if (Serial.dtr()) Serial.print(buf);
+}
+
 osjob_t txjob;
 osjob_t timeoutjob;
 static void tx_func (osjob_t* job);
 
 // Transmit the given string and call the given function afterwards
 void tx(const char *str, osjobcb_t func) {
-  os_radio(RADIO_RST); // Stop RX first
-  delay(1); // Wait a bit, without this os_radio below asserts, apparently because the state hasn't changed yet
+  // the radio is probably in RX mode; stop it.
+  os_radio(RADIO_RST);
+  // wait a bit so the radio can come out of RX mode
+  delay(1);
+
+  // prepare data
   LMIC.dataLen = 0;
   while (*str)
     LMIC.frame[LMIC.dataLen++] = *str++;
+
+  // set completion function.
   LMIC.osjob.func = func;
+
+  // start the transmission
   os_radio(RADIO_TX);
   Serial.println("TX");
 }
@@ -227,49 +260,173 @@ void setup() {
   // guides the responder through all the channels, powers, ramps
   // the transmit power from min to max, and measures the RSSI and SNR.
   // Even more amazing would be a scheme where the controller could
-  // handle multiple nodes; in that case we'd have a
-  const static bool fDownlink = true;
+  // handle multiple nodes; in that case we'd have a way to do
+  // production test and qualification. However, using an RWC5020A
+  // is a much better use of development time.
+
+  // set fDownlink true to use a downlink channel; false
+  // to use an uplink channel. Generally speaking, uplink
+  // is more interesting, because you can prove that gateways
+  // *should* be able to hear you.
+  const static bool fDownlink = false;
+
+  // the downlink channel to be used.
   const static uint8_t kDownlinkChannel = 3;
+
+  // the uplink channel to be used.
   const static uint8_t kUplinkChannel = 8 + 3;
+
+  // this is automatically set to the proper bandwidth in kHz,
+  // based on the selected channel.
   uint32_t uBandwidth;
 
   if (! fDownlink)
-	{
-	if (kUplinkChannel < 64)
-		{
-		LMIC.freq = US915_125kHz_UPFBASE +
-			    kUplinkChannel * US915_125kHz_UPFSTEP;
-		uBandwidth = 125;
-		}
-	else
-		{
-		LMIC.freq = US915_500kHz_UPFBASE +
-			    (kUplinkChannel - 64) * US915_500kHz_UPFSTEP;
-		uBandwidth = 500;
-		}
-	}
+        {
+        if (kUplinkChannel < 64)
+                {
+                LMIC.freq = US915_125kHz_UPFBASE +
+                            kUplinkChannel * US915_125kHz_UPFSTEP;
+                uBandwidth = 125;
+                }
+        else
+                {
+                LMIC.freq = US915_500kHz_UPFBASE +
+                            (kUplinkChannel - 64) * US915_500kHz_UPFSTEP;
+                uBandwidth = 500;
+                }
+        }
   else
-	{
-	// downlink channel
-	LMIC.freq = US915_500kHz_DNFBASE +
-		    kDownlinkChannel * US915_500kHz_DNFSTEP;
-	uBandwidth = 500;
-	}
+        {
+        // downlink channel
+        LMIC.freq = US915_500kHz_DNFBASE +
+                    kDownlinkChannel * US915_500kHz_DNFSTEP;
+        uBandwidth = 500;
+        }
 
   // Use a suitable spreading factor
   if (uBandwidth < 500)
-        LMIC.datarate = DR_SF10;        // DR0
+        LMIC.datarate = US915_DR_SF7;         // DR4
   else
-        LMIC.datarate = DR_SF12CR;      // DR8
+        LMIC.datarate = US915_DR_SF12CR;      // DR8
 
   // default tx power for US: 21 dBm
   LMIC.txpow = 21;
+#elif defined(CFG_au921)
+  // make it easier for test, by pull the parameters up to the top of the
+  // block. Ideally, we'd use the serial port to drive this; or have
+  // a voting protocol where one side is elected the controller and
+  // guides the responder through all the channels, powers, ramps
+  // the transmit power from min to max, and measures the RSSI and SNR.
+  // Even more amazing would be a scheme where the controller could
+  // handle multiple nodes; in that case we'd have a way to do
+  // production test and qualification. However, using an RWC5020A
+  // is a much better use of development time.
+
+  // set fDownlink true to use a downlink channel; false
+  // to use an uplink channel. Generally speaking, uplink
+  // is more interesting, because you can prove that gateways
+  // *should* be able to hear you.
+  const static bool fDownlink = false;
+
+  // the downlink channel to be used.
+  const static uint8_t kDownlinkChannel = 3;
+
+  // the uplink channel to be used.
+  const static uint8_t kUplinkChannel = 8 + 3;
+
+  // this is automatically set to the proper bandwidth in kHz,
+  // based on the selected channel.
+  uint32_t uBandwidth;
+
+  if (! fDownlink)
+        {
+        if (kUplinkChannel < 64)
+                {
+                LMIC.freq = AU921_125kHz_UPFBASE +
+                            kUplinkChannel * AU921_125kHz_UPFSTEP;
+                uBandwidth = 125;
+                }
+        else
+                {
+                LMIC.freq = AU921_500kHz_UPFBASE +
+                            (kUplinkChannel - 64) * AU921_500kHz_UPFSTEP;
+                uBandwidth = 500;
+                }
+        }
+  else
+        {
+        // downlink channel
+        LMIC.freq = AU921_500kHz_DNFBASE +
+                    kDownlinkChannel * AU921_500kHz_DNFSTEP;
+        uBandwidth = 500;
+        }
+
+  // Use a suitable spreading factor
+  if (uBandwidth < 500)
+        LMIC.datarate = AU921_DR_SF7;         // DR4
+  else
+        LMIC.datarate = AU921_DR_SF12CR;      // DR8
+
+  // default tx power for AU: 30 dBm
+  LMIC.txpow = 30;
+#elif defined(CFG_as923)
+// make it easier for test, by pull the parameters up to the top of the
+// block. Ideally, we'd use the serial port to drive this; or have
+// a voting protocol where one side is elected the controller and
+// guides the responder through all the channels, powers, ramps
+// the transmit power from min to max, and measures the RSSI and SNR.
+// Even more amazing would be a scheme where the controller could
+// handle multiple nodes; in that case we'd have a way to do
+// production test and qualification. However, using an RWC5020A
+// is a much better use of development time.
+        const static uint8_t kChannel = 0;
+        uint32_t uBandwidth;
+
+        LMIC.freq = AS923_F1 + kChannel * 200000;
+        uBandwidth = 125;
+
+        // Use a suitable spreading factor
+        if (uBandwidth == 125)
+                LMIC.datarate = AS923_DR_SF7;         // DR7
+        else
+                LMIC.datarate = AS923_DR_SF7B;        // DR8
+
+        // default tx power for AS: 21 dBm
+        LMIC.txpow = 16;
+
+        if (LMIC_COUNTRY_CODE == LMIC_COUNTRY_CODE_JP)
+                {
+                LMIC.lbt_ticks = us2osticks(AS923JP_LBT_US);
+                LMIC.lbt_dbmax = AS923JP_LBT_DB_MAX;
+                }
+#elif defined(CFG_in866)
+// make it easier for test, by pull the parameters up to the top of the
+// block. Ideally, we'd use the serial port to drive this; or have
+// a voting protocol where one side is elected the controller and
+// guides the responder through all the channels, powers, ramps
+// the transmit power from min to max, and measures the RSSI and SNR.
+// Even more amazing would be a scheme where the controller could
+// handle multiple nodes; in that case we'd have a way to do
+// production test and qualification. However, using an RWC5020A
+// is a much better use of development time.
+        const static uint8_t kChannel = 0;
+        uint32_t uBandwidth;
+
+        LMIC.freq = IN866_F1 + kChannel * 200000;
+        uBandwidth = 125;
+
+        LMIC.datarate = IN866_DR_SF7;         // DR7
+        // default tx power for IN: 30 dBm
+        LMIC.txpow = IN866_TX_EIRP_MAX_DBM;
+#else
+# error Unsupported LMIC regional configuration.
 #endif
+
 
   // disable RX IQ inversion
   LMIC.noRXIQinversion = true;
 
-  // This sets CR 4/5, BW125 (except for EU DR_SF7B, which uses BW250)
+  // This sets CR 4/5, BW125 (except for EU/AS923 DR_SF7B, which uses BW250)
   LMIC.rps = updr2rps(LMIC.datarate);
 
   Serial.print("Frequency: "); Serial.print(LMIC.freq / 1000000);

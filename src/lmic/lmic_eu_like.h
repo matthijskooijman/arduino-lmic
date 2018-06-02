@@ -92,4 +92,7 @@ static inline ostime_t LMICeulike_nextJoinTime(ostime_t now) {
 }
 #define LMICbandplan_nextJoinTime(now)     LMICeulike_nextJoinTime(now)
 
+#define LMICbandplan_init()     \
+        do { /* nothing */ } while (0)
+
 #endif // _lmic_eu_like_h_

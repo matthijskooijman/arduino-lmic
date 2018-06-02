@@ -61,6 +61,10 @@ void hal_pin_rst (u1_t val) {
     }
 }
 
+s1_t hal_getRssiCal (void) {
+    return plmic_pins->rssi_cal;
+}
+
 #if !defined(LMIC_USE_INTERRUPTS)
 static void hal_interrupt_init() {
     pinMode(plmic_pins->dio[0], INPUT);

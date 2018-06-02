@@ -12,13 +12,18 @@
 
 static const int NUM_DIO = 3;
 
+// be careful of alignment below.
 struct lmic_pinmap {
-    u1_t nss;
-    u1_t rxtx;
-    u1_t rst;
-    u1_t dio[NUM_DIO];
-    u1_t rxtx_rx_active;
-    u4_t spi_freq;
+    u1_t nss;                   // byte 0: pin for select
+    u1_t rxtx;                  // byte 1: pin for rx/tx control
+    u1_t rst;                   // byte 2: pin for reset
+    u1_t dio[NUM_DIO];          // bytes 3..5: pins for DIO0, DOI1, DIO2
+    // true if we must set rxtx for rx_active, false for tx_active
+    u1_t rxtx_rx_active;        // byte 6: polarity of rxtx active
+    s1_t rssi_cal;              // byte 7: cal in dB -- added to RSSI
+                                //   measured prior to decision.
+                                //   Must include noise guardband!
+    u4_t spi_freq;              // bytes 8..11: SPI freq in Hz.
 };
 
 // Use this for any unused pins.
