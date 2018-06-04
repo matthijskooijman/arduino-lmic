@@ -126,16 +126,27 @@ Revision history:
                          0)
 
 // the selected region.
-#define CFG_region      ((defined(CFG_eu868) * LMIC_REGION_eu868) + \
-                         (defined(CFG_us915) * LMIC_REGION_us915) + \
-                         (defined(CFG_cn783) * LMIC_REGION_cn783) + \
-                         (defined(CFG_eu433) * LMIC_REGION_eu433) + \
-                         (defined(CFG_au921) * LMIC_REGION_au921) + \
-                         (defined(CFG_cn490) * LMIC_REGION_cn490) + \
-                         (defined(CFG_as923) * LMIC_REGION_as923) + \
-                         (defined(CFG_kr921) * LMIC_REGION_kr921) + \
-                         (defined(CFG_in866) * LMIC_REGION_in866) + \
-                         0)
+#if defined(CFG_eu868)
+# define CFG_region     LMIC_REGION_eu868
+#elif defined(CFG_us915)
+# define CFG_region     LMIC_REGION_us915
+#elif defined(CFG_cn783)
+# define CFG_region     LMIC_REGION_cn783
+#elif defined(CFG_eu433)
+# define CFG_region     LMIC_REGION_eu433
+#elif defined(CFG_au921)
+# define CFG_region     LMIC_REGION_au921
+#elif defined(CFG_cn490)
+# define CFG_region     LMIC_REGION_cn490
+#elif defined(CFG_as923)
+# define CFG_region     LMIC_REGION_as923
+#elif defined(CFG_kr921)
+# define CFG_region     LMIC_REGION_kr921
+#elif defined(CFG_in866)
+# define CFG_region     LMIC_REGION_in866
+#else
+# define CFG_region     0
+#endif
 
 // finally the mask of` US-like and EU-like regions
 #define CFG_LMIC_EU_like_MASK   (                               \
