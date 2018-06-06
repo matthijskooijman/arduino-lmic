@@ -350,7 +350,7 @@ LMICas923_updateTx(ostime_t txbeg) {
         // Update channel/global duty cycle stats
         xref2band_t band = &LMIC.bands[freq & 0x3];
         LMIC.freq = freq & ~(u4_t)3;
-        LMIC.txpow = band->txpow + LMICas923_getMaxEIRP(LMIC.txParam);
+        LMIC.txpow = LMICas923_getMaxEIRP(LMIC.txParam);
         band->avail = txbeg + airtime * band->txcap;
         if (LMIC.globalDutyRate != 0)
                 LMIC.globalDutyAvail = txbeg + (airtime << LMIC.globalDutyRate);
