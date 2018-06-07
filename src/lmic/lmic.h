@@ -34,14 +34,20 @@
 #include "oslmic.h"
 #include "lorabase.h"
 
-#if LMIC_DEBUG_LEVEL > 0
+#if LMIC_DEBUG_LEVEL > 0 || LMIC_X_DEBUG_LEVEL > 0
 # if defined(LMIC_DEBUG_INCLUDE)
 #   define LMIC_STRINGIFY_(x) #x
 #   define LMIC_STRINGIFY(x) LMIC_STRINGIFY_(x)
 #   include LMIC_STRINGIFY(LMIC_DEBUG_INCLUDE)
 # endif
+#  ifdef LMIC_DEBUG_PRINTF_FN
+     extern void LMIC_DEBUG_PRINTF_FN(const char *f, ...);
+#  endif // ndef LMIC_DEBUG_PRINTF_FN
+#endif
+
 // if LMIC_DEBUG_PRINTF is now defined, just use it. This lets you do anything
 // you like with a sufficiently crazy header file.
+#if LMIC_LEVEL_DEBUG > 0
 # ifndef LMIC_DEBUG_PRINTF
 //  otherwise, check whether someone configured a print-function to be used,
 //  and use it if so.
@@ -69,6 +75,19 @@
 # define LMIC_DEBUG_PRINTF(f, ...)      do { ; } while (0)
 # define LMIC_DEBUG_FLUSH()             do { ; } while (0)
 #endif // LMIC_DEBUG_LEVEL == 0
+
+//
+// LMIC_X_DEBUG_LEVEL enables additional, special print functions for debugging
+// RSSI features. This is used sparingly.
+#if LMIC_X_DEBUG_LEVEL > 0
+#  ifdef LMIC_DEBUG_PRINTF_FN
+#    define LMIC_X_DEBUG_PRINTF(f, ...) LMIC_DEBUG_PRINTF_FN(f, ## __VA_ARGS__)
+#  else
+#    error "LMIC_DEBUG_PRINTF_FN must be defined for LMIC_X_DEBUG_LEVEL > 0."
+#  endif
+#else
+#  define LMIC_X_DEBUG_PRINTF(f, ...)  do {;} while(0)
+#endif
 
 #ifdef __cplusplus
 extern "C"{

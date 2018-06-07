@@ -174,8 +174,7 @@ void LMICas923_initDefaultChannels(bit_t join) {
                 LMIC.channelDrMap[fu] = DR_RANGE_MAP(AS923_DR_SF12, AS923_DR_SF7B);
         }
 
-	// all channels face a 1% duty cycle.
-        LMIC.bands[BAND_CENTI].txcap = 100;   // 1%
+        LMIC.bands[BAND_CENTI].txcap = AS923_TX_CAP;
         LMIC.bands[BAND_CENTI].txpow = AS923_TX_EIRP_MAX_DBM;
         LMIC.bands[BAND_CENTI].lastchnl = os_getRndU1() % MAX_CHANNELS;
         LMIC.bands[BAND_CENTI].avail = os_getTime();
@@ -351,7 +350,7 @@ LMICas923_updateTx(ostime_t txbeg) {
         // Update channel/global duty cycle stats
         xref2band_t band = &LMIC.bands[freq & 0x3];
         LMIC.freq = freq & ~(u4_t)3;
-        LMIC.txpow = band->txpow + LMICas923_getMaxEIRP(LMIC.txParam);
+        LMIC.txpow = LMICas923_getMaxEIRP(LMIC.txParam);
         band->avail = txbeg + airtime * band->txcap;
         if (LMIC.globalDutyRate != 0)
                 LMIC.globalDutyAvail = txbeg + (airtime << LMIC.globalDutyRate);

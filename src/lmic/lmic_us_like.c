@@ -193,6 +193,16 @@ void LMICuslike_initJoinLoop(void) {
 #endif // !DISABLE_JOIN
 
 #if !defined(DISABLE_JOIN)
+//
+// TODO(tmm@mcci.com):
+//
+// The definition of this is a little strange. this seems to return a time, but
+// in reality it returns 0 if the caller should continue scanning through
+// channels, and 1 if the caller has scanned all channels on this session,
+// and therefore should reset to the beginning.  The IBM 1.6 code is the
+// same way, so apparently I just carried this across. We should declare
+// as bool_t and change callers to use the result clearly as a flag.
+//
 ostime_t LMICuslike_nextJoinState(void) {
         // Try the following:
         //   DR0 (SF10)  on a random channel 0..63
@@ -227,6 +237,8 @@ ostime_t LMICuslike_nextJoinState(void) {
         // cycle on power up. For testability, add a way to set the join start time
         // externally (a test API) so we can check this feature.
         // See https://github.com/mcci-catena/arduino-lmic/issues/2
+	// Current code doesn't match LoRaWAN 1.0.2 requirements.
+
         LMIC.txend = os_getTime() +
                 (isTESTMODE()
                         // Avoid collision with JOIN ACCEPT being sent by GW (but we missed it - GW is still busy)

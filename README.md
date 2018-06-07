@@ -65,6 +65,7 @@ requires C99 mode to be enabled by default.
 - [Timing](#timing)
 - [Downlink datarate](#downlink-datarate)
 - [Release History](#release-history)
+- [Contributions](#contributions)
 - [Trademark Acknowledgements](#trademark-acknowledgements)
 - [License](#license)
 
@@ -684,6 +685,18 @@ When using OTAA, the network communicates the RX2 settings in the join accept me
 - V2.1.0 adds support for the Murata LoRaWAN module.
 
 - V2.0.2 adds support for the extended bandplans.
+
+## Contributions
+
+This library started from the IBM V1.5 open-source code.
+
+- Thomas Telkamp and Matthijs Kooijman ported V1.5 to Arduino and did a lot of bug fixing.
+
+- Terry Moore, LeRoy Leslie, Frank Rose, and ChaeHee Won did a lot of work on US support.
+
+- Terry Moore added the AU921, AS923 and IN866 bandplans, and created the regionalization framework.
+
+- [@tanupoo](https://github.com/tanupoo) of the WIDE Project debugged AS923JP and LBT support.
 
 ## Trademark Acknowledgements
 
