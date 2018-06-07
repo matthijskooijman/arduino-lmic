@@ -70,6 +70,17 @@
 # define LMIC_DEBUG_FLUSH()             do { ; } while (0)
 #endif // LMIC_DEBUG_LEVEL == 0
 
+#if LMIC_X_DEBUG_LEVEL > 0
+#  ifdef LMIC_DEBUG_PRINTF_FN
+     extern void LMIC_DEBUG_PRINTF_FN(const char *f, ...);
+#    define LMIC_X_DEBUG_PRINTF(f, ...) LMIC_DEBUG_PRINTF_FN(f, ## __VA_ARGS__)
+#  else
+#    error "LMIC_DEBUG_PRINTF_FN must be defined."
+#  endif
+#else
+#  define LMIC_X_DEBUG_PRINTF(f, ...)  do {;} while(0)
+#endif
+
 #ifdef __cplusplus
 extern "C"{
 #endif

@@ -74,7 +74,12 @@ enum { DR_PAGE_AS923 = 0x10 * (LMIC_REGION_as923 - 1) };
 
 enum { AS923_LMIC_REGION_EIRP = 1 };         // region uses EIRP
 
-enum { AS923JP_LBT_US = 125 };          // microseconds of LBT time
+enum { AS923JP_LBT_5MS = 5 };          // microseconds of LBT time
 enum { AS923JP_LBT_DB_MAX = -80 };      // maximum channel strength
+
+#if !defined(AS923_TX_CAP)
+// AS923 v1.1, all channels face a 1% duty cycle.
+# define AS923_TX_CAP 100
+#endif
 
 #endif /* _lorabase_as923_h_ */

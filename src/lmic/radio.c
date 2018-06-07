@@ -25,6 +25,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#if LMIC_X_DEBUG_LEVEL > 0
+#include <Arduino.h>
+#endif
+
 #define LMIC_DR_LEGACY 0
 
 #include "lmic.h"
@@ -198,7 +202,7 @@
 //-----------------------------------------
 // Parameters for RSSI monitoring
 #define SX127X_FREQ_LF_MAX      525000000       // per datasheet 6.3
-
+ 
 // per datasheet 5.5.3:
 #define SX127X_RSSI_ADJUST_LF   -164            // add to rssi value to get dB (LF)
 #define SX127X_RSSI_ADJUST_HF   -157            // add to rssi value to get dB (HF)
@@ -574,41 +578,16 @@ static void starttx () {
 
     if (LMIC.lbt_ticks > 0) {
         oslmic_radio_rssi_t rssi;
-#if LMIC_DEBUG_LEVEL > 1
-        LMIC_DEBUG_PRINTF("%lu: scan RSSI for %u osticks\n",
-            os_getTime(),
-            LMIC.lbt_ticks
-            );
-#endif
         radio_monitor_rssi(LMIC.lbt_ticks, &rssi);
+#if LMIC_X_DEBUG_LEVEL > 0
+	LMIC_X_DEBUG_PRINTF("LBT rssi max:min=%d:%d %d times in %d\n", rssi.max_rssi, rssi.min_rssi, rssi.n_rssi, LMIC.lbt_ticks);
+#endif
 
         if (rssi.max_rssi >= LMIC.lbt_dbmax) {
-#if LMIC_DEBUG_LEVEL > 0
-            u1_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
-            u1_t bw = getBw(LMIC.rps);
-            u1_t cr = getCr(LMIC.rps);
-            LMIC_DEBUG_PRINTF("%lu: freq=%lu, SF=%d, BW=%d, CR=4/%d, interfering signal %d > %d dB\n",
-                os_getTime(),
-                LMIC.freq,
-                sf,
-                bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
-                cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)),
-                rssi.max_rssi,
-                LMIC.lbt_dbmax
-                );
-#endif
-        // complete the request by scheduling the job
-        os_setCallback(&LMIC.osjob, LMIC.osjob.func);
-        return;
+            // complete the request by scheduling the job
+            os_setCallback(&LMIC.osjob, LMIC.osjob.func);
+            return;
         }
-
-#if LMIC_DEBUG_LEVEL > 1
-        LMIC_DEBUG_PRINTF("%lu: freq=%lu, interfering signal %d < %d dB\n",
-            os_getTime(), LMIC.freq,
-            rssi.max_rssi,
-            LMIC.lbt_dbmax
-            );
-#endif
     }
 
     if(getSf(LMIC.rps) == FSK) { // FSK modem
@@ -891,6 +870,15 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
     // scan for the desired time.
     tBegin = os_getTime();
     rssiMax = 0;
+
+    /* XXX(tanupoo)
+     * In this loop, micros() in os_getTime() returns a past time sometimes.
+     * At least, it happens on Dragino LoRa Mini.
+     * the return value of micros() looks not to be stable in IRQ disabled.
+     * Once it happens, this loop never exit infinitely.
+     * In order to prevent it, it enables IRQ before calling os_getTime(),
+     * disable IRQ again after that.
+     */
     do {
         ostime_t now;
 
@@ -902,7 +890,10 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
                 rssiMin = rssiNow;
         rssiSum += rssiNow;
         ++rssiN;
+	// TODO(tmm@mcci.com) move this to os_getTime().
+        hal_enableIRQs();
         now = os_getTime();
+        hal_disableIRQs();
         notDone = now - (tBegin + nTicks) < 0;
     } while (notDone);
 
@@ -945,6 +936,7 @@ void radio_irq_handler (u1_t dio) {
 #endif
     if( (readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
         u1_t flags = readReg(LORARegIrqFlags);
+        LMIC_X_DEBUG_PRINTF("IRQ=%02x\n", flags);
         if( flags & IRQ_LORA_TXDONE_MASK ) {
             // save exact tx time
             LMIC.txend = now - us2osticks(43); // TXDONE FIXUP
@@ -963,7 +955,9 @@ void radio_irq_handler (u1_t dio) {
             readBuf(RegFifo, LMIC.frame, LMIC.dataLen);
             // read rx quality parameters
             LMIC.snr  = readReg(LORARegPktSnrValue); // SNR [dB] * 4
-            LMIC.rssi = readReg(LORARegPktRssiValue) - 125 + 64; // RSSI [dBm] (-196...+63)
+            LMIC.rssi = readReg(LORARegPktRssiValue);
+            LMIC_X_DEBUG_PRINTF("RX snr=%u rssi=%d\n", LMIC.snr/4, SX127X_RSSI_ADJUST_HF + LMIC.rssi);
+            LMIC.rssi = LMIC.rssi - 125 + 64; // RSSI [dBm] (-196...+63)
         } else if( flags & IRQ_LORA_RXTOUT_MASK ) {
             // indicate timeout
             LMIC.dataLen = 0;

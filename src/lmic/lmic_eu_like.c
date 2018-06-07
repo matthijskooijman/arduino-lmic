@@ -103,7 +103,15 @@ ostime_t LMICeulike_nextJoinState(uint8_t nDefaultChannels) {
                 if (LMIC.datarate == LORAWAN_DR0)
                         failed = 1; // we have tried all DR - signal EV_JOIN_FAILED
                 else
+                {
+#if CFG_region != LMIC_REGION_as923
                         LMICcore_setDrJoin(DRCHG_NOJACC, decDR((dr_t)LMIC.datarate));
+#else
+                        // in the join of AS923 v1.1 or older, only DR2 is used.
+                        // no need to change the DR.
+                        LMIC.datarate = AS923_DR_SF10;
+#endif
+                }
         }
         // Clear NEXTCHNL because join state engine controls channel hopping
         LMIC.opmode &= ~OP_NEXTCHNL;
