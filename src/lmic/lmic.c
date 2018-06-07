@@ -1036,24 +1036,30 @@ static bit_t processJoinAccept (void) {
             return 1;
         }
         LMIC.opmode &= ~OP_TXRXPEND;
-        ostime_t delay = LMICbandplan_nextJoinState();
+        int failed = LMICbandplan_nextJoinState();
         EV(devCond, DEBUG, (e_.reason = EV::devCond_t::NO_JACC,
                             e_.eui    = MAIN::CDEV->getEui(),
                             e_.info   = LMIC.datarate|DR_PAGE,
-                            e_.info2  = osticks2ms(delay)));
+                            e_.info2  = failed));
         // Build next JOIN REQUEST with next engineUpdate call
         // Optionally, report join failed.
-        // Both after a random/chosen amount of ticks.
+        // Both after a random/chosen amount of ticks. That time
+	// is in LMIC.txend. The delay here is either zero or 1
+	// tick; onJoinFailed()/runEngineUpdate() are responsible
+	// for honoring that. XXX(tmm@mcci.com) The IBM 1.6 code
+	// claimed to return a delay but really returns 0 or 1.
+	// Once we update as923 to return failed after dr2, we
+	// can take out this #if.
 #if CFG_region != LMIC_REGION_as923
-        os_setTimedCallback(&LMIC.osjob, os_getTime()+delay,
-                            (delay&1) != 0
+        os_setTimedCallback(&LMIC.osjob, os_getTime()+failed,
+                            failed
                             ? FUNC_ADDR(onJoinFailed)      // one JOIN iteration done and failed
                             : FUNC_ADDR(runEngineUpdate)); // next step to be delayed
 #else
        // in the join of AS923 v1.1 older, only DR2 is used. Therefore,
        // not much improvement when it handles two different behavior;
        // onJoinFailed or runEngineUpdate.
-        os_setTimedCallback(&LMIC.osjob, os_getTime()+delay,
+        os_setTimedCallback(&LMIC.osjob, os_getTime()+failed,
                             FUNC_ADDR(onJoinFailed));
 #endif
         return 1;
@@ -1121,8 +1127,14 @@ static bit_t processJoinAccept (void) {
                                       : EV::joininfo_t::ACCEPT)));
 
     ASSERT((LMIC.opmode & (OP_JOINING|OP_REJOIN))!=0);
+    //
+    // XXX(tmm@mcci.com) OP_REJOIN confuses me, and I'm not sure why we're
+    // adjusting DRs here. We've just recevied a join accept, and the
+    // datarate therefore shouldn't be in play.
+    //
     if( (LMIC.opmode & OP_REJOIN) != 0 ) {
 #if CFG_region != LMIC_REGION_as923
+	// TODO(tmm@mcci.com) regionalize
         // Lower DR every try below current UP DR
         LMIC.datarate = lowerDR(LMIC.datarate, LMIC.rejoinCnt);
 #else

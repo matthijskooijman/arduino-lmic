@@ -184,7 +184,7 @@ void
 LMICas923_init(void) {
         // if this is japan, set LBT mode
         if (LMIC_COUNTRY_CODE == LMIC_COUNTRY_CODE_JP) {
-                LMIC.lbt_ticks = ms2osticks(AS923JP_LBT_5MS);
+                LMIC.lbt_ticks = us2osticks(AS923JP_LBT_US);
                 LMIC.lbt_dbmax = AS923JP_LBT_DB_MAX;
         }
 }
@@ -193,7 +193,7 @@ void
 LMICas923_resetDefaultChannels(void) {
         // if this is japan, set LBT mode
         if (LMIC_COUNTRY_CODE == LMIC_COUNTRY_CODE_JP) {
-                LMIC.lbt_ticks = ms2osticks(AS923JP_LBT_5MS);
+                LMIC.lbt_ticks = us2osticks(AS923JP_LBT_US);
                 LMIC.lbt_dbmax = AS923JP_LBT_DB_MAX;
         }
 }

@@ -25,10 +25,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if LMIC_X_DEBUG_LEVEL > 0
-#include <Arduino.h>
-#endif
-
 #define LMIC_DR_LEGACY 0
 
 #include "lmic.h"
