@@ -19,8 +19,8 @@ before_install:
   # Changes to the BSP may break this build, sorry!
   #
   - "function _samdopts { echo mcci:samd:${1:-mcci_catena_4450}:lorawan_region=${2:-us915} ; }"
-  - "function _stm32l0opts { echo mcci:stm32:Catena:pnum=${1:-CATENA_4551}:opt=${3:-osstd}:xserial=${4:-generic}:usb=${5:-none}:upload_method=${6:-STLink} ; }"
-  #
+  - "function _stm32l0opts { echo mcci:stm32:Catena:pnum=${1:-CATENA_4551},opt=${3:-osstd},xserial=${4:-generic},usb=${5:-none},upload_method=${6:-STLink} ; }"
+ #
   # Put one or more arguments into lmic_project_config.h as  `#define $i\n`
   - function _projcfg { for i in "$@" ; do printf '#define %s 1\n' "$i" ; done  > $PWD/project_config/lmic_project_config.h ; }
   #
@@ -32,7 +32,7 @@ before_install:
 
 install:
  - arduino --install-boards mcci:samd
-# - arduino --install-boards mcci:stm32
+ - arduino --install-boards mcci:stm32
 
 script:
 #
@@ -70,6 +70,12 @@ script:
 # *** TESTS FOR STM32L0 / Catena 4551 ****
 #  make sure you install the BSP above.
 #
-# - arduino --verify --board $(_stm32l0opts) $PWD/examples/raw-feather/raw-feather.ino
+ - _projcfg CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts) $PWD/examples/raw-feather/raw-feather.ino
+ - _projcfg CFG_eu868 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts) $PWD/examples/raw-feather/raw-feather.ino
+ - _projcfg CFG_au921 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts) $PWD/examples/raw-feather/raw-feather.ino
+ - _projcfg CFG_as923 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts) $PWD/examples/raw-feather/raw-feather.ino
+ - _projcfg CFG_in866 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts) $PWD/examples/raw-feather/raw-feather.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1272_radio && arduino --verify --board $(_stm32l0opts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
 
 ### end of file ###
