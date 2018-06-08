@@ -19,7 +19,7 @@ before_install:
   # Changes to the BSP may break this build, sorry!
   #
   - "function _samdopts { echo mcci:samd:${1:-mcci_catena_4450}:lorawan_region=${2:-us915} ; }"
-   - "function _stm32l0opts { echo mcci:stm32:Catena:pnum=${1:-CATENA_4551},opt=${3:-osstd},xserial=${4:-generic},usb=${5:-none},upload_method=${6:-STLink} ; }"
+  - "function _stm32l0opts { echo mcci:stm32:Catena:pnum=${1:-CATENA_4551},opt=${3:-osstd},xserial=${4:-generic},usb=${5:-none},upload_method=${6:-STLink} ; }"
  #
   # Put one or more arguments into lmic_project_config.h as  `#define $i\n`
   - function _projcfg { for i in "$@" ; do printf '#define %s 1\n' "$i" ; done  > $PWD/project_config/lmic_project_config.h ; }
