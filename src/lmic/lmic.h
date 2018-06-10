@@ -113,6 +113,9 @@ extern "C"{
 #define	ARDUINO_LMIC_VERSION_GET_PATCH(v)	\
 	(((v) >> 8u) & 0xFFu)
 
+#define	ARDUINO_LMIC_VERSION_GET_LOCAL(v)	\
+	((v) & 0xFFu)
+
 //! Only For Antenna Tuning Tests !
 //#define CFG_TxContinuousMode 1
 
