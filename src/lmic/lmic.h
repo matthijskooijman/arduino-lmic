@@ -93,10 +93,28 @@
 extern "C"{
 #endif
 
-// LMIC version
+// LMIC version -- this is ths IBM LMIC version
 #define LMIC_VERSION_MAJOR 1
 #define LMIC_VERSION_MINOR 6
 #define LMIC_VERSION_BUILD 1468577746
+
+// Arduino LMIC version
+#define ARDUINO_LMIC_VERSION_CALC(major, minor, patch, local)	\
+	(((major) << 24u) | ((minor) << 16u) | ((patch) << 8u) | (local))
+
+#define	ARDUINO_LMIC_VERSION	ARDUINO_LMIC_VERSION_CALC(2, 1, 5, 0)
+
+#define	ARDUINO_LMIC_VERSION_GET_MAJOR(v)	\
+	(((v) >> 24u) & 0xFFu)
+
+#define	ARDUINO_LMIC_VERSION_GET_MINOR(v)	\
+	(((v) >> 16u) & 0xFFu)
+
+#define	ARDUINO_LMIC_VERSION_GET_PATCH(v)	\
+	(((v) >> 8u) & 0xFFu)
+
+#define	ARDUINO_LMIC_VERSION_GET_LOCAL(v)	\
+	((v) & 0xFFu)
 
 //! Only For Antenna Tuning Tests !
 //#define CFG_TxContinuousMode 1

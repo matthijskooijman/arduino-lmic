@@ -20,7 +20,7 @@ before_install:
   #
   - "function _samdopts { echo mcci:samd:${1:-mcci_catena_4450}:lorawan_region=${2:-us915} ; }"
   - "function _stm32l0opts { echo mcci:stm32:Catena:pnum=${1:-CATENA_4551},opt=${3:-osstd},xserial=${4:-generic},usb=${5:-none},upload_method=${6:-STLink} ; }"
- #
+  #
   # Put one or more arguments into lmic_project_config.h as  `#define $i\n`
   - function _projcfg { for i in "$@" ; do printf '#define %s 1\n' "$i" ; done  > $PWD/project_config/lmic_project_config.h ; }
   #
@@ -29,17 +29,20 @@ before_install:
   #
   # modify the board manager preferences to point to our BSPs.
   - arduino --pref "boardsmanager.additional.urls=https://github.com/mcci-catena/arduino-boards/raw/master/BoardManagerFiles/package_mcci_index.json" --save-prefs
+  #
+  # show the output of the config commands for reference.
+  - "echo $(_stm32l0opts) $(_stm32l0opts '' projcfg)"
+  - "echo $(_samdopts) $(_samdopts '' projcfg)"
 
 install:
  - arduino --install-boards mcci:samd
  - arduino --install-boards mcci:stm32
 
 script:
-#
-# show the output of the config commands for reference.
- - "echo $(_stm32l0opts) $(_stm32l0opts '' projcfg)"
- - "echo $(_samdopts) $(_samdopts '' projcfg)"
 
+# simple header file test
+ - arduino --verify --board $(_samdopts) $PWD/examples/header_test/header_test.ino
+ - arduino --verify --board $(_stm32l0opts) $PWD/examples/header_test/header_test.ino
 #
 # test each of the regions.
  - arduino --verify --board $(_samdopts '' us915) $PWD/examples/raw-feather/raw-feather.ino
