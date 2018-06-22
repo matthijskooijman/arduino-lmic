@@ -243,9 +243,9 @@ This board uses the following pin mapping:
 
     const lmic_pinmap lmic_pins = {
         .nss = 8,
-	.rxtx = LMIC_UNUSED_PIN,
-	.rst = 4,
-	.dio = {7, 6, LMIC_UNUSED_PIN},
+        .rxtx = LMIC_UNUSED_PIN,
+        .rst = 4,
+        .dio = {7, 6, LMIC_UNUSED_PIN},
     };
 
 ##### Feather M0 RFM95W loRa Radio 900MHz
