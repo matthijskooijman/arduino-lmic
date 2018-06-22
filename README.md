@@ -236,17 +236,29 @@ This board uses the following pin mapping:
         .dio = {4, 5, 7},
     };
 
-#### Adfruit Feather 32u4 RFM95W loRa Radio 900MHz
+#### Adafruit Feather 
+
+##### Feather 32u4 RFM95W LoRa Radio 900MHz
 This board uses the following pin mapping:
 
     const lmic_pinmap lmic_pins = {
-    	.nss = 8,
-    	.rxtx = LMIC_UNUSED_PIN,
-    	.rst = 4,
-    	.dio = {7, 6, LMIC_UNUSED_PIN},
-	};
+        .nss = 8,
+	.rxtx = LMIC_UNUSED_PIN,
+	.rst = 4,
+	.dio = {7, 6, LMIC_UNUSED_PIN},
+    };
 
-**PIN6** and **IO1** from the Adafruit boadr need to be connected before uploading the code.
+##### Feather M0 RFM95W loRa Radio 900MHz
+This board uses the following pin mapping:
+
+    const lmic_pinmap lmic_pins = {
+        .nss = 8,
+        .rxtx = LMIC_UNUSED_PIN,
+        .rst = 4,
+        .dio = {3, 6, LMIC_UNUSED_PIN},
+    };
+
+**PIN6** and **IO1** from the Adafruit board need to be connected before uploading the code.
 
 A suitable length [antenna](https://learn.adafruit.com/adafruit-feather-32u4-radio-with-lora-radio-module/antenna-options) is also required to ensure good connection qualities.
 
