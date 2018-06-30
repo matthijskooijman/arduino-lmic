@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015 Thomas Telkamp and Matthijs Kooijman
+ * Copyright (c) 2018 Terry Moore, MCCI
  *
  * Permission is hereby granted, free of charge, to anyone
  * obtaining a copy of this document and accompanying files,
@@ -9,7 +10,8 @@
  *
  * This example sends a valid LoRaWAN packet with payload "Hello,
  * world!", using frequency and encryption settings matching those of
- * the The Things Network.
+ * the The Things Network. It's pre-configured for the Adafruit
+ * Feather M0 LoRa.
  *
  * This uses OTAA (Over-the-air activation), where where a DevEUI and
  * application key is configured, which are used in an over-the-air
@@ -33,11 +35,18 @@
 #include <hal/hal.h>
 #include <SPI.h>
 
-
+//
+// For normal use, we require that you edit the sketch to replace FILLMEIN
+// with values assigned by the TTN console. However, for regression tests,
+// we want to be able to compile these scripts. The regression tests define
+// COMPILE_REGRESSION_TEST, and in that case we define FILLMEIN to a non-
+// working but innocuous value.
+//
 #ifdef COMPILE_REGRESSION_TEST
 # define FILLMEIN 0
 #else
-# error "You must replace the values marked FILLMEIN with real values from the TTN control panel!"
+# warning "You must replace the values marked FILLMEIN with real values from the TTN control panel!"
+# define FILLMEIN (#dont edit this, edit the lines that use FILLMEIN)
 #endif
 
 // This EUI must be in little-endian format, so least-significant-byte
@@ -65,12 +74,34 @@ static osjob_t sendjob;
 const unsigned TX_INTERVAL = 60;
 
 // Pin mapping
+#if defined(ARDUINO_SAMD_FEATHER_M0)
+// Pin mapping for Adafruit Feather M0 LoRa, etc.
 const lmic_pinmap lmic_pins = {
     .nss = 8,
     .rxtx = LMIC_UNUSED_PIN,
     .rst = 4,
-    .dio = { 3, 6, LMIC_UNUSED_PIN },
+    .dio = {3, 6, LMIC_UNUSED_PIN},
+    .rxtx_rx_active = 0,
+    .rssi_cal = 8,              // LBT cal for the Adafruit Feather M0 LoRa, in dB
+    .spi_freq = 8000000,
 };
+#elif defined(ARDUINO_CATENA_4551)
+// Pin mapping for Murata module / Catena 4551
+const lmic_pinmap lmic_pins = {
+        .nss = 7,
+        .rxtx = 29,
+        .rst = 8,
+        .dio = { 25,    // DIO0 (IRQ) is D25
+                 26,    // DIO1 is D26
+                 27,    // DIO2 is D27
+               },
+        .rxtx_rx_active = 1,
+        .rssi_cal = 10,
+        .spi_freq = 8000000     // 8MHz
+};
+#else
+# error "Unknown target"
+#endif
 
 void onEvent (ev_t ev) {
     Serial.print(os_getTime());
@@ -123,9 +154,14 @@ void onEvent (ev_t ev) {
 	    // size, we don't use it in this example.
             LMIC_setLinkCheckMode(0);
             break;
-        case EV_RFU1:
-            Serial.println(F("EV_RFU1"));
-            break;
+        /*
+        || This event is defined but not used in the code. No
+        || point in wasting codespace on it.
+        ||
+        || case EV_RFU1:
+        ||     Serial.println(F("EV_RFU1"));
+        ||     break;
+        */
         case EV_JOIN_FAILED:
             Serial.println(F("EV_JOIN_FAILED"));
             break;
@@ -161,8 +197,20 @@ void onEvent (ev_t ev) {
         case EV_LINK_ALIVE:
             Serial.println(F("EV_LINK_ALIVE"));
             break;
-         default:
-            Serial.println(F("Unknown event"));
+        /*
+        || This event is defined but not used in the code. No
+        || point in wasting codespace on it.
+        ||
+        || case EV_SCAN_FOUND:
+        ||    Serial.println(F("EV_SCAN_FOUND"));
+        ||    break;
+        */
+        case EV_TXSTART:
+            Serial.println(F("EV_TXSTART"));
+            break;
+        default:
+            Serial.print(F("Unknown event: "));
+            Serial.println((unsigned) ev);
             break;
     }
 }
