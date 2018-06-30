@@ -35,11 +35,18 @@
 #include <hal/hal.h>
 #include <SPI.h>
 
-
+//
+// For normal use, we require that you edit the sketch to replace FILLMEIN
+// with values assigned by the TTN console. However, for regression tests,
+// we want to be able to compile these scripts. The regression tests define
+// COMPILE_REGRESSION_TEST, and in that case we define FILLMEIN to a non-
+// working but innocuous value.
+//
 #ifdef COMPILE_REGRESSION_TEST
 # define FILLMEIN 0
 #else
-# error "You must replace the values marked FILLMEIN with real values from the TTN control panel!"
+# warning "You must replace the values marked FILLMEIN with real values from the TTN control panel!"
+# define FILLMEIN (#dont edit this, edit the lines that use FILLMEIN)
 #endif
 
 // This EUI must be in little-endian format, so least-significant-byte
