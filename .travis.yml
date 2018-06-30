@@ -48,7 +48,7 @@ script:
  - arduino --verify --board $(_samdopts '' us915) $PWD/examples/raw-feather/raw-feather.ino
  - arduino --verify --board $(_samdopts '' eu868) $PWD/examples/raw-feather/raw-feather.ino
 # V1.1.0 of the samd bsp doesn't support au921 correctly -- test with projcfg
-# - arduino --verify --board $(_samdopts '' au921) $PWD/examples/raw-feather/raw-feather.ino
+#- arduino --verify --board $(_samdopts '' au921) $PWD/examples/raw-feather/raw-feather.ino
  - arduino --verify --board $(_samdopts '' as923) $PWD/examples/raw-feather/raw-feather.ino
  - arduino --verify --board $(_samdopts '' as923jp) $PWD/examples/raw-feather/raw-feather.ino
  - arduino --verify --board $(_samdopts '' in866) $PWD/examples/raw-feather/raw-feather.ino
