@@ -47,7 +47,7 @@
 
 // if LMIC_DEBUG_PRINTF is now defined, just use it. This lets you do anything
 // you like with a sufficiently crazy header file.
-#if LMIC_LEVEL_DEBUG > 0
+#if LMIC_DEBUG_LEVEL > 0
 # ifndef LMIC_DEBUG_PRINTF
 //  otherwise, check whether someone configured a print-function to be used,
 //  and use it if so.
