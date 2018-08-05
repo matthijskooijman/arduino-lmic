@@ -89,6 +89,8 @@ u1_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap) {
 	/*
 	|| MCMD_LADR_CHP_125ON and MCMD_LADR_CHP_125OFF are special. The
 	|| channel map appllies to 500kHz (ch 64..71) and in addition
+	|| all channels 0..63 are turned off or on.  MCMC_LADR_CHP_BANK
+	|| is also special, in that it enables subbands.
 	*/
 	u1_t base, top;
 
@@ -97,7 +99,8 @@ u1_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap) {
 		base = chpage << 4;
 		top = base + 16;
 		if (base == 64) {
-			if (chmap && 0xFF00) {
+			if (chmap & 0xFF00) {
+				// those are reserved bits, fail.
 				return 0;
 			}
 			top = 72;
