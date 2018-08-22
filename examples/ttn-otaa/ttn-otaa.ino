@@ -107,8 +107,8 @@ void onEvent (ev_t ev) {
             if (LMIC.txrxFlags & TXRX_ACK)
               Serial.println(F("Received ack"));
             if (LMIC.dataLen) {
-              Serial.println(F("Received "));
-              Serial.println(LMIC.dataLen);
+              Serial.print(F("Received "));
+              Serial.print(LMIC.dataLen);
               Serial.println(F(" bytes of payload"));
             }
             // Schedule next transmission
