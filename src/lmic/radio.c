@@ -785,7 +785,7 @@ void radio_irq_handler (u1_t dio) {
             // now read the FIFO
             readBuf(RegFifo, LMIC.frame, LMIC.dataLen);
             // read rx quality parameters
-            LMIC.snr  = readReg(LORARegPktSnrValue) / 4;
+            LMIC.snr  = ((s1_t)readReg(LORARegPktSnrValue)) / 4;
             LMIC.rssi = readReg(LORARegPktRssiValue) - 157; // RFI_HF for 868 and 915MHZ band
             if (LMIC.snr < 0)
                 LMIC.rssi += LMIC.snr;
