@@ -66,9 +66,13 @@ requires C99 mode to be enabled by default.
 - [Downlink datarate](#downlink-datarate)
 - [Encoding Utilities](#encoding-utilities)
 	- [sflt16](#sflt16)
+		- [JavaScript decoder](#javascript-decoder)
 	- [uflt16](#uflt16)
+		- [JavaScript decoder](#javascript-decoder-1)
 	- [sflt12](#sflt12)
+		- [JavaScript decoder](#javascript-decoder-2)
 	- [uflt12](#uflt12)
+		- [JavaScript decoder](#javascript-decoder-3)
 - [Release History](#release-history)
 - [Contributions](#contributions)
 - [Trademark Acknowledgements](#trademark-acknowledgements)
@@ -686,7 +690,7 @@ To simplify coding, the Arduino header file <lmic.h> defines some data encoding 
 - `uint16_t LMIC_f2sflt12(float)` converts a floating-point number to a [`sflt12`](#sflt12)-encoded `uint16_t`, leaving the top four bits of the result set to zero.
 - `uint16_t LMIC_f2uflt12(float)` converts a floating-point number to a [`uflt12`](#sflt12)-encoded `uint16_t`, leaving the top four bits of the result set to zero.
 
-JavaScript code for decoding the data can be found in the `extras` directory of this library.
+JavaScript code for decoding the data can be found in the following sections.
 
 ### sflt16
 
@@ -716,6 +720,52 @@ Floating point mavens will immediately recognize:
 * The format is somewhat wasteful, because it explicitly transmits the most-significant bit of the fraction. (Most binary floating-point formats assume that `f` is is normalized, which means by definition that the exponent `b` is adjusted and `f` is shifted left until the most-significant bit of `f` is one. Most formats then choose to delete the most-significant bit from the encoding. If we were to do that, we would insist that the actual value of `f` be in the range 2048..4095, and then transmit only `f - 2048`, saving a bit. However, this complicates the handling of gradual underflow; see next point.)
 * Gradual underflow at the bottom of the range is automatic and simple with this encoding; the more sophisticated schemes need extra logic (and extra testing) in order to provide the same feature.
 
+#### JavaScript decoder
+
+```javascript
+function sflt162f(rawSflt16)
+	{
+	// rawSflt16 is the 2-byte number decoded from wherever;
+	// it's in range 0..0xFFFF
+	// bit 15 is the sign bit
+	// bits 14..11 are the exponent
+	// bits 10..0 are the the mantissa. Unlike IEEE format,
+	// 	the msb is transmitted; this means that numbers
+	//	might not be normalized, but makes coding for
+	//	underflow easier.
+	// As with IEEE format, negative zero is possible, so
+	// we special-case that in hopes that JavaScript will
+	// also cooperate.
+	//
+	// The result is a number in the open interval (-1.0, 1.0);
+	//
+
+	// throw away high bits for repeatability.
+	rawSflt16 &= 0xFFFF;
+
+	// special case minus zero:
+	if (rawSflt16 == 0x8000)
+		return -0.0;
+
+	// extract the sign.
+	var sSign = ((rawSflt16 & 0x8000) != 0) ? -1 : 1;
+
+	// extract the exponent
+	var exp1 = (rawSflt16 >> 11) & 0xF;
+
+	// extract the "mantissa" (the fractional part)
+	var mant1 = (rawSflt16 & 0x7FF) / 2048.0;
+
+	// convert back to a floating point number. We hope
+	// that Math.pow(2, k) is handled efficiently by
+	// the JS interpreter! If this is time critical code,
+	// you can replace by a suitable shift and divide.
+	var f_unscaled = sSign * mant1 * Math.pow(2, exp1 - 15);
+
+	return f_unscaled;
+	}
+```
+
 ### uflt16
 
 A `uflt16` datum represents an unsigned floating point number in the range [0, 1.0), transmitted as a 16-bit field. The encoded field is interpreted as follows:
@@ -740,6 +790,44 @@ Floating point mavens will immediately recognize:
 * Numbers do not need to be normalized (although in practice they always are).
 * The format is somewhat wasteful, because it explicitly transmits the most-significant bit of the fraction. (Most binary floating-point formats assume that `f` is is normalized, which means by definition that the exponent `b` is adjusted and `f` is shifted left until the most-significant bit of `f` is one. Most formats then choose to delete the most-significant bit from the encoding. If we were to do that, we would insist that the actual value of `f` be in the range 4096..8191, and then transmit only `f - 4096`, saving a bit. However, this complicated the handling of gradual underflow; see next point.)
 * Gradual underflow at the bottom of the range is automatic and simple with this encoding; the more sophisticated schemes need extra logic (and extra testing) in order to provide the same feature.
+
+#### JavaScript decoder
+
+```javascript
+function uflt162f(rawUflt16)
+	{
+	// rawUflt16 is the 2-byte number decoded from wherever;
+	// it's in range 0..0xFFFF
+	// bits 15..12 are the exponent
+	// bits 11..0 are the the mantissa. Unlike IEEE format,
+	// 	the msb is transmitted; this means that numbers
+	//	might not be normalized, but makes coding for
+	//	underflow easier.
+	// As with IEEE format, negative zero is possible, so
+	// we special-case that in hopes that JavaScript will
+	// also cooperate.
+	//
+	// The result is a number in the half-open interval [0, 1.0);
+	//
+
+	// throw away high bits for repeatability.
+	rawUflt16 &= 0xFFFF;
+
+	// extract the exponent
+	var exp1 = (rawUflt16 >> 12) & 0xF;
+
+	// extract the "mantissa" (the fractional part)
+	var mant1 = (rawUflt16 & 0xFFF) / 4096.0;
+
+	// convert back to a floating point number. We hope
+	// that Math.pow(2, k) is handled efficiently by
+	// the JS interpreter! If this is time critical code,
+	// you can replace by a suitable shift and divide.
+	var f_unscaled = mant1 * Math.pow(2, exp1 - 15);
+
+	return f_unscaled;
+	}
+```
 
 ### sflt12
 
@@ -770,6 +858,53 @@ Floating point mavens will immediately recognize:
 * Gradual underflow at the bottom of the range is automatic and simple with this encoding; the more sophisticated schemes need extra logic (and extra testing) in order to provide the same feature.
 * It can be strongly argued that dropping the sign bit would be worth the effort, as this would get us 14% more resolution for a minor amount of work.
 
+#### JavaScript decoder
+
+```javascript
+function sflt122f(rawSflt12)
+	{
+	// rawSflt12 is the 2-byte number decoded from wherever;
+	// it's in range 0..0xFFF (12 bits). For safety, we mask
+	// on entry and discard the high-order bits.
+	// bit 11 is the sign bit
+	// bits 10..7 are the exponent
+	// bits 6..0 are the the mantissa. Unlike IEEE format,
+	// 	the msb is transmitted; this means that numbers
+	//	might not be normalized, but makes coding for
+	//	underflow easier.
+	// As with IEEE format, negative zero is possible, so
+	// we special-case that in hopes that JavaScript will
+	// also cooperate.
+	//
+	// The result is a number in the open interval (-1.0, 1.0);
+	//
+
+	// throw away high bits for repeatability.
+	rawSflt12 &= 0xFFF;
+
+	// special case minus zero:
+	if (rawSflt12 == 0x800)
+		return -0.0;
+
+	// extract the sign.
+	var sSign = ((rawSflt12 & 0x800) != 0) ? -1 : 1;
+
+	// extract the exponent
+	var exp1 = (rawSflt12 >> 7) & 0xF;
+
+	// extract the "mantissa" (the fractional part)
+	var mant1 = (rawSflt12 & 0x7F) / 128.0;
+
+	// convert back to a floating point number. We hope
+	// that Math.pow(2, k) is handled efficiently by
+	// the JS interpreter! If this is time critical code,
+	// you can replace by a suitable shift and divide.
+	var f_unscaled = sSign * mant1 * Math.pow(2, exp1 - 15);
+
+	return f_unscaled;
+	}
+```
+
 ### uflt12
 
 A `uflt12` datum represents an unsigned floating point number in the range [0, 1.0), transmitted as a 16-bit field. The encoded field is interpreted as follows:
@@ -794,6 +929,45 @@ Floating point mavens will immediately recognize:
 * Numbers do not need to be normalized (although in practice they always are).
 * The format is somewhat wasteful, because it explicitly transmits the most-significant bit of the fraction. (Most binary floating-point formats assume that `f` is is normalized, which means by definition that the exponent `b` is adjusted and `f` is shifted left until the most-significant bit of `f` is one. Most formats then choose to delete the most-significant bit from the encoding. If we were to do that, we would insist that the actual value of `f` be in the range 256 .. 512, and then transmit only `f - 256`, saving a bit. However, this complicates the handling of gradual underflow; see next point.)
 * Gradual underflow at the bottom of the range is automatic and simple with this encoding; the more sophisticated schemes need extra logic (and extra testing) in order to provide the same feature.
+
+#### JavaScript decoder
+
+```javascript
+function uflt122f(rawUflt12)
+	{
+	// rawUflt12 is the 2-byte number decoded from wherever;
+	// it's in range 0..0xFFF (12 bits). For safety, we mask
+	// on entry and discard the high-order bits.
+	// bits 11..8 are the exponent
+	// bits 7..0 are the the mantissa. Unlike IEEE format,
+	// 	the msb is transmitted; this means that numbers
+	//	might not be normalized, but makes coding for
+	//	underflow easier.
+	// As with IEEE format, negative zero is possible, so
+	// we special-case that in hopes that JavaScript will
+	// also cooperate.
+	//
+	// The result is a number in the half-open interval [0, 1.0);
+	//
+
+	// throw away high bits for repeatability.
+	rawUflt12 &= 0xFFF;
+
+	// extract the exponent
+	var exp1 = (rawUflt12 >> 8) & 0xF;
+
+	// extract the "mantissa" (the fractional part)
+	var mant1 = (rawUflt12 & 0xFF) / 256.0;
+
+	// convert back to a floating point number. We hope
+	// that Math.pow(2, k) is handled efficiently by
+	// the JS interpreter! If this is time critical code,
+	// you can replace by a suitable shift and divide.
+	var f_unscaled = sSign * mant1 * Math.pow(2, exp1 - 15);
+
+	return f_unscaled;
+	}
+```
 
 ## Release History
 
