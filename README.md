@@ -16,7 +16,7 @@ The [MCCI arduino-lorawan](https://github.com/mcci-catena/arduino-lorawan) libra
 This library requires Arduino IDE version 1.6.6 or above, since it
 requires C99 mode to be enabled by default.
 
-[![GitHub release](https://img.shields.io/github/release/mcci-catena/arduino-lmic.svg)](https://github.com/mcci-catena/arduino-lmic/releases/latest) [![GitHub commits](https://img.shields.io/github/commits-since/mcci-catena/arduino-lmic/latest.svg)](https://github.com/mcci-catena/arduino-lmic/compare/V2.1.5...master) [![Build Status](https://travis-ci.com/mcci-catena/arduino-lmic.svg?branch=master)](https://travis-ci.com/mcci-catena/arduino-lmic)
+[![GitHub release](https://img.shields.io/github/release/mcci-catena/arduino-lmic.svg)](https://github.com/mcci-catena/arduino-lmic/releases/latest) [![GitHub commits](https://img.shields.io/github/commits-since/mcci-catena/arduino-lmic/latest.svg)](https://github.com/mcci-catena/arduino-lmic/compare/V2.2.0...master) [![Build Status](https://travis-ci.com/mcci-catena/arduino-lmic.svg?branch=master)](https://travis-ci.com/mcci-catena/arduino-lmic)
 
 **Contents:**
 
@@ -971,9 +971,9 @@ function uflt122f(rawUflt12)
 
 ## Release History
 
-- V2.1.6 adds encoding functions.
+- V2.2.0 adds encoding functions and `tn-otaa-feather-us915-dht22.ino` example. Plus a large number of issues: [#59](https://github.com/mcci-catena/arduino-lmic/issues/59), [#60](https://github.com/mcci-catena/arduino-lmic/issues/60), [#63](https://github.com/mcci-catena/arduino-lmic/issues/63), [#64](https://github.com/mcci-catena/arduino-lmic/issues/47) (listen-before-talk for Japan), [#65](https://github.com/mcci-catena/arduino-lmic/issues/65), [#68](https://github.com/mcci-catena/arduino-lmic/issues/68), [#75](https://github.com/mcci-catena/arduino-lmic/issues/75), [#78](https://github.com/mcci-catena/arduino-lmic/issues/78), [#80](https://github.com/mcci-catena/arduino-lmic/issues/80), [#91](https://github.com/mcci-catena/arduino-lmic/issues/91), [#98](https://github.com/mcci-catena/arduino-lmic/issues/98), [#101](https://github.com/mcci-catena/arduino-lmic/issues/101). Added full Travis CI testing, switched to travis-ci.com as the CI service. Prepared to publish library in the offical Arduino library list.
 
-- V2.1.5 fixes issue [#56] (a documentation bug). Documentation was quickly reviewed and other issues were corrected. The OTAA examples were also updated slightly.
+- V2.1.5 fixes issue [#56](https://github.com/mcci-catena/arduino-lmic/issues/56) (a documentation bug). Documentation was quickly reviewed and other issues were corrected. The OTAA examples were also updated slightly.
 
 - V2.1.4 fixes issues [#47](https://github.com/mcci-catena/arduino-lmic/issues/47) and [#50](https://github.com/mcci-catena/arduino-lmic/issues/50) in the radio driver for the SX1276 (both related to handling of output power control bits).
 
