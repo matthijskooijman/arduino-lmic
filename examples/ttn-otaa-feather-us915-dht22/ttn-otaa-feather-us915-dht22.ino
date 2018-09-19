@@ -4,7 +4,7 @@
  * Example of sending a valid LoRaWAN packet with DHT22 temperature and
  * humidity data to The Things Networ using a Feather M0 LoRa.
  * 
- * Learn Guide:  
+ * Learn Guide: https://learn.adafruit.com/the-things-network-for-feather
  * 
  * Copyright (c) 2015 Thomas Telkamp and Matthijs Kooijman
  * Copyright (c) 2018 Terry Moore, MCCI
