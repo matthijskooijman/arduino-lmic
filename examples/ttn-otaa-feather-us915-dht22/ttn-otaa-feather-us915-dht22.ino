@@ -34,17 +34,17 @@ DHT dht(DHTPIN, DHTTYPE);
 // first. When copying an EUI from ttnctl output, this means to reverse
 // the bytes. For TTN issued EUIs the last bytes should be 0xD5, 0xB3,
 // 0x70.
-static const u1_t PROGMEM APPEUI[8]= { 0xEF, 0x24, 0x01, 0xD0, 0x7E, 0xD5, 0xB3, 0x70 };
+static const u1_t PROGMEM APPEUI[8]= { YOUR_APPEUI_HERE };
 void os_getArtEui (u1_t* buf) { memcpy_P(buf, APPEUI, 8);}
 
 // This should also be in little endian format, see above.
-static const u1_t PROGMEM DEVEUI[8]= { 0xD6, 0xDD, 0x10, 0x00, 0x00, 0xB6, 0x76, 0x98 };
+static const u1_t PROGMEM DEVEUI[8] = { YOUR_DEVEUI_HERE };
 void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 
 // This key should be in big endian format (or, since it is not really a
 // number but a block of memory, endianness does not really apply). In
 // practice, a key taken from the TTN console can be copied as-is.
-static const u1_t PROGMEM APPKEY[16] = { 0xBE, 0xDE, 0xCE, 0x25, 0x06, 0x38, 0xD1, 0x4D, 0x8E, 0x73, 0xE9, 0xE5, 0x61, 0x9F, 0xCC, 0xC3 };
+static const u1_t PROGMEM APPKEY[16] = { YOUR_APPKEY_HERE };
 void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
 
 // payload to send to TTN gateway
