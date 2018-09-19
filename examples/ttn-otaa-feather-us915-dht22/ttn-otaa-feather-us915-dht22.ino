@@ -215,8 +215,11 @@ void do_send(osjob_t* j){
         byte humidHigh = highByte(payloadHumid);
         payload[2] = humidLow;
         payload[3] = humidHigh;
-     
-        // Prepare upstream data transmission at the next possible time.
+
+        // prepare upstream data transmission at the next possible time.
+        // transmit on port 1 (the first parameter); you can use any value from 1 to 223 (others are reserved).
+        // don't request an ack (the last parameter, if not zero, requests an ack from the network).
+        // Remember, acks consume a lot of network resources; don't ask for an ack unless you really need it.
         LMIC_setTxData2(1, payload, sizeof(payload)-1, 0);
     }
     // Next TX is scheduled after TX_COMPLETE event.
@@ -234,9 +237,14 @@ void setup() {
     os_init();
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
-
+    // Disable link-check mode and ADR, because ADR tends to complicate testing.
     LMIC_setLinkCheckMode(0);
+    // Set the data rate to Spreading Factor 7.  This is the fastest supported rate for 125 kHz channels, and it
+    // minimizes air time and battery power. Set the transmission power to 14 dBi (25 mW).
     LMIC_setDrTxpow(DR_SF7,14);
+    // in the US, with TTN, it saves join time if we start on subband 1 (channels 8-15). This will
+    // get overridden after the join by parameters from the network. If working with other
+    // networks or in other regions, this will need to be changed.
     LMIC_selectSubBand(1);
 
     // Start job (sending automatically starts OTAA too)
@@ -244,5 +252,10 @@ void setup() {
 }
 
 void loop() {
-    os_runloop_once();
+  // we call the LMIC's runloop processor. This will cause things to happen based on events and time. One
+  // of the things that will happen is callbacks for transmission complete or received messages. We also
+  // use this loop to queue periodic data transmissions.  You can put other things here in the `loop()` routine,
+  // but beware that LoRaWAN timing is pretty tight, so if you do more than a few milliseconds of work, you
+  // will want to call `os_runloop_once()` every so often, to keep the radio running.
+  os_runloop_once();
 }
