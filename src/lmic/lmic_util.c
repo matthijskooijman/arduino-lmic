@@ -15,7 +15,7 @@ Author:
 
 #include "lmic_util.h"
 
-#include <math.H>
+#include <math.h>
 
 /*
 
