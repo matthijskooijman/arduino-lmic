@@ -85,6 +85,20 @@ const lmic_pinmap lmic_pins = {
     .rssi_cal = 8,              // LBT cal for the Adafruit Feather M0 LoRa, in dB
     .spi_freq = 8000000,
 };
+#elif defined(ARDUINO_AVR_FEATHER32U4)
+// Pin mapping for Adafruit Feather 32u4 LoRa, etc.
+// Just like Feather M0 LoRa, but uses SPI at 1MHz; and that's only
+// because MCCI doesn't have a test board; probably higher frequencies
+// will work.
+const lmic_pinmap lmic_pins = {
+    .nss = 8,
+    .rxtx = LMIC_UNUSED_PIN,
+    .rst = 4,
+    .dio = {3, 6, LMIC_UNUSED_PIN},
+    .rxtx_rx_active = 0,
+    .rssi_cal = 8,              // LBT cal for the Adafruit Feather M0 LoRa, in dB
+    .spi_freq = 1000000,
+};
 #elif defined(ARDUINO_CATENA_4551)
 // Pin mapping for Murata module / Catena 4551
 const lmic_pinmap lmic_pins = {
