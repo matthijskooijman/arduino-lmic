@@ -58,6 +58,7 @@ requires C99 mode to be enabled by default.
 	- [RXTX Polarity](#rxtx-polarity)
 	- [Pin mapping](#pin-mapping)
 		- [Adafruit Feather M0 LoRa](#adafruit-feather-m0-lora)
+		- [Adafruit Feather 32u4 LoRa](#adafruit-feather-32u4-lora)
 		- [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
 		- [MCCI Catena 4450/4460](#mcci-catena-44504460)
 		- [MCCI Catena 4551](#mcci-catena-4551)
@@ -452,12 +453,12 @@ The configuration entry `lmic_pinmap::rxtx_rx_active` should be set to the state
 > For pre-configured boards, refer to the documentation on your board for the required settings. See the following:
 >
 > - [Adafruit Feather M0 LoRa](#adafruit-feather-m0-lora)
+> - [Adafruit Feather 32u4 LoRa](#adafruit-feather-32u4-lora)
 > - [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
 > - [MCCI Catena 4450/4460](#mcci-catena-44504460)
 > - [MCCI Catena 4551](#mcci-catena-4551)
 
-If you don't have the board documentation, you need to provide your own `lmic_pinmap` values. As described above, a variety of configurations are possible. To tell the LMIC library how your board is configured, a pin mapping struct
-is used in the sketch file.
+If you don't have the board documentation, you need to provide your own `lmic_pinmap` values. As described above, a variety of configurations are possible. To tell the LMIC library how your board is configured, you must declare a variable containing a pin mapping struct in the sketch file.
 
 For example, this could look like this:
 
@@ -469,6 +470,12 @@ For example, this could look like this:
     .dio = {2, 3, 4},
     // optional: set polarity of rxtx pin.
     .rxtx_rx_active = 0,
+    // optional: set RSSI cal for listen-before-talk
+    // this value is in dB, and is added to RSSI
+    // measured prior to decision.
+    // Must include noise guardband! Ignored in US,
+    // EU, IN, other markets where LBT is not required.
+    .rssi_cal = 0,
     // optional: override LMIC_SPI_FREQ if non-zero
     .spi_freq = 0,
   };
@@ -482,18 +489,16 @@ respectively. Any pins that are not needed should be specified as
 potentially left out (depending on the environments and requirements,
 see the notes above for when a pin can or cannot be left out).
 
-The name of this struct must always be `lmic_pins`, which is a special name
-recognized by the library.
+The name of the variable containing this struct must always be `lmic_pins`, which is a special name recognized by the library.
 
+<!-- there are links to the following section, so be careful when renaming -->
 #### Adafruit Feather M0 LoRa
 
-See [Feather M0 LoRa](https://www.adafruit.com/product/3178).
+See Adafruit's [Feather M0 LoRa product page](https://www.adafruit.com/product/3178).
 This board uses the following pin mapping, as shown in the various "...-feather"
 sketches.
 
-DIO0 is hard-wired by Adafruit to Arduino D3, but DIO1 is not
-connected to any Arduino pin (it comes to JP1 pin 1, but is not otherwise connected). This pin table
-assumes that you have manually wired JP1 pin 1 to Arduino JP3 pin 9 (Arduino D6).
+DIO0 is hard-wired by Adafruit to Arduino D3, but DIO1 is not connected to any Arduino pin (it comes to JP1 pin 1, but is not otherwise connected). This pin table assumes that you have manually wired JP1 pin 1 to Arduino JP3 pin 9 (Arduino D6).
 
 DIO2 is not connected.
 
@@ -506,6 +511,12 @@ const lmic_pinmap lmic_pins = {
 };
 ```
 
+<!-- there are links to the following section, so be careful when renaming -->
+#### Adafruit Feather 32u4 LoRa
+
+See Adafruit's [Feather 32u4 LoRa product page](https://www.adafruit.com/product/3078).  This board is supported by the [ttn-otaa-feather-us915.ino](examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino) example sketch. It uses the same pin mapping as the [Feather M0 LoRa](#adafruit-feather-m0-lora).
+
+<!-- there are links to the following section, so be careful when renaming -->
 #### LoRa Nexus by Ideetron
 
 This board uses the following pin mapping:
@@ -519,6 +530,7 @@ This board uses the following pin mapping:
   };
 ```
 
+<!-- there are links to the following section, so be careful when renaming -->
 #### MCCI Catena 4450/4460
 
 See [MCCI Catena 4450](https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4450-lorawan-iot-device) and [MCCI Catena 4460](https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4460-sensor-wing-w-bme680).
@@ -534,6 +546,7 @@ const lmic_pinmap lmic_pins = {
 };
 ```
 
+<!-- there are links to the following section, so be careful when renaming -->
 #### MCCI Catena 4551
 
 See [MCCI Catena 4551](https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4551-integrated-lorawan-node).
@@ -554,9 +567,9 @@ const lmic_pinmap lmic_pins = {
 
 ## Example Sketches
 
-This library currently provides several examples:
+This library provides several examples.
 
- - `ttn-abp.ino` shows a basic transmission of a "Hello, world!" message
+ - [`ttn-abp.ino`](examples/ttn-abp/ttn-abp.ino) shows a basic transmission of a "Hello, world!" message
    using the LoRaWAN protocol. It contains some frequency settings and
    encryption keys intended for use with The Things Network, but these
    also correspond to the default settings of most gateways, so it
@@ -568,24 +581,32 @@ This library currently provides several examples:
    Reception of packets (in response to transmission, using the RX1 and
    RX2 receive windows is also supported).
 
- - `ttn-otaa.ino` also sends a "Hello, world!" message, but uses over
+ - [`ttn-otaa.ino`](examples/ttn-otaa/ttn-otaa.ino) also sends a "Hello, world!" message, but uses over
    the air activation (OTAA) to first join a network to establish a
    session and security keys. This was tested with The Things Network,
    but should also work (perhaps with some changes) for other networks.
 
- - `raw.ino` shows how to access the radio on a somewhat low level,
+ - [`raw.ino`](examples/raw/raw.ino) shows how to access the radio on a somewhat low level,
    and allows to send raw (non-LoRaWAN) packets between nodes directly.
    This is useful to verify basic connectivity, and when no gateway is
    available, but this example also bypasses duty cycle checks, so be
    careful when changing the settings.
 
- - `raw-feather.ino` is a version of `raw.ino` that is completely configured
+ - [`raw-feather.ino`](examples/raw-feather/raw-feather.ino) is a version of `raw.ino` that is completely configured
    for the Adafruit [Feather M0 LoRa](https://www.adafruit.com/product/3178)
 
- - `ttn-otaa-feather-us915.ino` is a version of `ttn-otaa.ino` that has
+ - [`ttn-otaa-feather-us915.ino`](examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino) is a version of `ttn-otaa.ino` that has
    been configured for use with the Feather M0 LoRa, on the US915 bandplan,
    with The Things Network. Remember that you may also have to change `config.h`
-   from defaults.
+   from defaults. This sketch also works with the MCCI Catena family of products
+   as well as with the Feather 32u4 LoRa.
+
+ - [`ttn-otaa-feather-us915-dht22.ino`](examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino)
+   is a further refinement of `ttn-otaa-feather-us915.ino`. It measures and
+   transmits temperature and relative humidity using a DHT22 sensor. It's only
+   been tested with Feather M0-family products.
+
+ - [`header_test.ino`](examples/header_test/header_test.ino) just tests the header files; it's used for regression testing.
 
 ## Timing
 
