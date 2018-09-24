@@ -85,7 +85,7 @@ LMIC_f2sflt16(
                 // bits 14..11 are the exponent
                 // bits 10..0 are the fraction
                 // we conmpute the fraction and then decide if we need to round.
-                uint16_t outputFraction = scalbnf(normalValue, 11) + 0.5;
+                uint16_t outputFraction = ldexpf(normalValue, 11) + 0.5;
                 if (outputFraction >= (1 << 11u))
                         {
                         // reduce output fraction
@@ -171,7 +171,7 @@ LMIC_f2sflt12(
                 // bits 14..11 are the exponent
                 // bits 10..0 are the fraction
                 // we conmpute the fraction and then decide if we need to round.
-                uint16_t outputFraction = scalbnf(normalValue, 7) + 0.5;
+                uint16_t outputFraction = ldexpf(normalValue, 7) + 0.5;
                 if (outputFraction >= (1 << 7u))
                         {
                         // reduce output fraction
@@ -245,7 +245,7 @@ LMIC_f2uflt16(
                 // bits 15..12 are the exponent
                 // bits 11..0 are the fraction
                 // we conmpute the fraction and then decide if we need to round.
-                uint16_t outputFraction = scalbnf(normalValue, 12) + 0.5;
+                uint16_t outputFraction = ldexpf(normalValue, 12) + 0.5;
                 if (outputFraction >= (1 << 12u))
                         {
                         // reduce output fraction
@@ -317,7 +317,7 @@ LMIC_f2uflt12(
                 // bits 11..8 are the exponent
                 // bits 7..0 are the fraction
                 // we conmpute the fraction and then decide if we need to round.
-                uint16_t outputFraction = scalbnf(normalValue, 8) + 0.5;
+                uint16_t outputFraction = ldexpf(normalValue, 8) + 0.5;
                 if (outputFraction >= (1 << 8u))
                         {
                         // reduce output fraction
