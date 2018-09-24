@@ -1,5 +1,3 @@
-/* raw-feather.ino	Tue Jan 23 2018 10:25:50 chwon */
-
 /*
 
 Module:  raw-feather.ino
@@ -7,31 +5,12 @@ Module:  raw-feather.ino
 Function:
         Slightly improved Raw test example, for Adafruit Feather M0 LoRa
 
-Version:
-        V0.7.0	Tue Jan 23 2018 10:25:50 chwon	Edit level 2
-
-Copyright notice:
-        This file copyright (C) 2017, 2018 by
-
-                MCCI Corporation
-                3520 Krums Corners Road
-                Ithaca, NY  14850
-
-        An unpublished work.  All rights reserved.
-
-        This file is proprietary information, and may not be disclosed or
-        copied without the prior permission of MCCI Corporation.
+Copyright notice and License:
+        See LICENSE file accompanying this project.
 
 Author:
         Matthijs Kooijman  2015
         Terry Moore, MCCI Corporation	April 2017
-
-Revision history:
-   0.5.0  Sat Apr  1 2017 22:26:22  tmm
-        Module created.
-
-   0.7.0  Tue Jan 23 2018 10:25:50  chwon
-        Add Catena 4551 platform support.
 
 */
 
