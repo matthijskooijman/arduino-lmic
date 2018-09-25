@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2016-2018 MCCI Corporation.
  * All rights reserved.
- *
+ * 
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *  * Redistributions of source code must retain the above copyright
@@ -840,7 +840,7 @@ static bit_t decodeFrame (void) {
 
     // Process OPTS
     int m = LMIC.rssi - RSSI_OFF - getSensitivity(LMIC.rps);
-    LMIC.margin = m < 0 ? 0 : m > 31 ? 31 : m;
+    LMIC.margin = m < 0 ? 0 : m > 254 ? 254 : m;
 
 #if LMIC_DEBUG_LEVEL > 0
     LMIC_DEBUG_PRINTF("%lu: process options (olen=%#x)\n", os_getTime(), olen);
