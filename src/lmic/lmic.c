@@ -612,7 +612,7 @@ scan_mac_cmds(
             // LMIC.snr is SNR time 4, convert to real SNR; rounding towards zero.
             const int snr = (LMIC.snr + 2) / 4;
             // per [1.02] 5.5. the margin is the SNR.
-            LMIC.devsAnsMargin = (u1_t)(0b00111111 & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr));
+            LMIC.devAnsMargin = (u1_t)(0b00111111 & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr));
             oidx += 1;
             continue;
         }
