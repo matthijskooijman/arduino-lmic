@@ -843,6 +843,8 @@ static bit_t decodeFrame (void) {
         LMIC.adrAckReq = LINK_CHECK_INIT;
 
     int m = LMIC.rssi - RSSI_OFF - getSensitivity(LMIC.rps);
+    // for legacy reasons, LMIC.margin is set to the unsigned sensitivity. It can never be negative.
+    // it's only computed for legacy clients
     LMIC.margin = m < 0 ? 0 : m > 254 ? 254 : m;
 
 #if LMIC_DEBUG_LEVEL > 0
