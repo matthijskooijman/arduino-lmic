@@ -253,7 +253,7 @@ struct lmic_t {
 
     u4_t        freq;
     s1_t        rssi;
-    s1_t        snr;            // LMIC.snr is SNR time 4
+    s1_t        snr;            // LMIC.snr is SNR times 4
     rps_t       rps;
     u1_t        rxsyms;
     u1_t        dndr;
