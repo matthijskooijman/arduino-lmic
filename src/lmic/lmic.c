@@ -1263,7 +1263,7 @@ static void buildDataFrame (void) {
     if( LMIC.devsAns ) {  // answer to device status
         LMIC.frame[end+0] = MCMD_DEVS_ANS;
         LMIC.frame[end+1] = os_getBattLevel();
-        LMIC.frame[end+2] = LMIC.margin;
+        LMIC.frame[end+2] = LMIC.devAnsMargin;
         end += 3;
         LMIC.devsAns = 0;
     }
