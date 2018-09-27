@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2016-2018 MCCI Corporation.
  * All rights reserved.
- * 
+ *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
  *  * Redistributions of source code must retain the above copyright
@@ -609,6 +609,10 @@ scan_mac_cmds(
         }
         case MCMD_DEVS_REQ: {
             LMIC.devsAns = 1;
+            // LMIC.snr is SNR time 4, convert to real SNR; rounding towards zero.
+            const int snr = (LMIC.snr + 2) / 4;
+            // per [1.02] 5.5. the margin is the SNR.
+            LMIC.devAnsMargin = (u1_t)(0b00111111 & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr));
             oidx += 1;
             continue;
         }
@@ -838,11 +842,13 @@ static bit_t decodeFrame (void) {
     if( LMIC.adrAckReq != LINK_CHECK_OFF )
         LMIC.adrAckReq = LINK_CHECK_INIT;
 
-    // Process OPTS
     int m = LMIC.rssi - RSSI_OFF - getSensitivity(LMIC.rps);
+    // for legacy reasons, LMIC.margin is set to the unsigned sensitivity. It can never be negative.
+    // it's only computed for legacy clients
     LMIC.margin = m < 0 ? 0 : m > 254 ? 254 : m;
 
 #if LMIC_DEBUG_LEVEL > 0
+    // Process OPTS
     LMIC_DEBUG_PRINTF("%lu: process options (olen=%#x)\n", os_getTime(), olen);
 #endif
 
@@ -1257,7 +1263,7 @@ static void buildDataFrame (void) {
     if( LMIC.devsAns ) {  // answer to device status
         LMIC.frame[end+0] = MCMD_DEVS_ANS;
         LMIC.frame[end+1] = os_getBattLevel();
-        LMIC.frame[end+2] = LMIC.margin;
+        LMIC.frame[end+2] = LMIC.devAnsMargin;
         end += 3;
         LMIC.devsAns = 0;
     }

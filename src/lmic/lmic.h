@@ -253,7 +253,7 @@ struct lmic_t {
 
     u4_t        freq;
     s1_t        rssi;
-    s1_t        snr;
+    s1_t        snr;            // LMIC.snr is SNR times 4
     rps_t       rps;
     u1_t        rxsyms;
     u1_t        dndr;
@@ -315,6 +315,7 @@ struct lmic_t {
     u1_t        margin;
     bit_t       ladrAns;      // link adr adapt answer pending
     bit_t       devsAns;      // device status answer pending
+    s1_t        devAnsMargin; // SNR value between -32 and 31 (inclusive) for the last successfully received DevStatusReq command
     u1_t        adrEnabled;
     u1_t        moreData;     // NWK has more data pending
 #if !defined(DISABLE_MCMD_DCAP_REQ)
