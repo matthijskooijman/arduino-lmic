@@ -53,7 +53,7 @@ static const u1_t PROGMEM APPSKEY[16] = { FILLMEIN };
 // LoRaWAN end-device address (DevAddr)
 // See http://thethingsnetwork.org/wiki/AddressSpace
 // The library converts the address to network byte order as needed.
-static const u4_t DEVADDR = FILLMEIN ; // <-- Change this address for every node!
+static const u4_t DEVADDR = 0xFILLMEIN;
 
 // These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless
