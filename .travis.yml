@@ -47,6 +47,10 @@ install:
  - arduino --install-boards mcci:stm32
  - 'if [ -d $HOME/.arduino15/packages/mcci/hardware/stm32/1.1.0 ]; then echo "Work around broken BSP version 1.1.0" ; export MCCI_STM32_OPTS="$MCCI_STM32_OPTS --pref build.board=CATENA_4551" ; fi'
 
+cache:
+  directories:
+  - $HOME/.arduino15
+
 script:
 
 # simple header file test
