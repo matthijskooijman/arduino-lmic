@@ -41,9 +41,15 @@ before_install:
   - "echo $(_samdopts) $(_samdopts '' projcfg)"
 
 install:
+ - git clone --depth=1 https://github.com/adafruit/Adafruit_Sensor.git $HOME/arduino_ide/libraries/Adafruit_Sensor
+ - git clone --depth=1 https://github.com/adafruit/DHT-sensor-library.git $HOME/arduino_ide/libraries/DHT-sensor-library
  - arduino --install-boards mcci:samd
  - arduino --install-boards mcci:stm32
  - 'if [ -d $HOME/.arduino15/packages/mcci/hardware/stm32/1.1.0 ]; then echo "Work around broken BSP version 1.1.0" ; export MCCI_STM32_OPTS="$MCCI_STM32_OPTS --pref build.board=CATENA_4551" ; fi'
+
+cache:
+  directories:
+  - $HOME/.arduino15
 
 script:
 
@@ -90,13 +96,31 @@ script:
  - _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp/ttn-abp.ino
  - _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp/ttn-abp.ino
 
+# test ttn-otaa-feather-us915-dht22 in all relevant regions with sx1276
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino
+#- _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino
+#- _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino
+#- _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino
+#- _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino
+
+# test ttn-abp-feather-us915-dht22 in all relevant regions with sx1276
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino
+#- _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino
+#- _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino
+#- _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino
+#- _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino
+
 #
 # some tests that should generate build failures.
 #
-# COMPILE_REGRESSION_TEST must be defined for ttn-otaa-feather-us915, ttn-otaa, ttn-abp
+# COMPILE_REGRESSION_TEST must be defined for ttn-otaa-feather-us915, ttn-otaa, ttn-abp, etc.
  - _projcfg CFG_us915 CFG_sx1272_radio && { arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; _expect_failure; }
  - _projcfg CFG_us915 CFG_sx1276_radio && { arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; _expect_failure; }
  - _projcfg CFG_us915 CFG_sx1276_radio && { arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp/ttn-abp.ino ; _expect_failure; }
+ - _projcfg CFG_us915 CFG_sx1272_radio && { arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino ; _expect_failure; }
+ - _projcfg CFG_us915 CFG_sx1272_radio && { arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino ; _expect_failure; }
 #
 # Only one radio may be defined
  - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1272_radio CFG_sx1276_radio && { arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; _expect_failure; }
