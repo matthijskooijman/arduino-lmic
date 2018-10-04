@@ -411,7 +411,7 @@ the transceiver will already be in a sane state on power-on, but
 connecting it might prevent problems in some cases.
 
 On the Arduino side, any I/O pin can be used. The pin number used must
-be configured in the pin mapping `lmic_pinmap::rst` field (see [below(#pin-mapping)]).
+be configured in the pin mapping `lmic_pinmap::rst` field (see [below](#pin-mapping)).
 
 ### RXTX
 
@@ -751,7 +751,7 @@ function sflt162f(rawSflt16)
 	// bit 15 is the sign bit
 	// bits 14..11 are the exponent
 	// bits 10..0 are the the mantissa. Unlike IEEE format,
-	// 	the msb is transmitted; this means that numbers
+	// 	the msb is explicit; this means that numbers
 	//	might not be normalized, but makes coding for
 	//	underflow easier.
 	// As with IEEE format, negative zero is possible, so
@@ -821,7 +821,7 @@ function uflt162f(rawUflt16)
 	// it's in range 0..0xFFFF
 	// bits 15..12 are the exponent
 	// bits 11..0 are the the mantissa. Unlike IEEE format,
-	// 	the msb is transmitted; this means that numbers
+	// 	the msb is explicit; this means that numbers
 	//	might not be normalized, but makes coding for
 	//	underflow easier.
 	// As with IEEE format, negative zero is possible, so
@@ -890,7 +890,7 @@ function sflt122f(rawSflt12)
 	// bit 11 is the sign bit
 	// bits 10..7 are the exponent
 	// bits 6..0 are the the mantissa. Unlike IEEE format,
-	// 	the msb is transmitted; this means that numbers
+	// 	the msb is explicit; this means that numbers
 	//	might not be normalized, but makes coding for
 	//	underflow easier.
 	// As with IEEE format, negative zero is possible, so
@@ -961,7 +961,7 @@ function uflt122f(rawUflt12)
 	// on entry and discard the high-order bits.
 	// bits 11..8 are the exponent
 	// bits 7..0 are the the mantissa. Unlike IEEE format,
-	// 	the msb is transmitted; this means that numbers
+	// 	the msb is explicit; this means that numbers
 	//	might not be normalized, but makes coding for
 	//	underflow easier.
 	// As with IEEE format, negative zero is possible, so
