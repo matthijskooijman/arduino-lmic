@@ -16,7 +16,7 @@ The [MCCI arduino-lorawan](https://github.com/mcci-catena/arduino-lorawan) libra
 This library requires Arduino IDE version 1.6.6 or above, since it
 requires C99 mode to be enabled by default.
 
-[![GitHub release](https://img.shields.io/github/release/mcci-catena/arduino-lmic.svg)](https://github.com/mcci-catena/arduino-lmic/releases/latest) [![GitHub commits](https://img.shields.io/github/commits-since/mcci-catena/arduino-lmic/latest.svg)](https://github.com/mcci-catena/arduino-lmic/compare/V2.2.1...master) [![Build Status](https://travis-ci.com/mcci-catena/arduino-lmic.svg?branch=master)](https://travis-ci.com/mcci-catena/arduino-lmic)
+[![GitHub release](https://img.shields.io/github/release/mcci-catena/arduino-lmic.svg)](https://github.com/mcci-catena/arduino-lmic/releases/latest) [![GitHub commits](https://img.shields.io/github/commits-since/mcci-catena/arduino-lmic/latest.svg)](https://github.com/mcci-catena/arduino-lmic/compare/V2.2.2...master) [![Build Status](https://travis-ci.com/mcci-catena/arduino-lmic.svg?branch=master)](https://travis-ci.com/mcci-catena/arduino-lmic)
 
 **Contents:**
 
@@ -569,31 +569,15 @@ const lmic_pinmap lmic_pins = {
 
 This library provides several examples.
 
- - [`ttn-abp.ino`](examples/ttn-abp/ttn-abp.ino) shows a basic transmission of a "Hello, world!" message
+ - [`ttn-otaa.ino`](examples/ttn-otaa/ttn-otaa.ino) shows a basic transmission of a "Hello, world!" message
    using the LoRaWAN protocol. It contains some frequency settings and
    encryption keys intended for use with The Things Network, but these
    also correspond to the default settings of most gateways, so it
-   should work with other networks and gateways as well. This example
-   uses activation-by-personalization (ABP, preconfiguring a device
-   address and encryption keys), and does not employ over-the-air
-   activation.
-
-   Reception of packets (in response to transmission, using the RX1 and
-   RX2 receive windows is also supported).
-
- - [`ttn-otaa.ino`](examples/ttn-otaa/ttn-otaa.ino) also sends a "Hello, world!" message, but uses over
-   the air activation (OTAA) to first join a network to establish a
+   should work with other networks and gateways as well.
+   The example uses over-the-air activation (OTAA) to first join the network to establish a
    session and security keys. This was tested with The Things Network,
    but should also work (perhaps with some changes) for other networks.
-
- - [`raw.ino`](examples/raw/raw.ino) shows how to access the radio on a somewhat low level,
-   and allows to send raw (non-LoRaWAN) packets between nodes directly.
-   This is useful to verify basic connectivity, and when no gateway is
-   available, but this example also bypasses duty cycle checks, so be
-   careful when changing the settings.
-
- - [`raw-feather.ino`](examples/raw-feather/raw-feather.ino) is a version of `raw.ino` that is completely configured
-   for the Adafruit [Feather M0 LoRa](https://www.adafruit.com/product/3178)
+   OTAA is the preferred way to work with production LoRaWAN networks.
 
  - [`ttn-otaa-feather-us915.ino`](examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino) is a version of `ttn-otaa.ino` that has
    been configured for use with the Feather M0 LoRa, on the US915 bandplan,
@@ -605,6 +589,43 @@ This library provides several examples.
    is a further refinement of `ttn-otaa-feather-us915.ino`. It measures and
    transmits temperature and relative humidity using a DHT22 sensor. It's only
    been tested with Feather M0-family products.
+
+ - [`raw.ino`](examples/raw/raw.ino) shows how to access the radio on a somewhat low level,
+   and allows to send raw (non-LoRaWAN) packets between nodes directly.
+   This is useful to verify basic connectivity, and when no gateway is
+   available, but this example also bypasses duty cycle checks, so be
+   careful when changing the settings.
+
+ - [`raw-feather.ino`](examples/raw-feather/raw-feather.ino) is a version of `raw.ino` that is completely configured
+   for the Adafruit [Feather M0 LoRa](https://www.adafruit.com/product/3178), and for a variety
+   of other MCCI products.
+
+ - [`ttn-abp.ino`](examples/ttn-abp/ttn-abp.ino) shows a basic transmission of a "Hello, world!" message
+   using the LoRaWAN protocol. This example
+   uses activation-by-personalization (ABP, preconfiguring a device
+   address and encryption keys), and does not employ over-the-air
+   activation.
+
+   ABP should not be used if you have access to a production gateway and network; it's
+   not compliant with LoRaWAN standards, it's not FCC compliant, and it's uses spectrum
+   in a way that's unfair to other users. However, it's often the most economical way to
+   get your feet wet with this technology. It's possible to do ABP compliantly with the LMIC
+   framework, but you need to have FRAM storage and a framework that saves uplink and
+   downlink counts across reboots and resets. See, for example,
+   [Catena-Arduino-Platform](https://github.com/mcci-catena/Catena-Arduino-Platform).
+
+ - [`ttn-abp-feather-us915-dht22.ino`](examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino)
+   refines `ttn-abp.ino` by configuring for use with the Feather M0 LoRa on the US915 bandplan,
+   with a single-channel gateway on The Things Network; it measures and transmits temperature and relative
+   humidity using a DHT22 sensor. It's only been tested with Feather M0-family products.
+
+   ABP should not be used if you have access to a production gateway and network; it's
+   not compliant with LoRaWAN standards, it's not FCC compliant, and it's uses spectrum
+   in a way that's unfair to other users. However, it's often the most economical way to
+   get your feet wet with this technology.  It's possible to do ABP compliantly with the LMIC
+   framework, but you need to have FRAM storage and a framework that saves uplink and
+   downlink counts across reboots and resets. See, for example,
+   [Catena-Arduino-Platform](https://github.com/mcci-catena/Catena-Arduino-Platform).
 
  - [`header_test.ino`](examples/header_test/header_test.ino) just tests the header files; it's used for regression testing.
 
@@ -991,6 +1012,8 @@ function uflt122f(rawUflt12)
 ```
 
 ## Release History
+
+- V2.2.2 adds `ttn-abp-feather-us915-dht22.ino` example, and fixes some documentation typos. It also fixes encoding of the `Margin` field of the `DevStatusAns` MAC message ([#130](https://github.com/mcci-catena/arduino-lmic/issues/130)).  This makes Arduino LMIC work with newtorks implemented with [LoraServer](https://www.loraserver.io/).
 
 - V2.2.1 corrects the value of `ARDUINO_LMIC_VERSION` ([#123](https://github.com/mcci-catena/arduino-lmic/issues/123)), allows ttn-otaa-feather-us915 example to compile for the Feather 32u4 LoRa ([#116](https://github.com/mcci-catena/arduino-lmic/issues/116)), and addresses documentation issues ([#122](https://github.com/mcci-catena/arduino-lmic/issues/122), [#120](https://github.com/mcci-catena/arduino-lmic/issues/120)).
 
