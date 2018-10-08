@@ -713,6 +713,24 @@ scan_mac_cmds(
             oidx += 2;
             continue;
         } /* end case */
+        case MCMD_DeviceTimeAns: {
+#if defined(LMIC_ENABLE_DeviceTimeReq)
+            // The first 4 bytes contain the seconds since the GPS epoch (i.e
+            // January the 6th 1980 at 00:00:00 UTC).
+            // Note: the octet order for all multi-octet fields is little endian
+            uint32_t seconds_since_gps_epoch;
+            memcpy(&seconds_since_gps_epoch, &opts[oidx + 1], sizeof(seconds_since_gps_epoch));
+
+            // The 5th byte contains the fractional seconds in 1⁄2^8 second steps
+            uint8_t fractional_seconds = opts[oidx + 5];
+#if LMIC_DEBUG_LEVEL > 0
+            LMIC_DEBUG_PRINTF("MCMD_DeviceTimeAns received. seconds_since_gps_epoch=%lu\n", seconds_since_gps_epoch);
+            LMIC_DEBUG_PRINTF("MCMD_DeviceTimeAns received. fractional_seconds=%d\n", fractional_seconds);
+#endif
+#endif // LMIC_ENABLE_DeviceTimeReq
+            oidx += 6;
+            continue;
+        } /* end case */
         } /* end switch */
         /* unrecognized mac commands fall out of switch to here */
         EV(specCond, ERR, (e_.reason = EV::specCond_t::BAD_MAC_CMD,
@@ -1328,6 +1346,13 @@ static void buildDataFrame (void) {
         LMIC.txParamSetupAns = 0;
     }
 #endif
+#if defined(LMIC_ENABLE_DeviceTimeReq)
+    if ( LMIC.txDeviceTimeReq ) {
+        LMIC.frame[end+0] = MCMD_DeviceTimeReq;
+        end += 1;
+        LMIC.txDeviceTimeReq = 0;
+    }
+#endif // LMIC_ENABLE_DeviceTimeReq
     ASSERT(end <= OFF_DAT_OPTS+16);
 
     u1_t flen = end + (txdata ? 5+dlen : 4);
@@ -1968,9 +1993,15 @@ int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
     return 0;
 }
 
+#if defined(LMIC_ENABLE_DeviceTimeReq)
+// Request that a DeviceTimeReq is sent on the next transmission
+void LMIC_DeviceTimeReq() {
+    LMIC.txDeviceTimeReq = 1;
+}
+#endif
 
 // Send a payload-less message to signal device is alive
-void LMIC_sendAlive (void) {
+void LMIC_sendAlive () {
     LMIC.opmode |= OP_POLL;
     engineUpdate();
 }

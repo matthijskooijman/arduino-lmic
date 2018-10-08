@@ -329,6 +329,9 @@ struct lmic_t {
     bit_t       txParamSetupAns; // transmit setup answer pending.
     u1_t        txParam;        // the saved TX param byte.
 #endif
+#if defined(LMIC_ENABLE_DeviceTimeReq)
+    bit_t       txDeviceTimeReq; // DeviceTimeReq pending
+#endif
 
     // rx1DrOffset is the offset from uplink to downlink datarate
     u1_t        rx1DrOffset;  // captured from join. zero by default.
@@ -395,6 +398,10 @@ void  LMIC_clrTxData    (void);
 void  LMIC_setTxData    (void);
 int   LMIC_setTxData2   (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
 void  LMIC_sendAlive    (void);
+
+#if defined(LMIC_ENABLE_DeviceTimeReq)
+void  LMIC_DeviceTimeReq();
+#endif
 
 #if !defined(DISABLE_BEACONS)
 bit_t LMIC_enableTracking  (u1_t tryBcnInfo);

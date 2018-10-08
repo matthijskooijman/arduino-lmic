@@ -449,6 +449,7 @@ enum {
     MCMD_RXTimingSetupAns = 0x08,       //         : -
     MCMD_TxParamSetupAns = 0x09,        //         : -
     MCMD_DIChannelAns = 0x0A,           //         : u1: [7-2]:RFU 1:exists 0:OK
+    MCMD_DeviceTimeReq = 0x0D,
 
     // Class B
     MCMD_PING_IND = 0x10, // -  pingability indic  : u1: 7=RFU, 6-4:interval, 3-0:datarate
@@ -468,6 +469,7 @@ enum {
     MCMD_RXTimingSetupReq = 0x08,       //      : u1: [7-4]:RFU [3-0]: Delay 1-15s (0 => 1)
     MCMD_TxParamSetupReq = 0x09,        //      : u1: [7-6]:RFU [5:4]: dl dwell/ul dwell [3:0] max EIRP
     MCMD_DIChannelReq = 0x0A,           //      : u1: channel, u3: frequency
+    MCMD_DeviceTimeAns = 0x0D,
 
     // Class B
     MCMD_PING_SET = 0x11, // set ping freq      : u3: freq
