@@ -1995,13 +1995,13 @@ int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
 
 #if defined(LMIC_ENABLE_DeviceTimeReq)
 // Request that a DeviceTimeReq is sent on the next transmission
-void LMIC_setDeviceTimeReq(void) {
+void LMIC_DeviceTimeReq() {
     LMIC.txDeviceTimeReq = 1;
 }
 #endif
 
 // Send a payload-less message to signal device is alive
-void LMIC_sendAlive (void) {
+void LMIC_sendAlive () {
     LMIC.opmode |= OP_POLL;
     engineUpdate();
 }
