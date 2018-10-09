@@ -23,6 +23,7 @@ before_install:
   #
   - "function _samdopts { echo mcci:samd:${1:-mcci_catena_4450}:lorawan_region=${2:-us915} ; }"
   - "function _stm32l0opts { echo mcci:stm32:${1:-mcci_catena_4551}:lorawan_region=${2:-us915},opt=${3:-osstd},xserial=${4:-generic},usb=${5:-none},upload_method=${6:-STLink} ; }"
+  - "function _avropts { echo adafruit:avr:${1:-feather32u4} ; }"
   #
   # Put one or more arguments into lmic_project_config.h as  `#define $i\n`
   - function _projcfg { for i in "$@" ; do printf '#define %s 1\n' "$i" ; done  > $PWD/project_config/lmic_project_config.h ; }
@@ -31,7 +32,7 @@ before_install:
   - 'function _expect_failure { if [ $? -eq 0 ]; then echo "Suceeded, but should have failed!" ; echo project_config/lmic_project_config.h ; cat $PWD/project_config/lmic_project_config.h ; return 1 ; else echo "Failed, as expected"; return 0 ; fi ; }'
   #
   # modify the board manager preferences to point to our BSPs.
-  - arduino --pref "boardsmanager.additional.urls=https://github.com/mcci-catena/arduino-boards/raw/master/BoardManagerFiles/package_mcci_index.json" --save-prefs
+  - arduino --pref "boardsmanager.additional.urls=https://github.com/mcci-catena/arduino-boards/raw/master/BoardManagerFiles/package_mcci_index.json,https://adafruit.github.io/arduino-board-index/package_adafruit_index.json" --save-prefs
   #
   # Centralize the STM32 config override. See the following:
   # https://github.com/mcci-catena/Arduino_Core_STM32/issues/30
@@ -42,11 +43,14 @@ before_install:
   # show the output of the config commands for reference.
   - "echo $(_stm32l0opts) $(_stm32l0opts '' projcfg)"
   - "echo $(_samdopts) $(_samdopts '' projcfg)"
+  - "echo $(_avropts) $(_avropts '' PROJCFG)"
+
 
 install:
  - git clone --depth=1 https://github.com/adafruit/Adafruit_Sensor.git $HOME/arduino_ide/libraries/Adafruit_Sensor
  - git clone --depth=1 https://github.com/adafruit/DHT-sensor-library.git $HOME/arduino_ide/libraries/DHT-sensor-library
  # be careful when installing; with caching, we usually won't update. Select most recent.
+ - arduino --install-boards adafruit:avr || echo "assume adafruit:avr already installed, continue"
  - arduino --install-boards mcci:samd || echo "assume mcci:samd already installed, continue"
  - arduino --install-boards mcci:stm32 || echo "assume mcci:samd already installed, continue"
  - 'if [ -d $HOME/.arduino15/packages/mcci/hardware/stm32/1.1.0 ]; then echo "Work around broken BSP version 1.1.0" ; export MCCI_STM32_OPTS="$MCCI_STM32_OPTS --pref build.board=CATENA_4551" ; fi'
@@ -57,9 +61,30 @@ cache:
 
 script:
 
-# simple header file test
+ # simple header file test
  - arduino --verify --board $(_samdopts) $PWD/examples/header_test/header_test.ino
  - arduino --verify --board $(_stm32l0opts) $MCCI_STM32_OPTS $PWD/examples/header_test/header_test.ino
+
+ #
+ # *** Tests for Feather 32u4
+ #  The Adafruit BSP doesn't support the BSP selection options; so we have to use projcfg
+ #
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+#- _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+#- _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+#- _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+#- _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino
+
+#
+# *** Tests for SAMD
 #
 # test each of the regions.
  - arduino --verify --board $(_samdopts '' us915) $PWD/examples/raw-feather/raw-feather.ino
@@ -73,7 +98,7 @@ script:
 #
 # some tests using the projcfg file that should pass - test the examples
 #
-# test ttn-otaa-feather in all relevant regions with sx1276
+# test ttn-otaa-feather-us915 in all relevant regions with sx1276
  - _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
 #- _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
  - _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
