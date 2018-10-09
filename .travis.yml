@@ -3,13 +3,16 @@ language: c
 dist: trusty
 sudo: false
 
+env:
+  - IDE_VERSION=1.8.5
+
 before_install:
   - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
   - sleep 3
   - export DISPLAY=:1.0
-  - wget http://downloads.arduino.cc/arduino-1.8.5-linux64.tar.xz
-  - tar xf arduino-1.8.5-linux64.tar.xz
-  - mv arduino-1.8.5 $HOME/arduino_ide
+  - wget http://downloads.arduino.cc/arduino-${IDE_VERSION}-linux64.tar.xz
+  - tar xf arduino-${IDE_VERSION}-linux64.tar.xz
+  - mv arduino-${IDE_VERSION} $HOME/arduino_ide
   - ln -s $PWD $HOME/arduino_ide/libraries/Test_Library
   - export PATH="$HOME/arduino_ide:$PATH"
   #
@@ -43,8 +46,9 @@ before_install:
 install:
  - git clone --depth=1 https://github.com/adafruit/Adafruit_Sensor.git $HOME/arduino_ide/libraries/Adafruit_Sensor
  - git clone --depth=1 https://github.com/adafruit/DHT-sensor-library.git $HOME/arduino_ide/libraries/DHT-sensor-library
- - arduino --install-boards mcci:samd
- - arduino --install-boards mcci:stm32
+ # be careful when installing; with caching, we usually won't update. Select most recent.
+ - arduino --install-boards mcci:samd || echo "assume mcci:samd already installed, continue"
+ - arduino --install-boards mcci:stm32 || echo "assume mcci:samd already installed, continue"
  - 'if [ -d $HOME/.arduino15/packages/mcci/hardware/stm32/1.1.0 ]; then echo "Work around broken BSP version 1.1.0" ; export MCCI_STM32_OPTS="$MCCI_STM32_OPTS --pref build.board=CATENA_4551" ; fi'
 
 cache:
