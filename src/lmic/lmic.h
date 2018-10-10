@@ -400,7 +400,7 @@ int   LMIC_setTxData2   (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
 void  LMIC_sendAlive    (void);
 
 #if defined(LMIC_ENABLE_DeviceTimeReq)
-void  LMIC_DeviceTimeReq();
+void  LMIC_setDeviceTimeReq(void);
 #endif
 
 #if !defined(DISABLE_BEACONS)
