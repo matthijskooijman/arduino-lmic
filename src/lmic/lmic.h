@@ -61,6 +61,7 @@
 #   else // ndef LMIC_DEBUG_PRINTF_FN
 //    if there's no other info, just use printf. In a pure Arduino environment,
 //    that's what will happen.
+#     include <stdio.h>
 #     define LMIC_DEBUG_PRINTF(f, ...) printf(f, ## __VA_ARGS__)
 #   endif // ndef LMIC_DEBUG_PRINTF_FN
 # endif // ndef LMIC_DEBUG_PRINTF
