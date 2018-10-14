@@ -24,7 +24,7 @@ before_install:
   - "function _samdopts { echo mcci:samd:${1:-mcci_catena_4450}:lorawan_region=${2:-us915} ; }"
   - "function _stm32l0opts { echo mcci:stm32:${1:-mcci_catena_4551}:lorawan_region=${2:-us915},opt=${3:-osstd},xserial=${4:-generic},usb=${5:-none},upload_method=${6:-STLink} ; }"
   - "function _avropts { echo adafruit:avr:${1:-feather32u4} ; }"
-  - "function _esp32opts { echo esp32:esp32:${1:-heltec_wifi_lora_32} ; }"
+  - "function _esp32opts { echo esp32:esp32:${1:-heltec_wifi_lora_32}:flash_freq=80m ; }"
   #
   # Put one or more arguments into lmic_project_config.h as  `#define $i 1\n` or `#define $i $arg`
   - function _splitdef { if [ "$1" = "${1/=/}" ]; then echo "$1" 1 ; else echo "${1/=/ }" ; fi ; }
@@ -72,6 +72,14 @@ script:
  - arduino --verify --board $(_samdopts) $PWD/examples/header_test/header_test.ino
  - arduino --verify --board $(_stm32l0opts) $MCCI_STM32_OPTS $PWD/examples/header_test/header_test.ino
 
+#
+# *** TESTS for ESP32
+#
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/ttn-otaa/ttn-otaa.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/ttn-abp/ttn-abp.ino
+ # make sure debug works
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio LMIC_DEBUG_LEVEL=2 LMIC_PRINTF_TO=Serial && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/ttn-otaa/ttn-otaa.ino
+
  #
  # *** Tests for Feather 32u4
  #  The Adafruit BSP doesn't support the BSP selection options; so we have to use projcfg
@@ -89,6 +97,9 @@ script:
  - _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino
  - _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino
  - _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino
+
+# make sure debug prints work
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio LMIC_DEBUG_LEVEL=2 LMIC_PRINTF_TO=Serial  && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino
 
 #
 # *** Tests for SAMD
@@ -181,13 +192,5 @@ script:
  - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
  - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa/ttn-otaa.ino
  - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-abp/ttn-abp.ino
-
-#
-# *** TESTS for ESP32
-#
- - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/ttn-otaa/ttn-otaa.ino
- - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/ttn-abp/ttn-abp.ino
- # make sure debug works
- - _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio LMIC_DEBUG_LEVEL=2 LMIC_PRINTF_TO=Serial && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/ttn-otaa/ttn-otaa.ino
 
  ### end of file ###
