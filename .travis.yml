@@ -105,6 +105,11 @@ script:
 #- _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
 #- _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
 #- _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+
+#
+# test ttn-otaa-feather-us915 with interrupts
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio LMIC_USE_INTERRUPTS && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino
+
 #
 # test raw feather with au921
  - _projcfg CFG_au921 CFG_sx1276_radio && arduino --verify --board $(_samdopts '' projcfg) $PWD/examples/raw-feather/raw-feather.ino

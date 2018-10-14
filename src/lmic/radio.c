@@ -917,6 +917,10 @@ static CONST_TABLE(u2_t, LORA_RXDONE_FIXUP)[] = {
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
 void radio_irq_handler (u1_t dio) {
+    radio_irq_handler_v2(dio, os_getTime());
+}
+
+void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
 #if CFG_TxContinuousMode
     // clear radio IRQ flags
     writeReg(LORARegIrqFlags, 0xFF);
@@ -927,7 +931,7 @@ void radio_irq_handler (u1_t dio) {
     opmode(OPMODE_TX);
     return;
 #else /* ! CFG_TxContinuousMode */
-    ostime_t now = os_getTime();
+
 #if LMIC_DEBUG_LEVEL > 0
     ostime_t const entry = now;
 #endif
