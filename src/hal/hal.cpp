@@ -276,8 +276,7 @@ void hal_sleep () {
 // -----------------------------------------------------------------------------
 
 #if defined(LMIC_PRINTF_TO)
-#if defined(ESP8266) || defined(ESP31B) || defined(ESP32)
-//ESPXX specific PRINTF, only tested with ESP32 Haltec LoRA Wifi so far
+#if !defined(__AVR)
 static ssize_t uart_putchar (void *, const char *buf, size_t len) {
     return LMIC_PRINTF_TO.write((const uint8_t *)buf, len);
 }
@@ -292,9 +291,11 @@ static cookie_io_functions_t functions =
 
 void hal_printf_init() {
     stdout = fopencookie(NULL, "w", functions);
+    if (stdout != nullptr) {
+	setvbuf(stdout, NULL, _IONBF, 0);
+    }
 }
-#else // !defined(ESP8266) || defined(ESP31B) || defined(ESP32)
-	 // all else, like AVR
+#else // defined(__AVR)
 static int uart_putchar (char c, FILE *)
 {
     LMIC_PRINTF_TO.write(c) ;
