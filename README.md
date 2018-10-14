@@ -64,6 +64,7 @@ requires C99 mode to be enabled by default.
 		- [MCCI Catena 4551](#mcci-catena-4551)
 - [Example Sketches](#example-sketches)
 - [Timing](#timing)
+	- [`LMIC_setClockError()`](#lmic_setclockerror)
 - [Downlink datarate](#downlink-datarate)
 - [Encoding Utilities](#encoding-utilities)
 	- [sflt16](#sflt16)
@@ -186,7 +187,7 @@ Configures the library for use with an sx1276 transceiver.
 
 `#define LMIC_USE_INTERRUPTS`
 
-If defined, configures the library to use interrupts for detecting events from the transceiver. If left undefined, the library will poll for events from the transceiver.  `LMIC_USE_INTERRUPTS` is not currently tested.
+If defined, configures the library to use interrupts for detecting events from the transceiver. If left undefined, the library will poll for events from the transceiver.  See [Timing](#timing) for more info.
 
 ### Disabling PING
 
@@ -380,9 +381,10 @@ which can be detected by the LMIC library.
 
 The LMIC library needs only access to DIO0, DIO1 and DIO2, the other
 DIOx pins can be left disconnected. On the Arduino side, they can
-connect to any I/O pin, since the current implementation does not use
-interrupts or other special hardware features (though this might be
-added in the feature, see also the "Timing" section).
+connect to any I/O pin. If interrupts are used, the accuracy of timing
+will be improved, particularly the rest of your `loop()` function has
+lengthy calculations; but in that case, the enabled DIO pins must all
+support rising-edge interrupts. See the [Timing](#timing) section below.
 
 In LoRa mode the DIO pins are used as follows:
  * DIO0: TxDone and RxDone
@@ -631,22 +633,28 @@ This library provides several examples.
 
 ## Timing
 
-Unfortunately, the SX127x transceivers do not support accurate
-timekeeping themselves (there is a sequencer that is *almost* sufficient
-for timing the RX1 and RX2 downlink windows, but that is only available
-in FSK mode, not in LoRa mode). This means that the microcontroller is
-responsible for keeping track of time. In particular, it should note
-when a packet finished transmitting, so it can open up the RX1 and RX2
-receive windows at a fixed time after the end of transmission.
+The library is
+responsible for keeping track of time of certain network events, and scheduling
+other events relative to those events. In particular, the library must note
+when a packet finishes transmitting, so it can open up the RX1 and RX2
+receive windows at a fixed time after the end of transmission. The library does this
+by watching for rising edges on the DIO0 output of the SX127x, and noting the time.
 
-This timing uses the Arduino `micros()` timer, which has a granularity
-of 4μs and is based on the primary microcontroller clock.  For timing
-events, the transceiver uses its DIOx pins as interrupt outputs. In the
-current implementation, these pins are handled by an interrupt handler,
-but only to set a flag - actual processing is done once every LMIC loop,
-resulting in a bit inaccuracy in the timestamping. Also, running
-scheduled jobs (such as opening up the receive windows) is done using a
-polling approach, which might also result in further delays.
+The library observes and processes rising edges on the pins as part of `os_runloop()` processing.
+This can be configured in one of two ways (see
+[Controlling use of interrupts](#controlling-use-of-interrupts)).
+
+By default, the routine `hal_io_check()`
+polls the enabled pins to determine whether an event has occured. This approach
+allows use of any CPU pin to sense the DIOs, and makes no assummptions about
+interrupts. However, it means that the end-of-transmit event is not observed
+(and time-stamped) until `os_runloop()` is called.
+
+Optionally, you can configure the LMIC library to use interrupts. The
+interrupt handlers capture the time of
+the event. Actual processing is done the next time that `os_runloop()`
+is called, using the captured time. However, this requires that the
+DIO pins be wired to Arduino pins that support rising-edge interrupts.
 
 Fortunately, LoRa is a fairly slow protocol and the timing of the
 receive windows is not super critical. To synchronize transmitter and
@@ -657,60 +665,63 @@ symbol times at 1.5 symbol after the start of the receive window,
 meaning that a inaccuracy of plus or minus 2.5 symbol times should be
 acceptable.
 
-At the fastest LoRa setting supported by the transceiver (SF5BW500) a
-single preamble symbol takes 64μs, so the receive window timing should
-be accurate within 160μs (for LoRaWAN this is SF7BW250, needing accuracy
-within 1280μs). This is certainly within a crystal's accuracy, but using
-the internal oscillator is probably not feasible (which is 1% - 10%
-accurate, depending on calibration). This accuracy should also be
+The HAL bases all timing on the Arduino `micros()` timer, which has a platform-specific
+granularity, and is based on the primary microcontroller clock.
+
+At the fastest LoRa setting supported by the SX127x (SF5BW500) a
+single preamble symbol takes 64 microseconds, so the receive window timing should
+be accurate within 160 microseconds (for LoRaWAN this is SF7BW250, needing accuracy
+within 1280μs). This accuracy should also be
 feasible with the polling approach used, provided that the LMIC loop is
 run often enough.
 
-It would be good to properly review this code at some point, since it
-seems that in some places some offsets and corrections are applied that
-might not be appropriate for the Arduino environment. So if reception is
-not working, the timing is something to have a closer look at.
-
-The LMIC library was intended to connect the DIO pins to interrupt
-lines and run code inside the interrupt handler. However, doing this
-opens up an entire can of worms with regard to doing SPI transfers
-inside interrupt routines (some of which is solved by the Arduino
-`beginTransaction()` API, but possibly not everything). One simpler
-alternative could be to use an interrupt handler to just store a
-timestamp, and then do the actual handling in the main loop (this
-requires modifications of the library to pass a timestamp to the LMIC
-`radio_irq_handler()` function).
+If using an internal oscillator (which is 1% - 10%
+accurate, depending on calibration), or if your other `loop()` processing
+is time consuming, you may have to use [`LMIC_setClockError()`](#lmic_setclockerror)
+to cause the library to leave the radio on longer.
 
 An even more accurate solution could be to use a dedicated timer with an
 input capture unit, that can store the timestamp of a change on the DIO0
 pin (the only one that is timing-critical) entirely in hardware.
-Unfortunately, timer0, as used by Arduino's `millis()` and `micros()`
-functions does not seem to have an input capture unit, meaning a
-separate timer is needed for this.
+Experience shows that this is not normally required, so we leave this as
+a customization to be performed on a platform-by-platfom basis. We provide
+a special API, `radio_irq_handler_v2(u1_t dio, ostime_t tEvent)`. This
+API allows you to supply a hardware-captured time for extra accuracy.
 
-If the main microcontroller does not have a crystal, but uses the
-internal oscillator, the clock output of the transceiver (on DIO5) could
-be usable to drive this timer instead of the main microcontroller clock,
-to ensure the receive window timing is sufficiently accurate. Ideally,
-this would use timer2, which supports asynchronous mode (e.g. running
-while the microcontroller is sleeping), but that timer does not have an
-input capture unit. Timer1 has one, but it seems it will stop running
-once the microcontroller sleeps. Running the microcontroller in idle
-mode with a slower clock might be feasible, though. Instead of using the
-main crystal oscillator of the transceiver, it could be possible to use
-the transceiver's internal RC oscillator (which is calibrated against
-the transceiver crystal), or to calibrate the microcontroller internal
-RC oscillator using the transceiver's clkout. However, that datasheet is
-a bit vague on the RC oscillator's accuracy and how to use it exactly
-(some registers seem to be FSK-mode only), so this needs some
-experiments.
+The practical consequence of inaccurate timing is reduced battery life;
+the LMIC must turn on the reciever earlier in order to be sure to capture downlink packets.
+
+### `LMIC_setClockError()`
+
+You may call this routine during intialization to infom the LMIC code about the timing accuracy of your system.
+
+```c++
+enum { MAX_CLOCK_ERROR = 65535 };
+
+void LMIC_setClockError(
+    u2_t error
+);
+```
+
+This function sets the anticipated relative clock error. `MAX_CLOCK_ERROR`
+represents +/- 100%, and 0 represents no additional clock compensation.
+To allow for an error of 20%, you would call
+
+```c++
+LMIC_setClockError(MAX_CLOCK_ERROR * 20 / 100);
+```
+
+Setting a high clock error causes the RX windows to be opened earlier than it otherwise would be. This causes more power to be consumed. For Class A devices, this extra power is not substantial, but for Class B devices, this can be significant.
+
+This clock error is not reset by `LMIC_reset()`.
 
 ## Downlink datarate
 
 Note that the datarate used for downlink packets in the RX2 window varies by region. Consult your network's manual for any divergences from the LoRaWAN Regional Parameters. This library assumes that the network follows the regional default.
 
-Some networks
-use different values than the specification. For example, in Europe, the specification default is DR0 (SF12, 125 kHz bandwidth). However, iot.semtech.com and The Things Network both used SF9 / 125 kHz or DR3). When using personalized activate (ABP), it is your
+Some networks use different values than the specification. For example, in Europe, the specification default is DR0 (SF12, 125 kHz bandwidth). However, iot.semtech.com and The Things Network both used SF9 / 125 kHz or DR3). If using over-the-air activation (OTAA), the network will download RX2 parameters as part of the JoinAccept message; the LMIC will honor the downloaded parameters.
+
+However, when using personalized activate (ABP), it is your
 responsibility to set the right settings, e.g. by adding this to your
 sketch (after calling `LMIC_setSession`). `ttn-abp.ino` already does
 this.
@@ -718,8 +729,6 @@ this.
 ```c++
 LMIC.dn2Dr = DR_SF9;
 ```
-
-When using OTAA, the network communicates the RX2 settings in the join accept message. This version of the LMIC library captures those settings. Therefore, you should not change the RX2 rate after joining.
 
 ## Encoding Utilities
 

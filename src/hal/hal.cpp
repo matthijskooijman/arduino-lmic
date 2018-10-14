@@ -91,16 +91,19 @@ static void hal_io_check() {
 
 #else
 // Interrupt handlers
-static bool interrupt_flags[NUM_DIO] = {0};
+static ostime_t interrupt_time[NUM_DIO] = {0};
 
 static void hal_isrPin0() {
-    interrupt_flags[0] = true;
+    ostime_t now = os_getTime();
+    interrupt_time[0] = now ? now : 1;
 }
 static void hal_isrPin1() {
-    interrupt_flags[1] = true;
+    ostime_t now = os_getTime();
+    interrupt_time[1] = now ? now : 1;
 }
 static void hal_isrPin2() {
-    interrupt_flags[2] = true;
+    ostime_t now = os_getTime();
+    interrupt_time[2] = now ? now : 1;
 }
 
 typedef void (*isr_t)();
@@ -118,12 +121,14 @@ static void hal_interrupt_init() {
 static void hal_io_check() {
     uint8_t i;
     for (i = 0; i < NUM_DIO; ++i) {
+	ostime_t iTime;
         if (plmic_pins->dio[i] == LMIC_UNUSED_PIN)
             continue;
 
-        if (interrupt_flags[i]) {
-            interrupt_flags[i] = false;
-            radio_irq_handler(i);
+	iTime = interrupt_time[i];
+        if (iTime) {
+            interrupt_time[i] = 0;
+            radio_irq_handler_v2(i, iTime);
         }
     }
 }
