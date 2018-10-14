@@ -65,7 +65,7 @@ install:
 cache:
   directories:
   - $HOME/.arduino15
-  - $HOME/arduio_ide
+  - $HOME/arduino_ide
 
 script:
 
