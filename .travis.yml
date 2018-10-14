@@ -11,6 +11,7 @@ before_install:
   - sleep 3
   - export DISPLAY=:1.0
   - export ARDUINO_IDE=arduino_ide/${IDE_VERSION}
+  - if [ ! -d "$HOME/arduino_ide" ] ; then mkdir "$HOME/arduino_ide" ; fi
   - if [ ! -d "$HOME/$ARDUINO_IDE" ] ; then { echo "fetch" && wget http://downloads.arduino.cc/arduino-${IDE_VERSION}-linux64.tar.xz && echo "untar" && tar xf arduino-${IDE_VERSION}-linux64.tar.xz && echo "move" && mv -f arduino-${IDE_VERSION} $HOME/${ARDUINO_IDE} ; } || { echo "IDE install failed"; exit 1; } ; else echo "IDE already installed" ; fi
   - ln -sf $PWD $HOME/${ARDUINO_IDE}/libraries/Test_Library
   - export PATH="$HOME/${ARDUINO_IDE}:$PATH"
