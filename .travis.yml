@@ -6,15 +6,23 @@ sudo: false
 env:
   - IDE_VERSION=1.8.7
 
+cache:
+  directories:
+  - $HOME/.arduino15
+  - $HOME/arduino_ide
+
 before_install:
   - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
   - sleep 3
   - export DISPLAY=:1.0
   - export ARDUINO_IDE=arduino_ide/${IDE_VERSION}
+  - export ARDUINO_LIBS="$HOME/Arduino/libraries"
   - if [ ! -d "$HOME/arduino_ide" ] ; then mkdir "$HOME/arduino_ide" ; fi
   - if [ ! -d "$HOME/$ARDUINO_IDE" ] ; then { echo "fetch" && wget http://downloads.arduino.cc/arduino-${IDE_VERSION}-linux64.tar.xz && echo "untar" && tar xf arduino-${IDE_VERSION}-linux64.tar.xz && echo "move" && mv -f arduino-${IDE_VERSION} $HOME/${ARDUINO_IDE} ; } || { echo "IDE install failed"; exit 1; } ; else echo "IDE already installed" ; fi
   - ln -sf $PWD $HOME/${ARDUINO_IDE}/libraries/Test_Library
   - export PATH="$HOME/${ARDUINO_IDE}:$PATH"
+  # clean up for earlier bugs. This is transitional.
+  - rm -rf $HOME/${ARDUINO_IDE}/libraries/Adafruit_Sensor $HOME/${ARDUINO_IDE}/libraries/DHT-sensor-library
   #
   # functions to generate the board settings for SAMD, STM32L0, ...
   # keep args for these aligned for any common options. $1 is always board name, $2 is region.
@@ -51,21 +59,15 @@ before_install:
   - "echo $(_avropts) $(_avropts '' PROJCFG)"
   - "echo $(_esp32opts) $(_esp32opts '' PROJCFG)"
 
-
 install:
- - git clone --depth=1 https://github.com/adafruit/Adafruit_Sensor.git $HOME/${ARDUINO_IDE}/libraries/Adafruit_Sensor
- - git clone --depth=1 https://github.com/adafruit/DHT-sensor-library.git $HOME/${ARDUINO_IDE}/libraries/DHT-sensor-library
+ - git clone --depth=1 https://github.com/adafruit/Adafruit_Sensor.git $ARDUINO_LIBS/Adafruit_Sensor
+ - git clone --depth=1 https://github.com/adafruit/DHT-sensor-library.git $ARDUINO_LIBS/DHT-sensor-library
  # be careful when installing; with caching, we usually won't update. Select most recent.
  - arduino --install-boards adafruit:avr || echo "assume adafruit:avr already installed, continue"
  - arduino --install-boards mcci:samd || echo "assume mcci:samd already installed, continue"
  - arduino --install-boards mcci:stm32 || echo "assume mcci:samd already installed, continue"
  - arduino --install-boards esp32:esp32 || echo "assume esp32:esp32 already installed, condtinue"
  - 'if [ -d $HOME/.arduino15/packages/mcci/hardware/stm32/1.1.0 ]; then echo "Work around broken BSP version 1.1.0" ; export MCCI_STM32_OPTS="$MCCI_STM32_OPTS --pref build.board=CATENA_4551" ; fi'
-
-cache:
-  directories:
-  - $HOME/.arduino15
-  - $HOME/arduino_ide
 
 script:
 
