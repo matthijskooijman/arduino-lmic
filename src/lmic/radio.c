@@ -920,7 +920,7 @@ void radio_irq_handler (u1_t dio) {
     radio_irq_handler_v2(dio, os_getTime());
 }
 
-void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
+void radio_irq_handler_v2 (UNUSED_VAR u1_t dio, ostime_t now) {
 #if CFG_TxContinuousMode
     // clear radio IRQ flags
     writeReg(LORARegIrqFlags, 0xFF);
