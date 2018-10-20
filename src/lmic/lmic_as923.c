@@ -75,12 +75,12 @@ static CONST_TABLE(u1_t, maxFrameLens_dwell1)[] = {
 };
 
 static uint8_t 
-LMICas923_getUplinkDwellBit(uint8_t mcmd_txparam) {
+LMICas923_getUplinkDwellBit(UNUSED_VAR uint8_t mcmd_txparam) {
         return (LMIC.txParam & MCMD_TxParam_TxDWELL_MASK) != 0; 
 }
 
 static uint8_t 
-LMICas923_getDownlinkDwellBit(uint8_t mcmd_txparam) {
+LMICas923_getDownlinkDwellBit(UNUSED_VAR uint8_t mcmd_txparam) {
         return (LMIC.txParam & MCMD_TxParam_RxDWELL_MASK) != 0; 
 }
 
@@ -163,7 +163,7 @@ static CONST_TABLE(u4_t, iniChannelFreq)[NUM_DEFAULT_CHANNELS] = {
 };
 
 // as923 ignores join, becuase the channel setup is the same either way.
-void LMICas923_initDefaultChannels(bit_t join) {
+void LMICas923_initDefaultChannels(UNUSED_VAR bit_t join) {
         os_clearMem(&LMIC.channelFreq, sizeof(LMIC.channelFreq));
         os_clearMem(&LMIC.channelDrMap, sizeof(LMIC.channelDrMap));
         os_clearMem(&LMIC.bands, sizeof(LMIC.bands));

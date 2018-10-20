@@ -82,6 +82,7 @@ typedef              s4_t  ostime_t;
 #define TYPEDEF_xref2osjob_t   typedef       osjob_t* xref2osjob_t
 
 #define SIZEOFEXPR(x) sizeof(x)
+#define UNUSED_VAR __attribute__((unused))
 
 #define ON_LMIC_EVENT(ev)  onEvent(ev)
 #define DECL_ON_LMIC_EVENT void onEvent(ev_t e)

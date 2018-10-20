@@ -46,7 +46,7 @@ static void engineUpdate(void);
 static void startScan (void);
 #endif
 
-static inline void initTxrxFlags(const char *func, u1_t mask) {
+static inline void initTxrxFlags(UNUSED_VAR const char *func, u1_t mask) {
 #if LMIC_DEBUG_LEVEL > 1
 	LMIC_DEBUG_PRINTF("%lu: %s txrxFlags %#02x --> %02x\n", os_getTime(), func, LMIC.txrxFlags, mask);
 #endif
@@ -278,7 +278,6 @@ extern inline int isFasterDR (dr_t dr1, dr_t dr2);
 extern inline int isSlowerDR (dr_t dr1, dr_t dr2);
 extern inline dr_t  incDR    (dr_t dr);
 extern inline dr_t  decDR    (dr_t dr);
-extern inline dr_t  assertDR (dr_t dr);
 extern inline dr_t  validDR  (dr_t dr);
 extern inline dr_t  lowerDR  (dr_t dr, u1_t n);
 
@@ -413,7 +412,7 @@ static void txDelay (ostime_t reftime, u1_t secSpan) {
 }
 
 
-void LMICcore_setDrJoin (u1_t reason, u1_t dr) {
+void LMICcore_setDrJoin (UNUSED_VAR u1_t reason, u1_t dr) {
     EV(drChange, INFO, (e_.reason    = reason,
                         e_.deveui    = MAIN::CDEV->getEui(),
                         e_.dr        = dr|DR_PAGE,
@@ -425,7 +424,7 @@ void LMICcore_setDrJoin (u1_t reason, u1_t dr) {
 }
 
 
-static void setDrTxpow (u1_t reason, u1_t dr, s1_t pow) {
+static void setDrTxpow (UNUSED_VAR u1_t reason, u1_t dr, s1_t pow) {
     EV(drChange, INFO, (e_.reason    = reason,
                         e_.deveui    = MAIN::CDEV->getEui(),
                         e_.dr        = dr|DR_PAGE,
@@ -461,7 +460,7 @@ void LMIC_setPingable (u1_t intvExp) {
 
 #endif // !DISABLE_PING
 
-static void runEngineUpdate (xref2osjob_t osjob) {
+static void runEngineUpdate (UNUSED_VAR xref2osjob_t osjob) {
     engineUpdate();
 }
 
@@ -475,7 +474,7 @@ static void reportEvent (ev_t ev) {
 }
 
 
-static void runReset (xref2osjob_t osjob) {
+static void runReset (UNUSED_VAR xref2osjob_t osjob) {
     // Disable session
     LMIC_reset();
 #if !defined(DISABLE_JOIN)
@@ -1019,7 +1018,7 @@ static void txDone (ostime_t delay, osjobcb_t func) {
 
 
 #if !defined(DISABLE_JOIN)
-static void onJoinFailed (xref2osjob_t osjob) {
+static void onJoinFailed (UNUSED_VAR xref2osjob_t osjob) {
     // Notify app - must call LMIC_reset() to stop joining
     // otherwise join procedure continues.
     reportEvent(EV_JOIN_FAILED);
@@ -1072,7 +1071,7 @@ static bit_t processJoinAccept (void) {
     }
     u1_t hdr  = LMIC.frame[0];
     u1_t dlen = LMIC.dataLen;
-    u4_t mic  = os_rlsbf4(&LMIC.frame[dlen-4]); // safe before modified by encrypt!
+    UNUSED_VAR u4_t mic  = os_rlsbf4(&LMIC.frame[dlen-4]); // safe before modified by encrypt!
     if( (dlen != LEN_JA && dlen != LEN_JAEXT)
         || (hdr & (HDR_FTYPE|HDR_MAJOR)) != (HDR_FTYPE_JACC|HDR_MAJOR_V1) ) {
         EV(specCond, ERR, (e_.reason = EV::specCond_t::UNEXPECTED_FRAME,
@@ -1160,7 +1159,7 @@ static bit_t processJoinAccept (void) {
 }
 
 
-static void processRx2Jacc (xref2osjob_t osjob) {
+static void processRx2Jacc (UNUSED_VAR xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 ) {
         initTxrxFlags(__func__, 0);  // nothing in 1st/2nd DN slot
     }
@@ -1168,24 +1167,24 @@ static void processRx2Jacc (xref2osjob_t osjob) {
 }
 
 
-static void setupRx2Jacc (xref2osjob_t osjob) {
+static void setupRx2Jacc (UNUSED_VAR xref2osjob_t osjob) {
     LMIC.osjob.func = FUNC_ADDR(processRx2Jacc);
     setupRx2();
 }
 
 
-static void processRx1Jacc (xref2osjob_t osjob) {
+static void processRx1Jacc (UNUSED_VAR xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 || !processJoinAccept() )
         schedRx12(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc), LMIC.dn2Dr);
 }
 
 
-static void setupRx1Jacc (xref2osjob_t osjob) {
+static void setupRx1Jacc (UNUSED_VAR xref2osjob_t osjob) {
     setupRx1(FUNC_ADDR(processRx1Jacc));
 }
 
 
-static void jreqDone (xref2osjob_t osjob) {
+static void jreqDone (UNUSED_VAR xref2osjob_t osjob) {
     txDone(DELAY_JACC1_osticks, FUNC_ADDR(setupRx1Jacc));
 }
 
@@ -1196,11 +1195,11 @@ static void jreqDone (xref2osjob_t osjob) {
 // Fwd decl.
 static bit_t processDnData(void);
 
-static void processRx2DnDataDelay (xref2osjob_t osjob) {
+static void processRx2DnDataDelay (UNUSED_VAR xref2osjob_t osjob) {
     processDnData();
 }
 
-static void processRx2DnData (xref2osjob_t osjob) {
+static void processRx2DnData (UNUSED_VAR xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 ) {
         initTxrxFlags(__func__, 0);  // nothing in 1st/2nd DN slot
         // Delay callback processing to avoid up TX while gateway is txing our missed frame!
@@ -1214,24 +1213,24 @@ static void processRx2DnData (xref2osjob_t osjob) {
 }
 
 
-static void setupRx2DnData (xref2osjob_t osjob) {
+static void setupRx2DnData (UNUSED_VAR xref2osjob_t osjob) {
     LMIC.osjob.func = FUNC_ADDR(processRx2DnData);
     setupRx2();
 }
 
 
-static void processRx1DnData (xref2osjob_t osjob) {
+static void processRx1DnData (UNUSED_VAR xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 || !processDnData() )
         schedRx12(sec2osticks(LMIC.rxDelay +(int)DELAY_EXTDNW2), FUNC_ADDR(setupRx2DnData), LMIC.dn2Dr);
 }
 
 
-static void setupRx1DnData (xref2osjob_t osjob) {
+static void setupRx1DnData (UNUSED_VAR xref2osjob_t osjob) {
     setupRx1(FUNC_ADDR(processRx1DnData));
 }
 
 
-static void updataDone (xref2osjob_t osjob) {
+static void updataDone (UNUSED_VAR xref2osjob_t osjob) {
     txDone(sec2osticks(LMIC.rxDelay), FUNC_ADDR(setupRx1DnData));
 }
 
@@ -1376,7 +1375,7 @@ static void buildDataFrame (void) {
 
 #if !defined(DISABLE_BEACONS)
 // Callback from HAL during scan mode or when job timer expires.
-static void onBcnRx (xref2osjob_t job) {
+static void onBcnRx (UNUSED_VAR xref2osjob_t job) {
     // If we arrive via job timer make sure to put radio to rest.
     os_radio(RADIO_RST);
     os_clearCallback(&LMIC.osjob);
@@ -1496,7 +1495,7 @@ static void buildJoinRequest (u1_t ftype) {
     DO_DEVDB(LMIC.devNonce,devNonce);
 }
 
-static void startJoining (xref2osjob_t osjob) {
+static void startJoining (UNUSED_VAR xref2osjob_t osjob) {
     reportEvent(EV_JOINING);
 }
 
@@ -1529,7 +1528,7 @@ bit_t LMIC_startJoining (void) {
 // ================================================================================
 
 #if !defined(DISABLE_PING)
-static void processPingRx (xref2osjob_t osjob) {
+static void processPingRx (UNUSED_VAR xref2osjob_t osjob) {
     if( LMIC.dataLen != 0 ) {
         initTxrxFlags(__func__, TXRX_PING);
         if( decodeFrame() ) {
@@ -1610,7 +1609,7 @@ static bit_t processDnData (void) {
 
 
 #if !defined(DISABLE_BEACONS)
-static void processBeacon (xref2osjob_t osjob) {
+static void processBeacon (UNUSED_VAR xref2osjob_t osjob) {
     ostime_t lasttx = LMIC.bcninfo.txtime;   // save here - decodeBeacon might overwrite
     u1_t flags = LMIC.bcninfo.flags;
     ev_t ev;
@@ -1671,7 +1670,7 @@ static void processBeacon (xref2osjob_t osjob) {
 }
 
 
-static void startRxBcn (xref2osjob_t osjob) {
+static void startRxBcn (UNUSED_VAR xref2osjob_t osjob) {
     LMIC.osjob.func = FUNC_ADDR(processBeacon);
     os_radio(RADIO_RX);
 }
@@ -1679,7 +1678,7 @@ static void startRxBcn (xref2osjob_t osjob) {
 
 
 #if !defined(DISABLE_PING)
-static void startRxPing (xref2osjob_t osjob) {
+static void startRxPing (UNUSED_VAR xref2osjob_t osjob) {
     LMIC.osjob.func = FUNC_ADDR(processPingRx);
     os_radio(RADIO_RX);
 }

@@ -86,7 +86,7 @@ u4_t LMICus915_convFreq(xref2cu1_t ptr) {
         return freq;
 }
 
-bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
+bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, UNUSED_VAR s1_t band) {
         if (chidx < 72 || chidx >= 72 + MAX_XCHANNELS)
                 return 0; // channels 0..71 are hardwired
         LMIC.xchFreq[chidx - 72] = freq;
