@@ -60,8 +60,8 @@ before_install:
   - "echo $(_esp32opts) $(_esp32opts '' PROJCFG)"
 
 install:
- - git clone --depth=1 https://github.com/adafruit/Adafruit_Sensor.git $ARDUINO_LIBS/libraries/Adafruit_Sensor
- - git clone --depth=1 https://github.com/adafruit/DHT-sensor-library.git $ARDUINO_LIBS/libraries/DHT-sensor-library
+ - git clone --depth=1 https://github.com/adafruit/Adafruit_Sensor.git $ARDUINO_LIBS/Adafruit_Sensor
+ - git clone --depth=1 https://github.com/adafruit/DHT-sensor-library.git $ARDUINO_LIBS/DHT-sensor-library
  # be careful when installing; with caching, we usually won't update. Select most recent.
  - arduino --install-boards adafruit:avr || echo "assume adafruit:avr already installed, continue"
  - arduino --install-boards mcci:samd || echo "assume mcci:samd already installed, continue"
