@@ -550,7 +550,7 @@ static void txlora () {
     u1_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
     u1_t bw = getBw(LMIC.rps);
     u1_t cr = getCr(LMIC.rps);
-    LMIC_DEBUG_PRINTF("%"PRId32": TXMODE, freq=%"PRIu32", len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
+    LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": TXMODE, freq=%"PRIu32", len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
            os_getTime(), LMIC.freq, LMIC.dataLen, sf,
            bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
            cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)),
@@ -657,7 +657,7 @@ static void rxlora (u1_t rxmode) {
         opmode(OPMODE_RX_SINGLE);
 #if LMIC_DEBUG_LEVEL > 0
 	ostime_t now = os_getTime();
-	LMIC_DEBUG_PRINTF("start single rx: now-rxtime: %"PRId32"\n", now - LMIC.rxtime);
+	LMIC_DEBUG_PRINTF("start single rx: now-rxtime: %"LMIC_PRId_ostime_t"\n", now - LMIC.rxtime);
 #endif
     } else { // continous rx (scan or rssi)
         opmode(OPMODE_RX);
@@ -670,7 +670,7 @@ static void rxlora (u1_t rxmode) {
         u1_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
         u1_t bw = getBw(LMIC.rps);
         u1_t cr = getCr(LMIC.rps);
-        LMIC_DEBUG_PRINTF("%"PRId32": %s, freq=%"PRIu32", SF=%d, BW=%d, CR=4/%d, IH=%d\n",
+        LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": %s, freq=%"PRIu32", SF=%d, BW=%d, CR=4/%d, IH=%d\n",
                os_getTime(),
                rxmode == RXMODE_SINGLE ? "RXMODE_SINGLE" : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
                LMIC.freq, sf,
@@ -921,8 +921,13 @@ void radio_irq_handler (u1_t dio) {
     radio_irq_handler_v2(dio, os_getTime());
 }
 
-void radio_irq_handler_v2 (UNUSED_VAR u1_t dio, ostime_t now) {
+void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
+    LMIC_API_PARAMETER(dio);
+
 #if CFG_TxContinuousMode
+    // in continuous mode, we don't use the now parameter.
+    LMIC_UNREFERENCED_PARAMETER(now);
+
     // clear radio IRQ flags
     writeReg(LORARegIrqFlags, 0xFF);
     u1_t p = readReg(LORARegFifoAddrPtr);
@@ -965,7 +970,7 @@ void radio_irq_handler_v2 (UNUSED_VAR u1_t dio, ostime_t now) {
             LMIC.dataLen = 0;
 #if LMIC_DEBUG_LEVEL > 0
 	    ostime_t now2 = os_getTime();
-	    LMIC_DEBUG_PRINTF("rxtimeout: entry: %"PRId32" rxtime: %"PRId32" entry-rxtime: %"PRId32" now-entry: %"PRId32" rxtime-txend: %"PRId32"\n", entry,
+	    LMIC_DEBUG_PRINTF("rxtimeout: entry: %"LMIC_PRId_ostime_t" rxtime: %"LMIC_PRId_ostime_t" entry-rxtime: %"LMIC_PRId_ostime_t" now-entry: %"LMIC_PRId_ostime_t" rxtime-txend: %"LMIC_PRId_ostime_t"\n", entry,
                 LMIC.rxtime, entry - LMIC.rxtime, now2 - entry, LMIC.rxtime-LMIC.txend);
 #endif
         }
