@@ -921,8 +921,13 @@ void radio_irq_handler (u1_t dio) {
     radio_irq_handler_v2(dio, os_getTime());
 }
 
-void radio_irq_handler_v2 (UNUSED_VAR u1_t dio, ostime_t now) {
+void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
+    LMIC_API_PARAMETER(dio);
+
 #if CFG_TxContinuousMode
+    // in continuous mode, we don't use the now parameter.
+    LMIC_UNREFERENCED_PARAMETER(now);
+
     // clear radio IRQ flags
     writeReg(LORARegIrqFlags, 0xFF);
     u1_t p = readReg(LORARegFifoAddrPtr);
