@@ -28,7 +28,6 @@
 
 #define LMIC_DR_LEGACY 0
 
-#include <inttypes.h>
 #include "lmic.h"
 
 // ----------------------------------------
