@@ -32,10 +32,12 @@
 
 #if CFG_LMIC_EU_like
 
-void  LMIC_enableSubBand(UNUSED_VAR u1_t band) {
+void  LMIC_enableSubBand(u1_t band) {
+        LMIC_API_PARAMETER(band);
 }
 
-void  LMIC_disableSubBand(UNUSED_VAR u1_t band) {
+void  LMIC_disableSubBand(u1_t band) {
+        LMIC_API_PARAMETER(band);
 }
 
 void LMIC_disableChannel(u1_t channel) {
@@ -45,7 +47,8 @@ void LMIC_disableChannel(u1_t channel) {
 }
 
 // this is a no-op provided for compatibilty
-void LMIC_enableChannel(UNUSED_VAR u1_t channel) {
+void LMIC_enableChannel(u1_t channel) {
+        LMIC_API_PARAMETER(channel);
 }
 
 u1_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap) {
