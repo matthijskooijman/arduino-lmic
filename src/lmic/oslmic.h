@@ -90,7 +90,6 @@ typedef              s4_t  ostime_t;
 #define TYPEDEF_xref2osjob_t   typedef       osjob_t* xref2osjob_t
 
 #define SIZEOFEXPR(x) sizeof(x)
-#define UNUSED_VAR __attribute__((unused))
 
 //----------------------------------------------------------------------------
 // Annotations to avoid various "unused" warnings. These must appear as a
