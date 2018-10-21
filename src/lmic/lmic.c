@@ -31,7 +31,6 @@
 //! \file
 #define LMIC_DR_LEGACY 0
 #include "lmic_bandplan.h"
-#include "inttypes.h"
 
 #if defined(DISABLE_BEACONS) && !defined(DISABLE_PING)
 #error Ping needs beacon tracking
@@ -51,7 +50,7 @@ static inline void initTxrxFlags(const char *func, u1_t mask) {
 	LMIC_DEBUG2_PARAMETER(func);
 
 #if LMIC_DEBUG_LEVEL > 1
-	LMIC_DEBUG_PRINTF("%"PRId32": %s txrxFlags %#02x --> %02x\n", os_getTime(), func, LMIC.txrxFlags, mask);
+	LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": %s txrxFlags %#02x --> %02x\n", os_getTime(), func, LMIC.txrxFlags, mask);
 #endif
 	LMIC.txrxFlags = mask;
 }
@@ -582,7 +581,7 @@ scan_mac_cmds(
             // of contiguous commands (whatever that means), and ignore the
             // data rate, NbTrans (uprpt) and txPow until the last one.
 #if LMIC_DEBUG_LEVEL > 0
-            LMIC_DEBUG_PRINTF("%"PRId32": LinkAdrReq: p1:%02x chmap:%04x chpage:%02x uprt:%02x ans:%02x\n",
+            LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": LinkAdrReq: p1:%02x chmap:%04x chpage:%02x uprt:%02x ans:%02x\n",
 		os_getTime(), p1, chmap, chpage, uprpt, LMIC.ladrAns
 		);
 #endif /* LMIC_DEBUG_LEVEL */
@@ -745,7 +744,7 @@ static bit_t decodeFrame (void) {
                             e_.info2  = hdr + (dlen<<8)));
       norx:
 #if LMIC_DEBUG_LEVEL > 0
-        LMIC_DEBUG_PRINTF("%"PRId32": Invalid downlink, window=%s\n", os_getTime(), window);
+        LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": Invalid downlink, window=%s\n", os_getTime(), window);
 #endif
         LMIC.dataLen = 0;
         return 0;
@@ -837,7 +836,7 @@ static bit_t decodeFrame (void) {
 
 #if LMIC_DEBUG_LEVEL > 0
     // Process OPTS
-    LMIC_DEBUG_PRINTF("%"PRId32": process options (olen=%#x)\n", os_getTime(), olen);
+    LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": process options (olen=%#x)\n", os_getTime(), olen);
 #endif
 
     xref2u1_t opts = &d[OFF_DAT_OPTS];
@@ -856,13 +855,13 @@ static bit_t decodeFrame (void) {
             if (port == 0) {
                 // this is a mac command. scan the options.
 #if LMIC_DEBUG_LEVEL > 0
-                LMIC_DEBUG_PRINTF("%"PRId32": process mac commands for port 0 (olen=%#x)\n", os_getTime(), pend-poff);
+                LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": process mac commands for port 0 (olen=%#x)\n", os_getTime(), pend-poff);
 #endif
                 int optendindex = scan_mac_cmds(d+poff, pend-poff);
                 if (optendindex != pend-poff) {
 #if LMIC_DEBUG_LEVEL > 0
                     LMIC_DEBUG_PRINTF(
-                        "%"PRId32": error processing mac commands for port 0 "
+                        "%"LMIC_PRId_ostime_t": error processing mac commands for port 0 "
                         "(len=%#x, optendindex=%#x)\n",
                         os_getTime(), pend-poff, optendindex
                         );
@@ -899,7 +898,7 @@ static bit_t decodeFrame (void) {
                            e_.info   = seqno,
                            e_.info2  = ackup));
 #if LMIC_DEBUG_LEVEL > 1
-	LMIC_DEBUG_PRINTF("%"PRId32": ??ack error ack=%d txCnt=%d\n", os_getTime(), ackup, LMIC.txCnt);
+	LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": ??ack error ack=%d txCnt=%d\n", os_getTime(), ackup, LMIC.txCnt);
 #endif
     }
 
@@ -916,7 +915,7 @@ static bit_t decodeFrame (void) {
         LMIC.dataLen = pend-poff;
     }
 #if LMIC_DEBUG_LEVEL > 0
-    LMIC_DEBUG_PRINTF("%"PRId32": Received downlink, window=%s, port=%d, ack=%d, txrxFlags=%#x\n", os_getTime(), window, port, ackup, LMIC.txrxFlags);
+    LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": Received downlink, window=%s, port=%d, ack=%d, txrxFlags=%#x\n", os_getTime(), window, port, ackup, LMIC.txrxFlags);
 #endif
     return 1;
 }
@@ -965,7 +964,7 @@ static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
     // (again note that hsym is half a sumbol time, so no /2 needed)
     LMIC.rxtime = LMIC.txend + delay + PAMBL_SYMS * hsym - LMIC.rxsyms * hsym;
 
-    LMIC_X_DEBUG_PRINTF("%"PRId32": sched Rx12 %"PRId32"\n", os_getTime(), LMIC.rxtime - RX_RAMPUP);
+    LMIC_X_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": sched Rx12 %"LMIC_PRId_ostime_t"\n", os_getTime(), LMIC.rxtime - RX_RAMPUP);
     os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
 }
 
@@ -1101,7 +1100,7 @@ static bit_t processJoinAccept (void) {
             if( freq ) {
                 LMIC_setupChannel(chidx, freq, 0, -1);
 #if LMIC_DEBUG_LEVEL > 1
-                LMIC_DEBUG_PRINTF("%"PRId32": Setup channel, idx=%d, freq=%"PRIu32"\n", os_getTime(), chidx, freq);
+                LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": Setup channel, idx=%d, freq=%"PRIu32"\n", os_getTime(), chidx, freq);
 #endif
             }
         }
@@ -1715,7 +1714,7 @@ static void startRxPing (xref2osjob_t osjob) {
 // Decide what to do next for the MAC layer of a device
 static void engineUpdate (void) {
 #if LMIC_DEBUG_LEVEL > 0
-    LMIC_DEBUG_PRINTF("%"PRId32": engineUpdate, opmode=0x%x\n", os_getTime(), LMIC.opmode);
+    LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": engineUpdate, opmode=0x%x\n", os_getTime(), LMIC.opmode);
 #endif
     // Check for ongoing state: scan or TX/RX transaction
     if( (LMIC.opmode & (OP_SCAN|OP_TXRXPEND|OP_SHUTDOWN)) != 0 )
@@ -1874,7 +1873,7 @@ static void engineUpdate (void) {
                        e_.eui    = MAIN::CDEV->getEui(),
                        e_.info   = osticks2ms(txbeg-now),
                        e_.info2  = LMIC.seqnoUp-1));
-    LMIC_X_DEBUG_PRINTF("%"PRId32": next engine update in %"PRId32"\n", now, txbeg-TX_RAMPUP);
+    LMIC_X_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": next engine update in %"LMIC_PRId_ostime_t"\n", now, txbeg-TX_RAMPUP);
     os_setTimedCallback(&LMIC.osjob, txbeg-TX_RAMPUP, FUNC_ADDR(runEngineUpdate));
 }
 

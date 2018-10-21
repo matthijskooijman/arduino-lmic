@@ -75,6 +75,14 @@ typedef        const u1_t* xref2cu1_t;
 typedef              u1_t* xref2u1_t;
 typedef              s4_t  ostime_t;
 
+// int32_t == s4_t is long on some platforms; and someday
+// we will want 64-bit ostime_t. So, we will use a macro for the
+// print formatting of ostime_t.
+#ifndef LMIC_PRId_ostime_t
+# include <inttypes.h>
+# define LMIC_PRId_ostime_t	PRId32
+#endif
+
 #define TYPEDEF_xref2rps_t     typedef         rps_t* xref2rps_t
 #define TYPEDEF_xref2rxsched_t typedef     rxsched_t* xref2rxsched_t
 #define TYPEDEF_xref2chnldef_t typedef     chnldef_t* xref2chnldef_t
