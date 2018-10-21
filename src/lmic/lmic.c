@@ -275,28 +275,6 @@ ostime_t calcAirTime (rps_t rps, u1_t plen) {
     return (((ostime_t)tmp << sfx) * OSTICKS_PER_SEC + div/2) / div;
 }
 
-extern inline rps_t updr2rps (dr_t dr);
-extern inline rps_t dndr2rps (dr_t dr);
-extern inline int isFasterDR (dr_t dr1, dr_t dr2);
-extern inline int isSlowerDR (dr_t dr1, dr_t dr2);
-extern inline dr_t  incDR    (dr_t dr);
-extern inline dr_t  decDR    (dr_t dr);
-extern inline dr_t  validDR  (dr_t dr);
-extern inline dr_t  lowerDR  (dr_t dr, u1_t n);
-
-extern inline sf_t  getSf    (rps_t params);
-extern inline rps_t setSf    (rps_t params, sf_t sf);
-extern inline bw_t  getBw    (rps_t params);
-extern inline rps_t setBw    (rps_t params, bw_t cr);
-extern inline cr_t  getCr    (rps_t params);
-extern inline rps_t setCr    (rps_t params, cr_t cr);
-extern inline int   getNocrc (rps_t params);
-extern inline rps_t setNocrc (rps_t params, int nocrc);
-extern inline int   getIh    (rps_t params);
-extern inline rps_t setIh    (rps_t params, int ih);
-extern inline rps_t makeRps  (sf_t sf, bw_t bw, cr_t cr, int ih, int nocrc);
-extern inline int   sameSfBw (rps_t r1, rps_t r2);
-
 // END LORA
 // ================================================================================
 
