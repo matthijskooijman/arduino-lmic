@@ -47,8 +47,10 @@ static void startScan (void);
 #endif
 
 static inline void initTxrxFlags(const char *func, u1_t mask) {
+	LMIC_DEBUG2_PARAMETER(func);
+
 #if LMIC_DEBUG_LEVEL > 1
-	LMIC_DEBUG_PRINTF("%lu: %s txrxFlags %#02x --> %02x\n", os_getTime(), func, LMIC.txrxFlags, mask);
+	LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": %s txrxFlags %#02x --> %02x\n", os_getTime(), func, LMIC.txrxFlags, mask);
 #endif
 	LMIC.txrxFlags = mask;
 }
@@ -272,29 +274,6 @@ ostime_t calcAirTime (rps_t rps, u1_t plen) {
     return (((ostime_t)tmp << sfx) * OSTICKS_PER_SEC + div/2) / div;
 }
 
-extern inline rps_t updr2rps (dr_t dr);
-extern inline rps_t dndr2rps (dr_t dr);
-extern inline int isFasterDR (dr_t dr1, dr_t dr2);
-extern inline int isSlowerDR (dr_t dr1, dr_t dr2);
-extern inline dr_t  incDR    (dr_t dr);
-extern inline dr_t  decDR    (dr_t dr);
-extern inline dr_t  assertDR (dr_t dr);
-extern inline dr_t  validDR  (dr_t dr);
-extern inline dr_t  lowerDR  (dr_t dr, u1_t n);
-
-extern inline sf_t  getSf    (rps_t params);
-extern inline rps_t setSf    (rps_t params, sf_t sf);
-extern inline bw_t  getBw    (rps_t params);
-extern inline rps_t setBw    (rps_t params, bw_t cr);
-extern inline cr_t  getCr    (rps_t params);
-extern inline rps_t setCr    (rps_t params, cr_t cr);
-extern inline int   getNocrc (rps_t params);
-extern inline rps_t setNocrc (rps_t params, int nocrc);
-extern inline int   getIh    (rps_t params);
-extern inline rps_t setIh    (rps_t params, int ih);
-extern inline rps_t makeRps  (sf_t sf, bw_t bw, cr_t cr, int ih, int nocrc);
-extern inline int   sameSfBw (rps_t r1, rps_t r2);
-
 // END LORA
 // ================================================================================
 
@@ -414,6 +393,8 @@ static void txDelay (ostime_t reftime, u1_t secSpan) {
 
 
 void LMICcore_setDrJoin (u1_t reason, u1_t dr) {
+    LMIC_EV_PARAMETER(reason);
+
     EV(drChange, INFO, (e_.reason    = reason,
                         e_.deveui    = MAIN::CDEV->getEui(),
                         e_.dr        = dr|DR_PAGE,
@@ -426,6 +407,8 @@ void LMICcore_setDrJoin (u1_t reason, u1_t dr) {
 
 
 static void setDrTxpow (u1_t reason, u1_t dr, s1_t pow) {
+    LMIC_EV_PARAMETER(reason);
+
     EV(drChange, INFO, (e_.reason    = reason,
                         e_.deveui    = MAIN::CDEV->getEui(),
                         e_.dr        = dr|DR_PAGE,
@@ -462,6 +445,8 @@ void LMIC_setPingable (u1_t intvExp) {
 #endif // !DISABLE_PING
 
 static void runEngineUpdate (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     engineUpdate();
 }
 
@@ -476,6 +461,8 @@ static void reportEvent (ev_t ev) {
 
 
 static void runReset (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     // Disable session
     LMIC_reset();
 #if !defined(DISABLE_JOIN)
@@ -594,7 +581,7 @@ scan_mac_cmds(
             // of contiguous commands (whatever that means), and ignore the
             // data rate, NbTrans (uprpt) and txPow until the last one.
 #if LMIC_DEBUG_LEVEL > 0
-            LMIC_DEBUG_PRINTF("%lu: LinkAdrReq: p1:%02x chmap:%04x chpage:%02x uprt:%02x ans:%02x\n",
+            LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": LinkAdrReq: p1:%02x chmap:%04x chpage:%02x uprt:%02x ans:%02x\n",
 		os_getTime(), p1, chmap, chpage, uprpt, LMIC.ladrAns
 		);
 #endif /* LMIC_DEBUG_LEVEL */
@@ -727,19 +714,29 @@ scan_mac_cmds(
             continue;
         } /* end case */
         case MCMD_DeviceTimeAns: {
-#if defined(LMIC_ENABLE_DeviceTimeReq)
-            // The first 4 bytes contain the seconds since the GPS epoch (i.e
-            // January the 6th 1980 at 00:00:00 UTC).
-            // Note: the octet order for all multi-octet fields is little endian
-            uint32_t seconds_since_gps_epoch;
-            memcpy(&seconds_since_gps_epoch, &opts[oidx + 1], sizeof(seconds_since_gps_epoch));
+#if LMIC_ENABLE_DeviceTimeReq
+            // don't process a spurious downlink.
+            if ( LMIC.txDeviceTimeReqState == lmic_RequestTimeState_rx ) {
+                // remember that it's time to notify the client.
+                LMIC.txDeviceTimeReqState = lmic_RequestTimeState_success;
 
-            // The 5th byte contains the fractional seconds in 1⁄2^8 second steps
-            uint8_t fractional_seconds = opts[oidx + 5];
+                // the network time is linked to the time of the last TX.
+                LMIC.localDeviceTime = LMIC.txend;
+
+                // save the network time.
+                // The first 4 bytes contain the seconds since the GPS epoch (i.e
+                // January the 6th 1980 at 00:00:00 UTC).
+                // Note: the octet order for all multi-octet fields is little endian
+                LMIC.netDeviceTime = opts[oidx + 1] |
+                                     (opts[oidx + 2] << 8) |
+                                     (opts[oidx + 3] << 16) |
+                                     (opts[oidx + 4] << 24);
+                // The 5th byte contains the fractional seconds in 2^-8 second steps
+                LMIC.netDeviceTimeFrac = opts[oidx + 5];
 #if LMIC_DEBUG_LEVEL > 0
-            LMIC_DEBUG_PRINTF("MCMD_DeviceTimeAns received. seconds_since_gps_epoch=%lu\n", seconds_since_gps_epoch);
-            LMIC_DEBUG_PRINTF("MCMD_DeviceTimeAns received. fractional_seconds=%d\n", fractional_seconds);
+                LMIC_DEBUG_PRINTF("MAC command DeviceTimeAns received: seconds_since_gps_epoch=%u, fractional_seconds=%d\n", LMIC.netDeviceTime, LMIC.netDeviceTimeFrac);
 #endif
+            }
 #endif // LMIC_ENABLE_DeviceTimeReq
             oidx += 6;
             continue;
@@ -775,7 +772,7 @@ static bit_t decodeFrame (void) {
                             e_.info2  = hdr + (dlen<<8)));
       norx:
 #if LMIC_DEBUG_LEVEL > 0
-        LMIC_DEBUG_PRINTF("%lu: Invalid downlink, window=%s\n", os_getTime(), window);
+        LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": Invalid downlink, window=%s\n", os_getTime(), window);
 #endif
         LMIC.dataLen = 0;
         return 0;
@@ -867,7 +864,7 @@ static bit_t decodeFrame (void) {
 
 #if LMIC_DEBUG_LEVEL > 0
     // Process OPTS
-    LMIC_DEBUG_PRINTF("%lu: process options (olen=%#x)\n", os_getTime(), olen);
+    LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": process options (olen=%#x)\n", os_getTime(), olen);
 #endif
 
     xref2u1_t opts = &d[OFF_DAT_OPTS];
@@ -886,13 +883,13 @@ static bit_t decodeFrame (void) {
             if (port == 0) {
                 // this is a mac command. scan the options.
 #if LMIC_DEBUG_LEVEL > 0
-                LMIC_DEBUG_PRINTF("%lu: process mac commands for port 0 (olen=%#x)\n", os_getTime(), pend-poff);
+                LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": process mac commands for port 0 (olen=%#x)\n", os_getTime(), pend-poff);
 #endif
                 int optendindex = scan_mac_cmds(d+poff, pend-poff);
                 if (optendindex != pend-poff) {
 #if LMIC_DEBUG_LEVEL > 0
                     LMIC_DEBUG_PRINTF(
-                        "%lu: error processing mac commands for port 0 "
+                        "%"LMIC_PRId_ostime_t": error processing mac commands for port 0 "
                         "(len=%#x, optendindex=%#x)\n",
                         os_getTime(), pend-poff, optendindex
                         );
@@ -929,7 +926,7 @@ static bit_t decodeFrame (void) {
                            e_.info   = seqno,
                            e_.info2  = ackup));
 #if LMIC_DEBUG_LEVEL > 1
-	LMIC_DEBUG_PRINTF("%lu: ??ack error ack=%d txCnt=%d\n", os_getTime(), ackup, LMIC.txCnt);
+	LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": ??ack error ack=%d txCnt=%d\n", os_getTime(), ackup, LMIC.txCnt);
 #endif
     }
 
@@ -946,7 +943,7 @@ static bit_t decodeFrame (void) {
         LMIC.dataLen = pend-poff;
     }
 #if LMIC_DEBUG_LEVEL > 0
-    LMIC_DEBUG_PRINTF("%lu: Received downlink, window=%s, port=%d, ack=%d, txrxFlags=%#x\n", os_getTime(), window, port, ackup, LMIC.txrxFlags);
+    LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": Received downlink, window=%s, port=%d, ack=%d, txrxFlags=%#x\n", os_getTime(), window, port, ackup, LMIC.txrxFlags);
 #endif
     return 1;
 }
@@ -995,7 +992,7 @@ static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
     // (again note that hsym is half a sumbol time, so no /2 needed)
     LMIC.rxtime = LMIC.txend + delay + PAMBL_SYMS * hsym - LMIC.rxsyms * hsym;
 
-    LMIC_X_DEBUG_PRINTF("%lu: sched Rx12 %lu\n", os_getTime(), LMIC.rxtime - RX_RAMPUP);
+    LMIC_X_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": sched Rx12 %"LMIC_PRId_ostime_t"\n", os_getTime(), LMIC.rxtime - RX_RAMPUP);
     os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
 }
 
@@ -1038,6 +1035,8 @@ static void txDone (ostime_t delay, osjobcb_t func) {
 
 #if !defined(DISABLE_JOIN)
 static void onJoinFailed (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     // Notify app - must call LMIC_reset() to stop joining
     // otherwise join procedure continues.
     reportEvent(EV_JOIN_FAILED);
@@ -1091,6 +1090,8 @@ static bit_t processJoinAccept (void) {
     u1_t hdr  = LMIC.frame[0];
     u1_t dlen = LMIC.dataLen;
     u4_t mic  = os_rlsbf4(&LMIC.frame[dlen-4]); // safe before modified by encrypt!
+    LMIC_EV_VARIABLE(mic);                      // only used by EV().
+
     if( (dlen != LEN_JA && dlen != LEN_JAEXT)
         || (hdr & (HDR_FTYPE|HDR_MAJOR)) != (HDR_FTYPE_JACC|HDR_MAJOR_V1) ) {
         EV(specCond, ERR, (e_.reason = EV::specCond_t::UNEXPECTED_FRAME,
@@ -1127,7 +1128,7 @@ static bit_t processJoinAccept (void) {
             if( freq ) {
                 LMIC_setupChannel(chidx, freq, 0, -1);
 #if LMIC_DEBUG_LEVEL > 1
-                LMIC_DEBUG_PRINTF("%lu: Setup channel, idx=%d, freq=%lu\n", os_getTime(), chidx, (unsigned long)freq);
+                LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": Setup channel, idx=%d, freq=%"PRIu32"\n", os_getTime(), chidx, freq);
 #endif
             }
         }
@@ -1179,6 +1180,8 @@ static bit_t processJoinAccept (void) {
 
 
 static void processRx2Jacc (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     if( LMIC.dataLen == 0 ) {
         initTxrxFlags(__func__, 0);  // nothing in 1st/2nd DN slot
     }
@@ -1187,23 +1190,31 @@ static void processRx2Jacc (xref2osjob_t osjob) {
 
 
 static void setupRx2Jacc (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     LMIC.osjob.func = FUNC_ADDR(processRx2Jacc);
     setupRx2();
 }
 
 
 static void processRx1Jacc (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     if( LMIC.dataLen == 0 || !processJoinAccept() )
         schedRx12(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc), LMIC.dn2Dr);
 }
 
 
 static void setupRx1Jacc (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     setupRx1(FUNC_ADDR(processRx1Jacc));
 }
 
 
 static void jreqDone (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     txDone(DELAY_JACC1_osticks, FUNC_ADDR(setupRx1Jacc));
 }
 
@@ -1215,10 +1226,14 @@ static void jreqDone (xref2osjob_t osjob) {
 static bit_t processDnData(void);
 
 static void processRx2DnDataDelay (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     processDnData();
 }
 
 static void processRx2DnData (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     if( LMIC.dataLen == 0 ) {
         initTxrxFlags(__func__, 0);  // nothing in 1st/2nd DN slot
         // Delay callback processing to avoid up TX while gateway is txing our missed frame!
@@ -1233,23 +1248,31 @@ static void processRx2DnData (xref2osjob_t osjob) {
 
 
 static void setupRx2DnData (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     LMIC.osjob.func = FUNC_ADDR(processRx2DnData);
     setupRx2();
 }
 
 
 static void processRx1DnData (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     if( LMIC.dataLen == 0 || !processDnData() )
         schedRx12(sec2osticks(LMIC.rxDelay +(int)DELAY_EXTDNW2), FUNC_ADDR(setupRx2DnData), LMIC.dn2Dr);
 }
 
 
 static void setupRx1DnData (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     setupRx1(FUNC_ADDR(processRx1DnData));
 }
 
 
 static void updataDone (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     txDone(sec2osticks(LMIC.rxDelay), FUNC_ADDR(setupRx1DnData));
 }
 
@@ -1333,11 +1356,11 @@ static void buildDataFrame (void) {
         LMIC.txParamSetupAns = 0;
     }
 #endif
-#if defined(LMIC_ENABLE_DeviceTimeReq)
-    if ( LMIC.txDeviceTimeReq ) {
+#if LMIC_ENABLE_DeviceTimeReq
+    if ( LMIC.txDeviceTimeReqState == lmic_RequestTimeState_tx ) {
         LMIC.frame[end+0] = MCMD_DeviceTimeReq;
         end += 1;
-        LMIC.txDeviceTimeReq = 0;
+        LMIC.txDeviceTimeReqState = lmic_RequestTimeState_rx;
     }
 #endif // LMIC_ENABLE_DeviceTimeReq
     ASSERT(end <= OFF_DAT_OPTS+16);
@@ -1401,7 +1424,9 @@ static void buildDataFrame (void) {
 
 #if !defined(DISABLE_BEACONS)
 // Callback from HAL during scan mode or when job timer expires.
-static void onBcnRx (xref2osjob_t job) {
+static void onBcnRx (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     // If we arrive via job timer make sure to put radio to rest.
     os_radio(RADIO_RST);
     os_clearCallback(&LMIC.osjob);
@@ -1522,6 +1547,8 @@ static void buildJoinRequest (u1_t ftype) {
 }
 
 static void startJoining (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     reportEvent(EV_JOINING);
 }
 
@@ -1555,6 +1582,8 @@ bit_t LMIC_startJoining (void) {
 
 #if !defined(DISABLE_PING)
 static void processPingRx (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     if( LMIC.dataLen != 0 ) {
         initTxrxFlags(__func__, TXRX_PING);
         if( decodeFrame() ) {
@@ -1593,6 +1622,26 @@ static bit_t processDnData (void) {
         LMIC.dataBeg = LMIC.dataLen = 0;
       txcomplete:
         LMIC.opmode &= ~(OP_TXDATA|OP_TXRXPEND);
+
+#if LMIC_ENABLE_DeviceTimeReq
+        lmic_request_time_state_t const requestTimeState = LMIC.txDeviceTimeReqState;
+        if ( requestTimeState != lmic_RequestTimeState_idle ) {
+            lmic_request_network_time_cb_t * const pNetworkTimeCb = LMIC.pNetworkTimeCb;
+            LMIC.txDeviceTimeReqState = lmic_RequestTimeState_idle;
+            if (pNetworkTimeCb != NULL) {
+                // reset the callback, so that the user's routine
+                // can post another request if desired.
+                LMIC.pNetworkTimeCb = NULL;
+
+                // call the user's notification routine.
+                (*pNetworkTimeCb)(
+                    LMIC.pNetworkTimeUserData,
+                    (LMIC.txDeviceTimeReqState == lmic_RequestTimeState_success)
+                    );
+            }
+        }
+#endif // LMIC_ENABLE_DeviceTimeReq
+
         if( (LMIC.txrxFlags & (TXRX_DNW1|TXRX_DNW2|TXRX_PING)) != 0  &&  (LMIC.opmode & OP_LINKDEAD) != 0 ) {
             LMIC.opmode &= ~OP_LINKDEAD;
             reportEvent(EV_LINK_ALIVE);
@@ -1636,6 +1685,8 @@ static bit_t processDnData (void) {
 
 #if !defined(DISABLE_BEACONS)
 static void processBeacon (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     ostime_t lasttx = LMIC.bcninfo.txtime;   // save here - decodeBeacon might overwrite
     u1_t flags = LMIC.bcninfo.flags;
     ev_t ev;
@@ -1697,6 +1748,8 @@ static void processBeacon (xref2osjob_t osjob) {
 
 
 static void startRxBcn (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     LMIC.osjob.func = FUNC_ADDR(processBeacon);
     os_radio(RADIO_RX);
 }
@@ -1705,6 +1758,8 @@ static void startRxBcn (xref2osjob_t osjob) {
 
 #if !defined(DISABLE_PING)
 static void startRxPing (xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+
     LMIC.osjob.func = FUNC_ADDR(processPingRx);
     os_radio(RADIO_RX);
 }
@@ -1714,7 +1769,7 @@ static void startRxPing (xref2osjob_t osjob) {
 // Decide what to do next for the MAC layer of a device
 static void engineUpdate (void) {
 #if LMIC_DEBUG_LEVEL > 0
-    LMIC_DEBUG_PRINTF("%lu: engineUpdate, opmode=0x%x\n", os_getTime(), LMIC.opmode);
+    LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": engineUpdate, opmode=0x%x\n", os_getTime(), LMIC.opmode);
 #endif
     // Check for ongoing state: scan or TX/RX transaction
     if( (LMIC.opmode & (OP_SCAN|OP_TXRXPEND|OP_SHUTDOWN)) != 0 )
@@ -1873,7 +1928,7 @@ static void engineUpdate (void) {
                        e_.eui    = MAIN::CDEV->getEui(),
                        e_.info   = osticks2ms(txbeg-now),
                        e_.info2  = LMIC.seqnoUp-1));
-    LMIC_X_DEBUG_PRINTF("%lu: next engine update in %lu\n", now, txbeg-TX_RAMPUP);
+    LMIC_X_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": next engine update in %"LMIC_PRId_ostime_t"\n", now, txbeg-TX_RAMPUP);
     os_setTimedCallback(&LMIC.osjob, txbeg-TX_RAMPUP, FUNC_ADDR(runEngineUpdate));
 }
 
@@ -1927,6 +1982,11 @@ void LMIC_reset (void) {
     DO_DEVDB(LMIC.ping.dr,      pingDr);
     DO_DEVDB(LMIC.ping.intvExp, pingIntvExp);
 #endif // !DISABLE_PING
+#if LMIC_ENABLE_DeviceTimeReq
+    LMIC.txDeviceTimeReqState = lmic_RequestTimeState_idle;
+    LMIC.netDeviceTime = 0;     // the "invalid" time.
+    LMIC.netDeviceTimeFrac = 0;
+#endif // LMIC_ENABLE_DeviceTimeReq
 }
 
 
@@ -1967,13 +2027,6 @@ int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
     LMIC_setTxData();
     return 0;
 }
-
-#if defined(LMIC_ENABLE_DeviceTimeReq)
-// Request that a DeviceTimeReq is sent on the next transmission
-void LMIC_setDeviceTimeReq(void) {
-    LMIC.txDeviceTimeReq = 1;
-}
-#endif
 
 // Send a payload-less message to signal device is alive
 void LMIC_sendAlive (void) {
@@ -2071,4 +2124,37 @@ void LMIC_getSessionKeys (u4_t *netid, devaddr_t *devaddr, xref2u1_t nwkKey, xre
     *devaddr = LMIC.devaddr;
     memcpy(artKey, LMIC.artKey, sizeof(LMIC.artKey));
     memcpy(nwkKey, LMIC.nwkKey, sizeof(LMIC.nwkKey));
+}
+
+// \brief post an asynchronous request for the network time.
+void LMIC_requestNetworkTime(lmic_request_network_time_cb_t *pCallbackfn, void *pUserData) {
+#if LMIC_ENABLE_DeviceTimeReq
+    if (LMIC.txDeviceTimeReqState == lmic_RequestTimeState_idle) {
+        LMIC.txDeviceTimeReqState = lmic_RequestTimeState_tx;
+        LMIC.pNetworkTimeCb = pCallbackfn;
+        LMIC.pNetworkTimeUserData = pUserData;
+        return;
+    }
+#endif // LMIC_ENABLE_DeviceTimeReq
+    // if no device time support, or if not in proper state,
+    // report a failure.
+    if (pCallbackfn != NULL)
+        (*pCallbackfn)(pUserData, /* false */ 0);
+}
+
+// \brief return local/remote time pair (if valid, and DeviceTimeReq enabled),
+// return true for success, false for error. We adjust the sampled OS time
+// back in time to the nearest second boundary.
+int LMIC_getNetworkTimeReference(lmic_time_reference_t *pReference) {
+#if LMIC_ENABLE_DeviceTimeReq
+    if (pReference != NULL &&       // valid parameter, and
+        LMIC.netDeviceTime != 0) {  // ... we have a reasonable answer.
+        const ostime_t tAdjust = LMIC.netDeviceTimeFrac * ms2osticks(1000) / 256;
+
+        pReference->tLocal = LMIC.localDeviceTime - tAdjust;
+        pReference->tNetwork = LMIC.netDeviceTime;
+        return 1;
+    }
+#endif // LMIC_ENABLE_DeviceTimeReq
+    return 0;
 }

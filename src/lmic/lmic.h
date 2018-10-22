@@ -61,6 +61,7 @@
 #   else // ndef LMIC_DEBUG_PRINTF_FN
 //    if there's no other info, just use printf. In a pure Arduino environment,
 //    that's what will happen.
+#     include <stdio.h>
 #     define LMIC_DEBUG_PRINTF(f, ...) printf(f, ## __VA_ARGS__)
 #   endif // ndef LMIC_DEBUG_PRINTF_FN
 # endif // ndef LMIC_DEBUG_PRINTF
@@ -242,6 +243,35 @@ enum {
         MAX_CLOCK_ERROR = 65536,
 };
 
+// network time request callback function
+// defined unconditionally, because APIs and types can't change based on config.
+// This is called when a time-request succeeds or when we get a downlink
+// without time request, "completing" the pending time request.
+typedef void lmic_request_network_time_cb_t(void *pUserData, int flagSuccess);
+
+// how the network represents time.
+typedef u4_t lmic_gpstime_t;
+
+// rather than deal with 1/256 second tick, we adjust ostime back
+// (as it's high res) to match tNetwork.
+typedef struct lmic_time_reference_s lmic_time_reference_t;
+
+struct lmic_time_reference_s {
+    // our best idea of when we sent the uplink (end of packet).
+    ostime_t tLocal;
+    // the network's best idea of when we sent the uplink.
+    lmic_gpstime_t tNetwork;
+};
+
+enum lmic_request_time_state_e {
+    lmic_RequestTimeState_idle = 0,     // we're not doing anything
+    lmic_RequestTimeState_tx,           // we want to tx a time request on next uplink
+    lmic_RequestTimeState_rx,           // we have tx'ed, next downlink completes.
+    lmic_RequestTimeState_success       // we sucessfully got time.
+};
+
+typedef u1_t lmic_request_time_state_t;
+
 struct lmic_t {
     // Radio settings TX/RX (also accessed by HAL)
     ostime_t    txend;
@@ -305,6 +335,14 @@ struct lmic_t {
     devaddr_t   devaddr;
     u4_t        seqnoDn;      // device level down stream seqno
     u4_t        seqnoUp;
+#if LMIC_ENABLE_DeviceTimeReq
+    // put here for alignment, to reduce RAM use.
+    ostime_t    localDeviceTime;    // the LMIC.txend value for last DeviceTimeAns
+    lmic_gpstime_t netDeviceTime;   // the netDeviceTime for lastDeviceTimeAns
+                                    // zero ==> not valid.
+    lmic_request_network_time_cb_t *pNetworkTimeCb;	// call-back routine
+    void        *pNetworkTimeUserData; // call-back data
+#endif // LMIC_ENABLE_DeviceTimeReq
 
     u1_t        dnConf;       // dn frame confirm pending: LORA::FCT_ACK or 0
     s1_t        adrAckReq;    // counter until we reset data rate (0=off)
@@ -328,8 +366,9 @@ struct lmic_t {
     bit_t       txParamSetupAns; // transmit setup answer pending.
     u1_t        txParam;        // the saved TX param byte.
 #endif
-#if defined(LMIC_ENABLE_DeviceTimeReq)
-    bit_t       txDeviceTimeReq; // DeviceTimeReq pending
+#if LMIC_ENABLE_DeviceTimeReq
+    lmic_request_time_state_t txDeviceTimeReqState;  // current state, initially idle.
+    u1_t        netDeviceTimeFrac;     // updated on any DeviceTimeAns.
 #endif
 
     // rx1DrOffset is the offset from uplink to downlink datarate
@@ -370,6 +409,7 @@ struct lmic_t {
 
     u1_t        noRXIQinversion;
 };
+
 //! \var struct lmic_t LMIC
 //! The state of LMIC MAC layer is encapsulated in this variable.
 DECLARE_LMIC; //!< \internal
@@ -398,10 +438,6 @@ void  LMIC_setTxData    (void);
 int   LMIC_setTxData2   (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
 void  LMIC_sendAlive    (void);
 
-#if defined(LMIC_ENABLE_DeviceTimeReq)
-void  LMIC_setDeviceTimeReq(void);
-#endif
-
 #if !defined(DISABLE_BEACONS)
 bit_t LMIC_enableTracking  (u1_t tryBcnInfo);
 void  LMIC_disableTracking (void);
@@ -422,6 +458,9 @@ void LMIC_setClockError(u2_t error);
 u4_t LMIC_getSeqnoUp    (void);
 u4_t LMIC_setSeqnoUp    (u4_t);
 void LMIC_getSessionKeys (u4_t *netid, devaddr_t *devaddr, xref2u1_t nwkKey, xref2u1_t artKey);
+
+void LMIC_requestNetworkTime(lmic_request_network_time_cb_t *pCallbackfn, void *pUserData);
+int LMIC_getNetworkTimeReference(lmic_time_reference_t *pReference);
 
 // Declare onEvent() function, to make sure any definition will have the
 // C conventions, even when in a C++ file.

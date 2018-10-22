@@ -91,16 +91,19 @@ static void hal_io_check() {
 
 #else
 // Interrupt handlers
-static bool interrupt_flags[NUM_DIO] = {0};
+static ostime_t interrupt_time[NUM_DIO] = {0};
 
 static void hal_isrPin0() {
-    interrupt_flags[0] = true;
+    ostime_t now = os_getTime();
+    interrupt_time[0] = now ? now : 1;
 }
 static void hal_isrPin1() {
-    interrupt_flags[1] = true;
+    ostime_t now = os_getTime();
+    interrupt_time[1] = now ? now : 1;
 }
 static void hal_isrPin2() {
-    interrupt_flags[2] = true;
+    ostime_t now = os_getTime();
+    interrupt_time[2] = now ? now : 1;
 }
 
 typedef void (*isr_t)();
@@ -118,12 +121,14 @@ static void hal_interrupt_init() {
 static void hal_io_check() {
     uint8_t i;
     for (i = 0; i < NUM_DIO; ++i) {
+	ostime_t iTime;
         if (plmic_pins->dio[i] == LMIC_UNUSED_PIN)
             continue;
 
-        if (interrupt_flags[i]) {
-            interrupt_flags[i] = false;
-            radio_irq_handler(i);
+	iTime = interrupt_time[i];
+        if (iTime) {
+            interrupt_time[i] = 0;
+            radio_irq_handler_v2(i, iTime);
         }
     }
 }
@@ -271,6 +276,26 @@ void hal_sleep () {
 // -----------------------------------------------------------------------------
 
 #if defined(LMIC_PRINTF_TO)
+#if !defined(__AVR)
+static ssize_t uart_putchar (void *, const char *buf, size_t len) {
+    return LMIC_PRINTF_TO.write((const uint8_t *)buf, len);
+}
+
+static cookie_io_functions_t functions =
+ {
+     .read = NULL,
+     .write = uart_putchar,
+     .seek = NULL,
+     .close = NULL
+ };
+
+void hal_printf_init() {
+    stdout = fopencookie(NULL, "w", functions);
+    if (stdout != nullptr) {
+	setvbuf(stdout, NULL, _IONBF, 0);
+    }
+}
+#else // defined(__AVR)
 static int uart_putchar (char c, FILE *)
 {
     LMIC_PRINTF_TO.write(c) ;
@@ -288,6 +313,8 @@ void hal_printf_init() {
     // The uart is the standard output device STDOUT.
     stdout = &uartout ;
 }
+
+#endif // !defined(ESP8266) || defined(ESP31B) || defined(ESP32)
 #endif // defined(LMIC_PRINTF_TO)
 
 void hal_init (void) {
