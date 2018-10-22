@@ -141,33 +141,40 @@ static void hal_spi_init () {
     SPI.begin();
 }
 
-void hal_pin_nss (u1_t val) {
-    if (!val) {
-        uint32_t spi_freq;
+static void hal_spi_trx_start() {
+    uint32_t spi_freq;
 
-        if ((spi_freq = plmic_pins->spi_freq) == 0)
-            spi_freq = LMIC_SPI_FREQ;
+    if ((spi_freq = plmic_pins->spi_freq) == 0)
+        spi_freq = LMIC_SPI_FREQ;
 
-        SPISettings settings(spi_freq, MSBFIRST, SPI_MODE0);
-        SPI.beginTransaction(settings);
-    } else {
-        SPI.endTransaction();
-    }
-
-    //Serial.println(val?">>":"<<");
-    digitalWrite(plmic_pins->nss, val);
+    SPISettings settings(spi_freq, MSBFIRST, SPI_MODE0);
+    SPI.beginTransaction(settings);
+    digitalWrite(plmic_pins->nss, 0);
 }
 
-// perform SPI transaction with radio
-u1_t hal_spi (u1_t out) {
-    u1_t res = SPI.transfer(out);
-/*
-    Serial.print(">");
-    Serial.print(out, HEX);
-    Serial.print("<");
-    Serial.println(res, HEX);
-    */
-    return res;
+static void hal_spi_trx_end() {
+    digitalWrite(plmic_pins->nss, 1);
+    SPI.endTransaction();
+}
+
+void hal_spi_write(u1_t cmd, const u1_t* buf, int len) {
+    hal_spi_trx_start();
+
+    SPI.transfer(cmd);
+    for (u1_t i = 0; i < len; i++)
+        SPI.transfer(buf[i]);
+
+    hal_spi_trx_end();
+}
+
+void hal_spi_read(u1_t cmd, u1_t* buf, int len) {
+    hal_spi_trx_start();
+
+    SPI.transfer(cmd);
+    for (u1_t i = 0; i < len; i++)
+        buf[i] = SPI.transfer(0x00);
+
+    hal_spi_trx_end();
 }
 
 // -----------------------------------------------------------------------------
