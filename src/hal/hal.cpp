@@ -141,40 +141,36 @@ static void hal_spi_init () {
     SPI.begin();
 }
 
-static void hal_spi_trx_start() {
+static void hal_spi_trx(u1_t cmd, u1_t* buf, int len, u1_t is_read) {
     uint32_t spi_freq;
+    u1_t nss = plmic_pins->nss;
 
     if ((spi_freq = plmic_pins->spi_freq) == 0)
         spi_freq = LMIC_SPI_FREQ;
 
     SPISettings settings(spi_freq, MSBFIRST, SPI_MODE0);
     SPI.beginTransaction(settings);
-    digitalWrite(plmic_pins->nss, 0);
-}
+    digitalWrite(nss, 0);
 
-static void hal_spi_trx_end() {
-    digitalWrite(plmic_pins->nss, 1);
+    SPI.transfer(cmd);
+
+    for (u1_t i = 0; i < len; i++) {
+        u1_t data = is_read ? 0x00 : buf[i];
+        data = SPI.transfer(data);
+        if (is_read)
+            buf[i] = data;
+    }
+
+    digitalWrite(nss, 1);
     SPI.endTransaction();
 }
 
 void hal_spi_write(u1_t cmd, const u1_t* buf, int len) {
-    hal_spi_trx_start();
-
-    SPI.transfer(cmd);
-    for (u1_t i = 0; i < len; i++)
-        SPI.transfer(buf[i]);
-
-    hal_spi_trx_end();
+    hal_spi_trx(cmd, (u1_t*)buf, len, 0);
 }
 
 void hal_spi_read(u1_t cmd, u1_t* buf, int len) {
-    hal_spi_trx_start();
-
-    SPI.transfer(cmd);
-    for (u1_t i = 0; i < len; i++)
-        buf[i] = SPI.transfer(0x00);
-
-    hal_spi_trx_end();
+    hal_spi_trx(cmd, buf, len, 1);
 }
 
 // -----------------------------------------------------------------------------
