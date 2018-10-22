@@ -155,10 +155,11 @@ static void hal_spi_trx(u1_t cmd, u1_t* buf, int len, u1_t is_read) {
     SPI.transfer(cmd);
 
     for (u1_t i = 0; i < len; i++) {
-        u1_t data = is_read ? 0x00 : buf[i];
+        u1_t* p = buf + i;
+        u1_t data = is_read ? 0x00 : *p;
         data = SPI.transfer(data);
         if (is_read)
-            buf[i] = data;
+            *p = data;
     }
 
     digitalWrite(nss, 1);
