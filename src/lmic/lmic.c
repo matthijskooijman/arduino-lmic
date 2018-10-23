@@ -724,13 +724,17 @@ scan_mac_cmds(
                 LMIC.localDeviceTime = LMIC.txend;
 
                 // save the network time.
-                // The first 4 bytes contain the seconds since the GPS epoch (i.e
-                // January the 6th 1980 at 00:00:00 UTC).
-                // Note: the octet order for all multi-octet fields is little endian
-                LMIC.netDeviceTime = opts[oidx + 1] |
-                                     (opts[oidx + 2] << 8) |
-                                     (opts[oidx + 3] << 16) |
-                                     (opts[oidx + 4] << 24);
+                // The first 4 bytes contain the seconds since the GPS epoch
+                // (i.e January the 6th 1980 at 00:00:00 UTC).
+                // Note: as per the LoRaWAN specs, the octet order for all
+                //       multi-octet fields is little endian
+                // Note: the casts are necessary, because opts is an array of
+                //       single byte values, and they might overflow when shifted
+                LMIC.netDeviceTime = ( (lmic_gpstime_t) opts[oidx + 1]       ) |
+                                     (((lmic_gpstime_t) opts[oidx + 2]) <<  8) |
+                                     (((lmic_gpstime_t) opts[oidx + 3]) << 16) |
+                                     (((lmic_gpstime_t) opts[oidx + 4]) << 24);
+
                 // The 5th byte contains the fractional seconds in 2^-8 second steps
                 LMIC.netDeviceTimeFrac = opts[oidx + 5];
 #if LMIC_DEBUG_LEVEL > 0
