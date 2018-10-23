@@ -1631,6 +1631,7 @@ static bit_t processDnData (void) {
         lmic_request_time_state_t const requestTimeState = LMIC.txDeviceTimeReqState;
         if ( requestTimeState != lmic_RequestTimeState_idle ) {
             lmic_request_network_time_cb_t * const pNetworkTimeCb = LMIC.pNetworkTimeCb;
+            int flagSuccess = (LMIC.txDeviceTimeReqState == lmic_RequestTimeState_success);
             LMIC.txDeviceTimeReqState = lmic_RequestTimeState_idle;
             if (pNetworkTimeCb != NULL) {
                 // reset the callback, so that the user's routine
@@ -1638,10 +1639,7 @@ static bit_t processDnData (void) {
                 LMIC.pNetworkTimeCb = NULL;
 
                 // call the user's notification routine.
-                (*pNetworkTimeCb)(
-                    LMIC.pNetworkTimeUserData,
-                    (LMIC.txDeviceTimeReqState == lmic_RequestTimeState_success)
-                    );
+                (*pNetworkTimeCb)(LMIC.pNetworkTimeUserData, flagSuccess);
             }
         }
 #endif // LMIC_ENABLE_DeviceTimeReq
