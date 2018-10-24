@@ -199,7 +199,9 @@ void printDigits(int digits) {
     Serial.print(digits);
 }
 
-void user_request_network_time_callback(uint32_t *pUserUTCTime, int flagSuccess) {
+void user_request_network_time_callback(void *pVoidUserUTCTime, int flagSuccess) {
+    // Explicit convertion from void* to uint32_t* to avoid compiler errors
+    uint32_t *pUserUTCTime = (uint32_t *) pVoidUserUTCTime;
 
     // A struct that will be populated by LMIC_getNetworkTimeReference.
     // It contains the following fields:
