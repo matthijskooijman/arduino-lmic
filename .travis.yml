@@ -76,7 +76,7 @@ before_install:
 install:
  - git clone --depth=1 https://github.com/adafruit/Adafruit_Sensor.git $ARDUINO_LIBS/Adafruit_Sensor
  - git clone --depth=1 https://github.com/adafruit/DHT-sensor-library.git $ARDUINO_LIBS/DHT-sensor-library
- - git clone --depth=1 --branch v1.5 git@github.com:PaulStoffregen/Time.git $ARDUINO_LIBS/Time
+ - git clone --depth=1 --branch v1.5 https://github.com/PaulStoffregen/Time.git $ARDUINO_LIBS/Time
  # be careful when installing; with caching, we usually won't update. Select most recent.
  - _notavr ||      arduino --install-boards adafruit:avr || echo "assume adafruit:avr already installed, continue"
  - _notsamd ||     arduino --install-boards mcci:samd || echo "assume mcci:samd already installed, continue"
