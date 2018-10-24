@@ -28,7 +28,7 @@ before_install:
   - ln -sf $PWD $HOME/${ARDUINO_IDE}/libraries/Test_Library
   - export PATH="$HOME/${ARDUINO_IDE}:$PATH"
   # clean up for earlier bugs. This is transitional.
-  - rm -rf $HOME/${ARDUINO_IDE}/libraries/Adafruit_Sensor $HOME/${ARDUINO_IDE}/libraries/DHT-sensor-library
+  - rm -rf "$ARDUINO_LIBS/Adafruit_Sensor" "$ARDUINO_LIBS/DHT-sensor-library" "$ARDUINO_LIBS/Time"
   #
   # functions to generate the board settings for SAMD, STM32L0, ...
   # keep args for these aligned for any common options. $1 is always board name, $2 is region.
@@ -76,6 +76,7 @@ before_install:
 install:
  - git clone --depth=1 https://github.com/adafruit/Adafruit_Sensor.git $ARDUINO_LIBS/Adafruit_Sensor
  - git clone --depth=1 https://github.com/adafruit/DHT-sensor-library.git $ARDUINO_LIBS/DHT-sensor-library
+ - git clone --depth=1 --branch v1.5 git@github.com:PaulStoffregen/Time.git $ARDUINO_LIBS/Time
  # be careful when installing; with caching, we usually won't update. Select most recent.
  - _notavr ||      arduino --install-boards adafruit:avr || echo "assume adafruit:avr already installed, continue"
  - _notsamd ||     arduino --install-boards mcci:samd || echo "assume mcci:samd already installed, continue"
@@ -193,6 +194,14 @@ script:
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino ; }
+
+# test ttn-otaa-network-time
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino
 
 #
 # some tests that should generate build failures.
