@@ -194,7 +194,6 @@ uint32_t userUTCTime; // Seconds since the UTC epoch
 // Utility function for digital clock display: prints preceding colon and
 // leading 0
 void printDigits(int digits) {
-    
     Serial.print(':');
     if (digits < 10) Serial.print('0');
     Serial.print(digits);
