@@ -146,6 +146,8 @@ void setup() {
   LMIC.freq = 869525000;
 #elif defined(CFG_us915)
   LMIC.freq = 902300000;
+#else
+  error Region not supported!
 #endif
 
   // Maximum TX power
