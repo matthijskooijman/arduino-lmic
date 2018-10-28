@@ -26,7 +26,8 @@
  * AppSKey. Each device should have their own unique values for these
  * fields.
  *
- * Do not forget to define the radio type correctly in config.h.
+ * Do not forget to define the radio type correctly in
+ * arduino-lmic/project_config/lmic_project_config.h or from your BOARDS.txt.
  *
  *******************************************************************************/
 
@@ -64,7 +65,8 @@ static const u4_t DEVADDR = FILLMEIN ; // <-- Change this address for every node
 
 // These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless
-// DISABLE_JOIN is set in config.h, otherwise the linker will complain).
+// DISABLE_JOIN is set in arduino-lmic/project_config/lmic_project_config.h,
+// otherwise the linker will complain).
 void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
