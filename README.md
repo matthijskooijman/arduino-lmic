@@ -147,6 +147,7 @@ The library supports the following regions:
 `-D CFG_us915` | `LMIC_REGION_us915` | 2 | 2.2 | US 902-928 MHz ISM
 `-D CFG_au921` | `LMIC_REGION_au921` | 5 | 2.5 | Australia 915-928 MHz ISM
 `-D CFG_as923` | `LMIC_REGION_as923` | 7 | 2.7 | Asia 923 MHz ISM
+`-D CFG_as923jp` | `LMIC_REGION_as923` and `LMIC_COUNTRY_CODE_JP` | 7 | 2.7 | Asia 923 MHz ISM  with Japan listen-before-talk (LBT) rules
 `-D CFG_in866` | `LMIC_REGION_in866` | 9 | 2.9 | India 865-867 MHz ISM
 
 You should define exactly one of `CFG_...` variables. If you don't,
@@ -1021,6 +1022,8 @@ function uflt122f(rawUflt12)
 ```
 
 ## Release History
+
+- Interim bug fixes: added a new API (`radio_irq_handler_v2()`), which allows the caller to provide the timestamp of the interrupt. This allows for more accurate timing, because the knowledge of interrupt overhead can be moved to a platform-specific layer ((#148)[https://github.com/mcci-catena/arduino-lmic/issues/148]). Fixed compile issues on ESP32 ((#140)[https://github.com/mcci-catena/arduino-lmic/issues/140] and (#153)[https://github.com/mcci-catena/arduino-lmic/issues/150]). We added ESP32 and 32u4 as targets in CI testing. We switched CI testing to Arduino IDE 1.8.7. We fixed a problem in selecting the Japan version of as923 using `CFG_as923jp` (selecting via `CFG_as923` and `LMIC_COUNTRY_CODE=LMIC_COUNTRY_CODE_JP` worked).
 
 - V2.2.2 adds `ttn-abp-feather-us915-dht22.ino` example, and fixes some documentation typos. It also fixes encoding of the `Margin` field of the `DevStatusAns` MAC message ([#130](https://github.com/mcci-catena/arduino-lmic/issues/130)).  This makes Arduino LMIC work with newtorks implemented with [LoraServer](https://www.loraserver.io/).
 
