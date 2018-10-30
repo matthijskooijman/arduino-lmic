@@ -31,7 +31,7 @@ before_install:
   # $ARDUINO_IDE/libraries -- this could result in them being cached. We don't want them to be cached.
   # No need to add new libraries to this lise, only the first two were ever in the wrong place.
   # We can remove this after 2018-11-01.
-  - rm -rf "$HOME/${ARDUINO_IDE}/libraries/Adafruit_Sensor" "$HOME/${ARDUINO_IDE}/libraries/DHT-sensor-library"
+  - rm -rf "$HOME/${ARDUINO_IDE}/libraries/Adafruit_Sensor" "$HOME/${ARDUINO_IDE}/libraries/DHT-sensor-library" "$HOME/${ARDUINO_IDE}/libraries/Time"
   #
   # functions to generate the board settings for SAMD, STM32L0, ...
   # keep args for these aligned for any common options. $1 is always board name, $2 is region.
@@ -205,6 +205,14 @@ script:
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino ; }
+
+# test ttn-otaa-network-time
+ - _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino
+ - _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino
 
 #
 # some tests that should generate build failures.
