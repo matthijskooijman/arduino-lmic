@@ -742,9 +742,9 @@ u1_t radio_rand1 () {
     return v;
 }
 
-u1_t radio_rssi () {
+s2_t radio_rssi () {
     hal_disableIRQs();
-    u1_t r = readReg(LORARegRssiValue);
+    s2_t r = (s2_t) (0x00FF & (u2_t)readReg(LORARegRssiValue)); //HERE
     hal_enableIRQs();
     return r;
 }
@@ -785,10 +785,12 @@ void radio_irq_handler (u1_t dio) {
             // now read the FIFO
             readBuf(RegFifo, LMIC.frame, LMIC.dataLen);
             // read rx quality parameters
-            LMIC.snr  = ((s1_t)readReg(LORARegPktSnrValue)) / 4;
-            LMIC.rssi = readReg(LORARegPktRssiValue) - 157; // RFI_HF for 868 and 915MHZ band
+            LMIC.snr  = ((s1_t)readReg(LORARegPktSnrValue)) / SNR_SCALEUP;
+            LMIC.rssi = (s2_t)(0x00FF & (u2_t)readReg(LORARegPktRssiValue)) - 157 + RSSI_OFF; // use RSSI_OFF to compensate any loss
+                                                                                              // in the matching network or even the gain of an
+                                                                                              // additional LNA //HERE
             if (LMIC.snr < 0)
-                LMIC.rssi += LMIC.snr;
+                LMIC.rssi += (s2_t)LMIC.snr;	//HERE
         } else if( flags & IRQ_LORA_RXTOUT_MASK ) {
             // indicate timeout
             LMIC.dataLen = 0;
@@ -811,8 +813,8 @@ void radio_irq_handler (u1_t dio) {
             // now read the FIFO
             readBuf(RegFifo, LMIC.frame, LMIC.dataLen);
             // read rx quality parameters
-            LMIC.snr  = 0; // determine snr
-            LMIC.rssi = 0; // determine rssi
+            LMIC.snr  = 0; // determine snr  - TO DO
+            LMIC.rssi = 0; // determine rssi - TO DO
         } else if( flags1 & IRQ_FSK1_TIMEOUT_MASK ) {
             // indicate timeout
             LMIC.dataLen = 0;

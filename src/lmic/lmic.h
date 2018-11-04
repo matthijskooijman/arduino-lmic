@@ -95,7 +95,7 @@ enum { BCN_NONE    = 0x00,   //!< No beacon received
 //! Information about the last and previous beacons.
 struct bcninfo_t {
     ostime_t txtime;  //!< Time when the beacon was sent
-    s1_t     rssi;    //!< Adjusted RSSI value of last received beacon
+    s2_t     rssi;    //!< Adjusted RSSI value of last received beacon	//HERE
     s1_t     snr;     //!< Scaled SNR value of last received beacon
     u1_t     flags;   //!< Last beacon reception and tracking states. See BCN_* values.
     u4_t     time;    //!< GPS time in seconds of last beacon (received or surrogate)
@@ -153,7 +153,7 @@ struct lmic_t {
     ostime_t    txend;
     ostime_t    rxtime;
     u4_t        freq;
-    s1_t        rssi;
+    s2_t        rssi;	//HERE
     s1_t        snr;
     rps_t       rps;
     u1_t        rxsyms;
