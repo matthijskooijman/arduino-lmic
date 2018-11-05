@@ -738,7 +738,7 @@ scan_mac_cmds(
                 // The 5th byte contains the fractional seconds in 2^-8 second steps
                 LMIC.netDeviceTimeFrac = opts[oidx + 5];
 #if LMIC_DEBUG_LEVEL > 0
-                LMIC_DEBUG_PRINTF("MAC command DeviceTimeAns received: seconds_since_gps_epoch=%"PRIu32", fractional_seconds=%d\n", LMIC.netDeviceTime, LMIC.netDeviceTimeFrac);
+                LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": MAC command DeviceTimeAns received: seconds_since_gps_epoch=%"PRIu32", fractional_seconds=%d\n", os_getTime(), LMIC.netDeviceTime, LMIC.netDeviceTimeFrac);
 #endif
             }
 #endif // LMIC_ENABLE_DeviceTimeReq
@@ -2138,7 +2138,7 @@ void LMIC_requestNetworkTime(lmic_request_network_time_cb_t *pCallbackfn, void *
         return;
     }
 #endif // LMIC_ENABLE_DeviceTimeReq
-    // if no device time support, or if not in proper state, 
+    // if no device time support, or if not in proper state,
     // report a failure.
     if (pCallbackfn != NULL)
         (*pCallbackfn)(pUserData, /* false */ 0);
