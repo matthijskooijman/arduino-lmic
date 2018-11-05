@@ -200,7 +200,7 @@ void printDigits(int digits) {
 }
 
 void user_request_network_time_callback(void *pVoidUserUTCTime, int flagSuccess) {
-    // Explicit convertion from void* to uint32_t* to avoid compiler errors
+    // Explicit conversion from void* to uint32_t* to avoid compiler errors
     uint32_t *pUserUTCTime = (uint32_t *) pVoidUserUTCTime;
 
     // A struct that will be populated by LMIC_getNetworkTimeReference.
