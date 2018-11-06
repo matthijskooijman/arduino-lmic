@@ -713,6 +713,38 @@ scan_mac_cmds(
             oidx += 2;
             continue;
         } /* end case */
+        case MCMD_DeviceTimeAns: {
+#if LMIC_ENABLE_DeviceTimeReq
+            // don't process a spurious downlink.
+            if ( LMIC.txDeviceTimeReqState == lmic_RequestTimeState_rx ) {
+                // remember that it's time to notify the client.
+                LMIC.txDeviceTimeReqState = lmic_RequestTimeState_success;
+
+                // the network time is linked to the time of the last TX.
+                LMIC.localDeviceTime = LMIC.txend;
+
+                // save the network time.
+                // The first 4 bytes contain the seconds since the GPS epoch
+                // (i.e January the 6th 1980 at 00:00:00 UTC).
+                // Note: as per the LoRaWAN specs, the octet order for all
+                //       multi-octet fields is little endian
+                // Note: the casts are necessary, because opts is an array of
+                //       single byte values, and they might overflow when shifted
+                LMIC.netDeviceTime = ( (lmic_gpstime_t) opts[oidx + 1]       ) |
+                                     (((lmic_gpstime_t) opts[oidx + 2]) <<  8) |
+                                     (((lmic_gpstime_t) opts[oidx + 3]) << 16) |
+                                     (((lmic_gpstime_t) opts[oidx + 4]) << 24);
+
+                // The 5th byte contains the fractional seconds in 2^-8 second steps
+                LMIC.netDeviceTimeFrac = opts[oidx + 5];
+#if LMIC_DEBUG_LEVEL > 0
+                LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": MAC command DeviceTimeAns received: seconds_since_gps_epoch=%"PRIu32", fractional_seconds=%d\n", os_getTime(), LMIC.netDeviceTime, LMIC.netDeviceTimeFrac);
+#endif
+            }
+#endif // LMIC_ENABLE_DeviceTimeReq
+            oidx += 6;
+            continue;
+        } /* end case */
         } /* end switch */
         /* unrecognized mac commands fall out of switch to here */
         EV(specCond, ERR, (e_.reason = EV::specCond_t::BAD_MAC_CMD,
@@ -1328,6 +1360,13 @@ static void buildDataFrame (void) {
         LMIC.txParamSetupAns = 0;
     }
 #endif
+#if LMIC_ENABLE_DeviceTimeReq
+    if ( LMIC.txDeviceTimeReqState == lmic_RequestTimeState_tx ) {
+        LMIC.frame[end+0] = MCMD_DeviceTimeReq;
+        end += 1;
+        LMIC.txDeviceTimeReqState = lmic_RequestTimeState_rx;
+    }
+#endif // LMIC_ENABLE_DeviceTimeReq
     ASSERT(end <= OFF_DAT_OPTS+16);
 
     u1_t flen = end + (txdata ? 5+dlen : 4);
@@ -1587,6 +1626,24 @@ static bit_t processDnData (void) {
         LMIC.dataBeg = LMIC.dataLen = 0;
       txcomplete:
         LMIC.opmode &= ~(OP_TXDATA|OP_TXRXPEND);
+
+#if LMIC_ENABLE_DeviceTimeReq
+        lmic_request_time_state_t const requestTimeState = LMIC.txDeviceTimeReqState;
+        if ( requestTimeState != lmic_RequestTimeState_idle ) {
+            lmic_request_network_time_cb_t * const pNetworkTimeCb = LMIC.pNetworkTimeCb;
+            int flagSuccess = (LMIC.txDeviceTimeReqState == lmic_RequestTimeState_success);
+            LMIC.txDeviceTimeReqState = lmic_RequestTimeState_idle;
+            if (pNetworkTimeCb != NULL) {
+                // reset the callback, so that the user's routine
+                // can post another request if desired.
+                LMIC.pNetworkTimeCb = NULL;
+
+                // call the user's notification routine.
+                (*pNetworkTimeCb)(LMIC.pNetworkTimeUserData, flagSuccess);
+            }
+        }
+#endif // LMIC_ENABLE_DeviceTimeReq
+
         if( (LMIC.txrxFlags & (TXRX_DNW1|TXRX_DNW2|TXRX_PING)) != 0  &&  (LMIC.opmode & OP_LINKDEAD) != 0 ) {
             LMIC.opmode &= ~OP_LINKDEAD;
             reportEvent(EV_LINK_ALIVE);
@@ -1927,6 +1984,11 @@ void LMIC_reset (void) {
     DO_DEVDB(LMIC.ping.dr,      pingDr);
     DO_DEVDB(LMIC.ping.intvExp, pingIntvExp);
 #endif // !DISABLE_PING
+#if LMIC_ENABLE_DeviceTimeReq
+    LMIC.txDeviceTimeReqState = lmic_RequestTimeState_idle;
+    LMIC.netDeviceTime = 0;     // the "invalid" time.
+    LMIC.netDeviceTimeFrac = 0;
+#endif // LMIC_ENABLE_DeviceTimeReq
 }
 
 
@@ -1967,7 +2029,6 @@ int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
     LMIC_setTxData();
     return 0;
 }
-
 
 // Send a payload-less message to signal device is alive
 void LMIC_sendAlive (void) {
@@ -2065,4 +2126,37 @@ void LMIC_getSessionKeys (u4_t *netid, devaddr_t *devaddr, xref2u1_t nwkKey, xre
     *devaddr = LMIC.devaddr;
     memcpy(artKey, LMIC.artKey, sizeof(LMIC.artKey));
     memcpy(nwkKey, LMIC.nwkKey, sizeof(LMIC.nwkKey));
+}
+
+// \brief post an asynchronous request for the network time.
+void LMIC_requestNetworkTime(lmic_request_network_time_cb_t *pCallbackfn, void *pUserData) {
+#if LMIC_ENABLE_DeviceTimeReq
+    if (LMIC.txDeviceTimeReqState == lmic_RequestTimeState_idle) {
+        LMIC.txDeviceTimeReqState = lmic_RequestTimeState_tx;
+        LMIC.pNetworkTimeCb = pCallbackfn;
+        LMIC.pNetworkTimeUserData = pUserData;
+        return;
+    }
+#endif // LMIC_ENABLE_DeviceTimeReq
+    // if no device time support, or if not in proper state,
+    // report a failure.
+    if (pCallbackfn != NULL)
+        (*pCallbackfn)(pUserData, /* false */ 0);
+}
+
+// \brief return local/remote time pair (if valid, and DeviceTimeReq enabled),
+// return true for success, false for error. We adjust the sampled OS time
+// back in time to the nearest second boundary.
+int LMIC_getNetworkTimeReference(lmic_time_reference_t *pReference) {
+#if LMIC_ENABLE_DeviceTimeReq
+    if (pReference != NULL &&       // valid parameter, and
+        LMIC.netDeviceTime != 0) {  // ... we have a reasonable answer.
+        const ostime_t tAdjust = LMIC.netDeviceTimeFrac * ms2osticks(1000) / 256;
+
+        pReference->tLocal = LMIC.localDeviceTime - tAdjust;
+        pReference->tNetwork = LMIC.netDeviceTime;
+        return 1;
+    }
+#endif // LMIC_ENABLE_DeviceTimeReq
+    return 0;
 }
