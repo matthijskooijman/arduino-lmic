@@ -247,7 +247,7 @@ enum {
 // defined unconditionally, because APIs and types can't change based on config.
 // This is called when a time-request succeeds or when we get a downlink
 // without time request, "completing" the pending time request.
-typedef void lmic_request_network_time_cb_t(void *pUserData, int flagSuccess);
+typedef void LMIC_ABI_STD lmic_request_network_time_cb_t(void *pUserData, int flagSuccess);
 
 // how the network represents time.
 typedef u4_t lmic_gpstime_t;
