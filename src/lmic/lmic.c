@@ -1785,10 +1785,11 @@ static void engineUpdate (void) {
 #endif // !DISABLE_JOIN
 
     ostime_t now    = os_getTime();
-    ostime_t rxtime = 0;
     ostime_t txbeg  = 0;
 
 #if !defined(DISABLE_BEACONS)
+    ostime_t rxtime = 0;
+
     if( (LMIC.opmode & OP_TRACK) != 0 ) {
         // We are tracking a beacon
         ASSERT( now + RX_RAMPUP - LMIC.bcnRxtime <= 0 );
