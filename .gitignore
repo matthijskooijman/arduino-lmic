@@ -31,6 +31,8 @@
 # Backup files
 *.BAK
 *.CKP
+*.wbk
+~$*.docx
 
 # files from Visual Micro
 Release
