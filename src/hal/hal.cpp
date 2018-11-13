@@ -1,5 +1,7 @@
 /*******************************************************************************
  * Copyright (c) 2015 Matthijs Kooijman
+ * Copyright (c) 2018 MCCI Corporation
+ * 
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,8 +12,11 @@
 
 #include <Arduino.h>
 #include <SPI.h>
+// include all the lmic header files, including ../lmic/hal.h
 #include "../lmic.h"
+// include the C++ hal.h
 #include "hal.h"
+// we may need some things from stdio.
 #include <stdio.h>
 
 // -----------------------------------------------------------------------------
@@ -354,4 +359,11 @@ void hal_failed (const char *file, u2_t line) {
 #endif
     hal_disableIRQs();
     while(1);
+}
+
+ostime_t hal_setTcxoPower (u1_t val) {
+	// remove the const attribute for this call, because we
+	// the enclosing object might not be const afterall; it's just
+	// const to us.
+	return const_cast<lmic_pinmap *>(plmic_pins)->setTcxoPower(val);
 }

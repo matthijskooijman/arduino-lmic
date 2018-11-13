@@ -18,8 +18,8 @@ Description:
 
 */
 
-#ifndef _LMIC_ENV_H_	/* prevent multiple includes */
-#define _LMIC_ENV_H_
+#ifndef _lmic_env_h_	/* prevent multiple includes */
+#define _lmic_env_h_
 
 /*
 
@@ -214,4 +214,4 @@ Returns:
 # endif
 #endif
 
-#endif /* _LMIC_ENV_H_ */
+#endif /* _lmic_env_h_ */

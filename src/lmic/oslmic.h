@@ -35,26 +35,17 @@
 // You should not, however, change the lmic merely for porting purposes.[hc]
 
 #include "config.h"
-#include <stdint.h>
 
-#ifndef _LMIC_ENV_H_
+#ifndef _lmic_env_h_
 # include "lmic_env.h"
+#endif
+
+#ifndef _oslmic_types_h_
+# include "oslmic_types.h"
 #endif
 
 LMIC_BEGIN_DECLS
 
-//================================================================================
-//================================================================================
-// Target platform as C library
-typedef uint8_t            bit_t;
-typedef uint8_t            u1_t;
-typedef int8_t             s1_t;
-typedef uint16_t           u2_t;
-typedef int16_t            s2_t;
-typedef uint32_t           u4_t;
-typedef int32_t            s4_t;
-typedef unsigned int       uint;
-typedef const char* str_t;
 
 #include <string.h>
 #include "hal.h"
@@ -76,7 +67,6 @@ typedef   struct rxsched_t rxsched_t;
 typedef   struct bcninfo_t bcninfo_t;
 typedef        const u1_t* xref2cu1_t;
 typedef              u1_t* xref2u1_t;
-typedef              s4_t  ostime_t;
 
 // int32_t == s4_t is long on some platforms; and someday
 // we will want 64-bit ostime_t. So, we will use a macro for the

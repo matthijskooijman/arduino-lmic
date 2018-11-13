@@ -24,68 +24,7 @@ requires C99 mode to be enabled by default.
   We strongly recommend updating using VS Code, the markdown-toc extension and the
   bierner.markdown-preview-github-styles extension.
 -->
-<!-- TOC depthFrom:2 -->
-
-- [Installing](#installing)
-- [Features](#features)
-- [Additional Documentation](#additional-documentation)
-	- [PDF/Word Documentation](#pdfword-documentation)
-	- [Adding Bandplans](#adding-bandplans)
-	- [Known bugs and issues](#known-bugs-and-issues)
-	- [LMIC IOCTLs](#lmic-ioctls)
-- [Configuration](#configuration)
-	- [Selecting the LoRaWAN Region Configuration](#selecting-the-lorawan-region-configuration)
-		- [eu868, as923, in866](#eu868-as923-in866)
-		- [us915, au921](#us915-au921)
-	- [Selecting the target radio transceiver](#selecting-the-target-radio-transceiver)
-	- [Controlling use of interrupts](#controlling-use-of-interrupts)
-	- [Disabling PING](#disabling-ping)
-	- [Disabling Beacons](#disabling-beacons)
-	- [Enabling Network Time Support](#enabling-network-time-support)
-	- [Rarely changed variables](#rarely-changed-variables)
-		- [Changing debug output](#changing-debug-output)
-		- [Getting debug from the RF library](#getting-debug-from-the-rf-library)
-		- [Selecting the AES library](#selecting-the-aes-library)
-		- [Defining the OS Tick Frequency](#defining-the-os-tick-frequency)
-		- [Setting the SPI-bus frequency](#setting-the-spi-bus-frequency)
-		- [Changing handling of runtime assertion failures](#changing-handling-of-runtime-assertion-failures)
-		- [Disabling JOIN](#disabling-join)
-		- [Disabling Class A MAC commands](#disabling-class-a-mac-commands)
-		- [Disabling Class B MAC commands](#disabling-class-b-mac-commands)
-		- [Special purpose](#special-purpose)
-- [Supported hardware](#supported-hardware)
-- [Connections](#connections)
-	- [Power](#power)
-	- [SPI](#spi)
-	- [DIO pins](#dio-pins)
-	- [Reset](#reset)
-	- [RXTX](#rxtx)
-	- [RXTX Polarity](#rxtx-polarity)
-	- [Pin mapping](#pin-mapping)
-		- [Adafruit Feather M0 LoRa](#adafruit-feather-m0-lora)
-		- [Adafruit Feather 32u4 LoRa](#adafruit-feather-32u4-lora)
-		- [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
-		- [MCCI Catena 4450/4460](#mcci-catena-44504460)
-		- [MCCI Catena 4551](#mcci-catena-4551)
-- [Example Sketches](#example-sketches)
-- [Timing](#timing)
-	- [`LMIC_setClockError()`](#lmic_setclockerror)
-- [Downlink datarate](#downlink-datarate)
-- [Encoding Utilities](#encoding-utilities)
-	- [sflt16](#sflt16)
-		- [JavaScript decoder](#javascript-decoder)
-	- [uflt16](#uflt16)
-		- [JavaScript decoder](#javascript-decoder-1)
-	- [sflt12](#sflt12)
-		- [JavaScript decoder](#javascript-decoder-2)
-	- [uflt12](#uflt12)
-		- [JavaScript decoder](#javascript-decoder-3)
-- [Release History](#release-history)
-- [Contributions](#contributions)
-- [Trademark Acknowledgements](#trademark-acknowledgements)
-- [License](#license)
-
-<!-- /TOC -->
+<!-- TOC depthFrom:2 -->autoauto- [Installing](#installing)auto- [Features](#features)auto- [Additional Documentation](#additional-documentation)auto	- [PDF/Word Documentation](#pdfword-documentation)auto	- [Adding Bandplans](#adding-bandplans)auto	- [Known bugs and issues](#known-bugs-and-issues)auto- [Configuration](#configuration)auto	- [Selecting the LoRaWAN Region Configuration](#selecting-the-lorawan-region-configuration)auto		- [eu868, as923, in866](#eu868-as923-in866)auto		- [us915, au921](#us915-au921)auto	- [Selecting the target radio transceiver](#selecting-the-target-radio-transceiver)auto	- [Controlling use of interrupts](#controlling-use-of-interrupts)auto	- [Disabling PING](#disabling-ping)auto	- [Disabling Beacons](#disabling-beacons)auto	- [Enabling Network Time Support](#enabling-network-time-support)auto	- [Rarely changed variables](#rarely-changed-variables)auto		- [Changing debug output](#changing-debug-output)auto		- [Getting debug from the RF library](#getting-debug-from-the-rf-library)auto		- [Selecting the AES library](#selecting-the-aes-library)auto		- [Defining the OS Tick Frequency](#defining-the-os-tick-frequency)auto		- [Setting the SPI-bus frequency](#setting-the-spi-bus-frequency)auto		- [Changing handling of runtime assertion failures](#changing-handling-of-runtime-assertion-failures)auto		- [Disabling JOIN](#disabling-join)auto		- [Disabling Class A MAC commands](#disabling-class-a-mac-commands)auto		- [Disabling Class B MAC commands](#disabling-class-b-mac-commands)auto		- [Special purpose](#special-purpose)auto- [Supported hardware](#supported-hardware)auto- [Connections](#connections)auto	- [Power](#power)auto	- [SPI](#spi)auto	- [DIO pins](#dio-pins)auto	- [Reset](#reset)auto	- [RXTX](#rxtx)auto	- [RXTX Polarity](#rxtx-polarity)auto	- [Pin mapping](#pin-mapping)auto		- [Adafruit Feather M0 LoRa](#adafruit-feather-m0-lora)auto		- [Adafruit Feather 32u4 LoRa](#adafruit-feather-32u4-lora)auto		- [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)auto		- [MCCI Catena 4450/4460](#mcci-catena-44504460)auto		- [MCCI Catena 4551](#mcci-catena-4551)auto- [Example Sketches](#example-sketches)auto- [Timing](#timing)auto	- [`LMIC_setClockError()`](#lmic_setclockerror)auto- [Downlink datarate](#downlink-datarate)auto- [Encoding Utilities](#encoding-utilities)auto	- [sflt16](#sflt16)auto		- [JavaScript decoder](#javascript-decoder)auto	- [uflt16](#uflt16)auto		- [JavaScript decoder](#javascript-decoder-1)auto	- [sflt12](#sflt12)auto		- [JavaScript decoder](#javascript-decoder-2)auto	- [uflt12](#uflt12)auto		- [JavaScript decoder](#javascript-decoder-3)auto- [Release History](#release-history)auto- [Contributions](#contributions)auto- [Trademark Acknowledgements](#trademark-acknowledgements)auto- [License](#license)autoauto<!-- /TOC -->
 
 ## Installing
 
@@ -140,10 +79,6 @@ There is a general framework for adding new region support. [HOWTO-ADD-REGION.md
 ### Known bugs and issues
 
 See the list of bugs at [mcci-catena/arduino-lmic](https://github.com/mcci-catena/arduino-lmic/issues).
-
-### LMIC IOCTLs
-
-There are a lot of variations in how the SX1272/SX1276 radio can be wired up. Experience has led us to represent the basic variations in a table (the [LMIC pinmap](#pin-mapping)). The more exotic variations are determined at run time using BSD-like IOCTL operations -- essentially messages from the hardware-independent LMIC and radio driver to the platform layer that knows how the radio is hooked up. See [LMiC-v2.3.pdf](doc/LMiC-v2.3.pdf) and [src/lmic/lmic_ioctl.h](src/lmic/lmic_ioctl.h) for more information.
 
 ## Configuration
 
@@ -217,7 +152,7 @@ If defined, configures the library to use interrupts for detecting events from t
 
 `#define DISABLE_PING`
 
-If defined, removes all code needed for PING.  Removes the APIs `LMIC_setPingable()` and `LMIC_stopPingable()`.
+If defined, removes all code needed for Class B downlink during ping slots (PING).  Removes the APIs `LMIC_setPingable()` and `LMIC_stopPingable()`.
 Class A devices don't support PING, so defining `DISABLE_PING` is often a good idea.
 
 By default, PING support is included in the library.
@@ -227,7 +162,10 @@ By default, PING support is included in the library.
 `#define DISABLE_BEACONS`
 
 If defined, removes all code needed for handling beacons. Removes the APIs `LMIC_enableTracking()` and `LMIC_disableTracking()`.
-Class A devices don't support beacons, so defining `DISABLE_BEACONS` might be a good idea.
+
+Enabling beacon handling allows tracking of network time, and is required if you want to enable downlink during ping slots. However, many networks don't support Class B devices. Class A devices don't support tracking beacons, so defining `DISABLE_BEACONS` might be a good idea.
+
+By default, beacon support is included in the library.
 
 ### Enabling Network Time Support
 

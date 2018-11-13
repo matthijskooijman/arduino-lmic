@@ -26,8 +26,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _hal_hpp_
-#define _hal_hpp_
+#ifndef _lmic_hal_h_
+#define _lmic_hal_h_
+
+#ifndef _oslmic_types_h_
+# include "oslmic_types.h"
+#endif
 
 #ifdef __cplusplus
 extern "C"{
@@ -111,8 +115,17 @@ void hal_failed (const char *file, u2_t line);
  */
 s1_t hal_getRssiCal (void);
 
+/*
+ * control the tcxo power pin state
+ *   - if val == 0, turn tcxo off
+ *   - if val == 1, turn tcxo on
+ *   - if val == 2, put tcxo control in high-Z (if that matters)
+ *   - return the number of ticks that we need to wait
+ */
+ostime_t hal_setTcxoPower (u1_t val);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-#endif // _hal_hpp_
+#endif // _lmic_hal_h_
