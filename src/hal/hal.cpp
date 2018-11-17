@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright (c) 2015 Matthijs Kooijman
  * Copyright (c) 2018 MCCI Corporation
- * 
+ *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -22,7 +22,7 @@
 // -----------------------------------------------------------------------------
 // I/O
 
-static const lmic_pinmap *plmic_pins;
+static const Arduino_LMIC::HalConfiguration_t *plmic_pins;
 
 static void hal_interrupt_init(); // Fwd declaration
 
@@ -331,11 +331,36 @@ void hal_printf_init() {
 #endif // defined(LMIC_PRINTF_TO)
 
 void hal_init (void) {
-    hal_init_ex(&lmic_pins);
+    // create a default configuration object
+    static Arduino_LMIC::HalConfiguration_t myConfig(lmic_pins);
+    Arduino_LMIC::hal_init_with_config(&myConfig);
 }
 
+// hal_init_ex is a C API routine, written in C++, and it's called
+// with a pointer to an lmic_pinmap. This is deprecated!
 void hal_init_ex (const void *pContext) {
-    plmic_pins = (const lmic_pinmap *)pContext;
+    if (! hal_init_with_config(pContext))
+        hal_failed(__FILE__, __LINE__);
+}
+
+bit_t hal_init_with_config (const void *pContext) {
+    const lmic_pinmap * const pRawPins = (const lmic_pinmap *) pContext;
+    if (! pRawPins->fIsObject)
+        return 0;
+
+    const Arduino_LMIC::HalConfiguration_t * const pMyPins = (const Arduino_LMIC::HalConfiguration_t *)pContext;
+    if (! pMyPins->fIsObject)
+        return 0;
+
+    return Arduino_LMIC::hal_init_with_config(pMyPins);
+}
+
+// C++ API: initialize the HAL properly with a configuration object
+bool Arduino_LMIC::hal_init_with_config(const Arduino_LMIC::HalConfiguration_t *pConfig)
+    {
+    plmic_pins = pConfig;
+
+    plmic_pins->begin();
 
     // configure radio I/O and interrupt handler
     hal_io_init();
@@ -347,7 +372,9 @@ void hal_init_ex (const void *pContext) {
     // printf support
     hal_printf_init();
 #endif
-}
+    // declare success
+    return true;
+	}
 
 void hal_failed (const char *file, u2_t line) {
 #if defined(LMIC_FAILURE_TO)
@@ -365,5 +392,5 @@ ostime_t hal_setTcxoPower (u1_t val) {
 	// remove the const attribute for this call, because we
 	// the enclosing object might not be const afterall; it's just
 	// const to us.
-	return const_cast<lmic_pinmap *>(plmic_pins)->setTcxoPower(val);
+	return plmicpins->setTcxoPower(val);
 }

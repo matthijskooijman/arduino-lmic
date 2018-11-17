@@ -43,9 +43,16 @@ extern "C"{
 void hal_init (void);
 
 /*
- * initialize hardware, passing in platform-specific context
+ * Initialize hardware, passing in platform-specific context
+ * This API is deprecated.
  */
 void hal_init_ex (const void *pContext);
+
+/*
+ * Initialize hardware, passing in platform-specific context
+ * returns 0 for failure, 1 for success.
+ */
+bit_t hal_init_with_config (const void *pContext);
 
 /*
  * drive radio NSS pin (0=low, 1=high).

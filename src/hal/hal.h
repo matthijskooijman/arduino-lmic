@@ -15,8 +15,8 @@
 #include "arduino_lmic_hal_configuration.h"
 
 // for compatbility reasons, we need to disclose the configuration
-// structure as type lmic_pinmap.
-using lmic_pinmap = ArduinoLMIC::HalConfiguration_t;
+// structure as global type lmic_pinmap.
+using Arduino_LMIC::lmic_pinmap;
 
 // similarly, we need to disclose NUM_DIO and LMIC_UNUSED_PIN
 static const int NUM_DIO = lmic_pinmap::NUM_DIO;
