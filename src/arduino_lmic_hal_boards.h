@@ -22,14 +22,17 @@ Author:
 
 namespace Arduino_LMIC {
 
-const HalConfiguration_t *GetConfig_FeatherM0LoRa();
-const HalConfiguration_t *GetConfig_Feather32U4LoRa();
+const HalPinmap_t *GetPinmap_FeatherM0LoRa();
+const HalPinmap_t *GetPinmap_Feather32U4LoRa();
 
-const HalConfiguration_t *GetConfig_Catena4610();
-const HalConfiguration_t *GetConfig_Catena4612();
-const HalConfiguration_t *GetConfig_Catena4801();
+const HalPinmap_t *GetPinmap_Catena4420();
+const HalPinmap_t *GetPinmap_Catena4551();
+const HalPinmap_t *GetPinmap_Catena4610();
+const HalPinmap_t *GetPinmap_Catena4610();
+const HalPinmap_t *GetPinmap_Catena4612();
+const HalPinmap_t *GetPinmap_Catena4801();
 
-const HalConfiguration_t *GetConfig_ThisBoard();
+const HalPinmap_t *GetPinmap_ThisBoard();
 
 }; /* namespace Arduino_LIMC */
 

@@ -49,12 +49,6 @@ void hal_init (void);
 void hal_init_ex (const void *pContext);
 
 /*
- * Initialize hardware, passing in platform-specific context
- * returns 0 for failure, 1 for success.
- */
-bit_t hal_init_with_config (const void *pContext);
-
-/*
  * drive radio NSS pin (0=low, 1=high).
  */
 void hal_pin_nss (u1_t val);

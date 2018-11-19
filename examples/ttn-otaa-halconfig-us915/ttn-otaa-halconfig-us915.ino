@@ -124,7 +124,7 @@ void onEvent (ev_t ev) {
             }
             // Disable link check validation (automatically enabled
             // during join, but because slow data rates change max TX
-	    // size, we don't use it in this example.
+        // size, we don't use it in this example.
             LMIC_setLinkCheckMode(0);
             break;
         /*
@@ -207,15 +207,25 @@ void setup() {
     Serial.begin(9600);
     Serial.println(F("Starting"));
 
-    #ifdef VCC_ENABLE
-    // For Pinoccio Scout boards
-    pinMode(VCC_ENABLE, OUTPUT);
-    digitalWrite(VCC_ENABLE, HIGH);
-    delay(1000);
-    #endif
+    // LMIC init using the computed target
+    const lmic_pinmap *pPinMap = Arduino_LMIC::GetPinmap_ThisBoard();
 
-    // LMIC init
-    os_init_ex(Arduino_LMIC::GetConfig_ThisBoard());
+    // don't die mysteriously; die noisily.
+    if (pPinMap == nullptr) {
+        pinMode(LED_BUILTIN, OUTPUT);
+        for (;;) {
+            // flash lights, sleep.
+            for (int i = 0; i < 5; ++i) {
+                digitalWrite(LED_BUILTIN, 1);
+                delay(100);
+                digitalWrite(LED_BUILTIN, 0);
+                delay(900);
+            }
+            Serial.println(F("board not known to library; add pinmap or update getconfig_thisboard.cpp"));
+        }
+    }
+
+    os_init_ex(pPinMap);
 
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();

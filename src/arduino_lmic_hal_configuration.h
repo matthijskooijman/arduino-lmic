@@ -18,7 +18,7 @@ Author:
 #ifndef _arduino_lmic_hal_configuration_h_
 # define _arduino_lmic_hal_configuration_h_
 
-#include <cstdint>
+#include <stdint.h>
 
 namespace Arduino_LMIC {
 
@@ -32,17 +32,17 @@ enum class ThreeState_t : uint8_t {
 	HiZ = 2
 };
 
+// forward reference
+class HalConfiguration_t;
+
 //
-// for legacy reasons, we may need a plain-old-data C-like
+// for legacy reasons, we need a plain-old-data C-like
 // structure that defines the "pin mapping" for the
 // common pins. Many clients initialize an instance of
 // this structure using named-field initialization.
-// Rather than break them all, we have a base type (HalPinmap_t)
-// and the more elaborate (virtual, overridable) type used
-// in the library and by the pre-built board configuratons.
 //
 // Be careful of alignment below.
-struct lmic_pinmap {
+struct HalPinmap_t {
 	// Use this for any unused pins.
 	static constexpr uint8_t UNUSED_PIN = 0xff;
 	static constexpr int NUM_DIO = 3;
@@ -61,20 +61,15 @@ struct lmic_pinmap {
 				//   measured prior to decision.
 				//   Must include noise guardband!
 	uint32_t spi_freq;	// bytes 8..11: SPI freq in Hz.
-	uint8_t fIsObject;	// byte 12: 0 ==> lmic_pinmap, !=0 ==>
-				//   HalConfiguration_t
-};
 
-class HalConfiguration_t : public lmic_pinmap {
+	// optional pointer to configuration object (byest 12..15)
+	HalConfiguration_t *pConfig;
+	};
+
+class HalConfiguration_t
+	{
 public:
 	HalConfiguration_t() {};
-	HalConfiguration_t(const lmic_pinmap &pinmap)
-		{
-		// copy pinmap
-		*static_cast<lmic_pinmap *>(this) = pinmap;
-		// it's an object
-		this->fIsObject = true;
-		};
 
 	// putting this into lmic_pinmap breaks old code.
 	// so we have to have the weird hierarchy.
@@ -82,7 +77,7 @@ public:
 	// New code uses HalConfiguration_t or other type, and
 	// calls os_init_ex(). Note that code that calls 
 	// os_init_ex() with lmic_pinmap must be converted.
-	virtual ostime_t setTcxoPower(uint8_t state) const
+	virtual ostime_t setTcxoPower(uint8_t state) 
 		{
 		// by default, if not overridden, do nothing
 		// and return 0 to indicate that the caller
@@ -90,11 +85,11 @@ public:
 		return 0;
 		};
 
-	virtual void begin(void) const {};
-	virtual void end(void) const {};
+	virtual void begin(void) {};
+	virtual void end(void) {};
 	};
 
-bool hal_init_with_config(const HalConfiguration_t *pConfig);
+bool hal_init_with_pinmap(const HalPinmap_t *pPinmap);
 
 }; // end namespace Arduino_LMIC
 
