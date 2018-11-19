@@ -87,6 +87,7 @@ public:
 
 	virtual void begin(void) {};
 	virtual void end(void) {};
+	virtual bool queryTcxoControl(void) { return false; };
 	};
 
 bool hal_init_with_pinmap(const HalPinmap_t *pPinmap);

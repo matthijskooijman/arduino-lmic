@@ -125,6 +125,8 @@ s1_t hal_getRssiCal (void);
  */
 ostime_t hal_setTcxoPower (u1_t val);
 
+bit_t hal_queryTcxoControl(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
