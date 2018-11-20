@@ -3,7 +3,7 @@
 Module:  lmic.h
 
 Function:
-        Deprecated Arduino-LMIC C++ top-level include file
+        Deprecated C++ top-level include file (use <arduino_lmic.h> instead).
 
 Copyright & License:
         See accompanying LICENSE file.
