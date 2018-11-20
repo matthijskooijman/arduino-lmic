@@ -53,7 +53,7 @@ public:
                 pinMode(PIN_TCXO_VDD, INPUT);
                 }
 
-        virtual bool queryTcxoControl(void) override { return true; };
+        virtual bool queryUsingTcxo(void) override { return true; };
 
         virtual ostime_t setTcxoPower(uint8_t state) override
                 {

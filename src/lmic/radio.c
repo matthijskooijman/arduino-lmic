@@ -798,7 +798,7 @@ int radio_init () {
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif
     // set the tcxo input, if needed
-    if (hal_queryTcxoControl())
+    if (hal_queryUsingTcxo())
         writeReg(RegTcxo, readReg(RegTcxo) | RegTcxo_TcxoInputOn);
 
     // seed 15-byte randomness via noise rssi

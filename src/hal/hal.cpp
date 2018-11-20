@@ -397,6 +397,6 @@ ostime_t hal_setTcxoPower (u1_t val) {
     return pHalConfig->setTcxoPower(val);
 }
 
-bit_t hal_queryTcxoControl(void) {
-    return pHalConfig->queryTcxoControl();
+bit_t hal_queryUsingTcxo(void) {
+    return pHalConfig->queryUsingTcxo();
 }
