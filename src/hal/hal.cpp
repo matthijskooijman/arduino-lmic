@@ -136,11 +136,11 @@ static void hal_interrupt_init() {
 static void hal_io_check() {
     uint8_t i;
     for (i = 0; i < NUM_DIO; ++i) {
-	ostime_t iTime;
+        ostime_t iTime;
         if (plmic_pins->dio[i] == LMIC_UNUSED_PIN)
             continue;
 
-	iTime = interrupt_time[i];
+        iTime = interrupt_time[i];
         if (iTime) {
             interrupt_time[i] = 0;
             radio_irq_handler_v2(i, iTime);
@@ -307,7 +307,7 @@ static cookie_io_functions_t functions =
 void hal_printf_init() {
     stdout = fopencookie(NULL, "w", functions);
     if (stdout != nullptr) {
-	setvbuf(stdout, NULL, _IONBF, 0);
+        setvbuf(stdout, NULL, _IONBF, 0);
     }
 }
 #else // defined(__AVR)
@@ -378,7 +378,7 @@ bool hal_init_with_pinmap(const HalPinmap_t *pPinmap)
 #endif
     // declare success
     return true;
-	}
+    }
 }; // namespace Arduino_LMIC
 
 void hal_failed (const char *file, u2_t line) {
