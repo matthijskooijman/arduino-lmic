@@ -338,7 +338,7 @@ void hal_init (void) {
 }
 
 // hal_init_ex is a C API routine, written in C++, and it's called
-// with a pointer to an lmic_pinmap. This is deprecated!
+// with a pointer to an lmic_pinmap.
 void hal_init_ex (const void *pContext) {
     const lmic_pinmap * const pHalPinmap = (const lmic_pinmap *) pContext;
     if (! Arduino_LMIC::hal_init_with_pinmap(pHalPinmap)) {
@@ -394,9 +394,6 @@ void hal_failed (const char *file, u2_t line) {
 }
 
 ostime_t hal_setTcxoPower (u1_t val) {
-	// remove the const attribute for this call, because we
-	// the enclosing object might not be const afterall; it's just
-	// const to us.
     return pHalConfig->setTcxoPower(val);
 }
 
