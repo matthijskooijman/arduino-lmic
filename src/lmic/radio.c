@@ -135,12 +135,21 @@
 // #define RegAgcThresh2                              0x45 // common
 // #define RegAgcThresh3                              0x46 // common
 // #define RegPllHop                                  0x4B // common
-#define RegPaDac                                   0x4D // common
 // #define RegTcxo                                    0x58 // common
 // #define RegPll                                     0x5C // common
 // #define RegPllLowPn                                0x5E // common
 // #define RegFormerTemp                              0x6C // common
 // #define RegBitRateFrac                             0x70 // common
+
+#if defined(CFG_sx1276_radio)
+#define RegTcxo                                    0x4B // common
+#define RegPaDac                                   0x4D // common
+#elif defined(CFG_sx1272_radio)
+#define RegTcxo                                    0x58 // common
+#define RegPaDac                                   0x5A // common
+#endif
+
+#define RegTcxo_TcxoInputOn                        (1u << 4)
 
 // ----------------------------------------
 // spread factors and mode for RegModemConfig2
@@ -322,8 +331,24 @@ static void readBuf (u1_t addr, xref2u1_t buf, u1_t len) {
     hal_pin_nss(1);
 }
 
+static void requestTcxo(bit_t state) {
+    ostime_t const ticks = hal_setTcxoPower(state);
+
+    if (ticks)
+        hal_waitUntil(os_getTime() + ticks);;
+}
+
+static void writeOpmode(u1_t mode) {
+    u1_t const maskedMode = mode & OPMODE_MASK;
+    if (maskedMode != OPMODE_SLEEP)
+        requestTcxo(1);
+    writeReg(RegOpMode, mode);
+    if (maskedMode == OPMODE_SLEEP)
+        requestTcxo(0);
+}
+
 static void opmode (u1_t mode) {
-    writeReg(RegOpMode, (readReg(RegOpMode) & ~OPMODE_MASK) | mode);
+    writeOpmode((readReg(RegOpMode) & ~OPMODE_MASK) | mode);
 }
 
 static void opmodeLora() {
@@ -331,7 +356,7 @@ static void opmodeLora() {
 #ifdef CFG_sx1276_radio
     u |= 0x8;   // TBD: sx1276 high freq
 #endif
-    writeReg(RegOpMode, u);
+    writeOpmode(u);
 }
 
 static void opmodeFSK() {
@@ -339,7 +364,7 @@ static void opmodeFSK() {
 #ifdef CFG_sx1276_radio
     u |= 0x8;   // TBD: sx1276 high freq
 #endif
-    writeReg(RegOpMode, u);
+    writeOpmode(u);
 }
 
 // configure LoRa modem (cfg1, cfg2)
@@ -465,7 +490,7 @@ static void configPower () {
 
 static void txfsk () {
     // select FSK modem (from sleep mode)
-    writeReg(RegOpMode, 0x10); // FSK, BT=0.5
+    writeOpmode(0x10); // FSK, BT=0.5
     ASSERT(readReg(RegOpMode) == 0x10);
     // enter standby mode (required for FIFO loading))
     opmode(OPMODE_STANDBY);
@@ -747,6 +772,8 @@ static void startrx (u1_t rxmode) {
 int radio_init () {
     hal_disableIRQs();
 
+    requestTcxo(1);
+
     // manually reset radio
 #ifdef CFG_sx1276_radio
     hal_pin_rst(0); // drive RST pin low
@@ -770,6 +797,10 @@ int radio_init () {
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif
+    // set the tcxo input, if needed
+    if (hal_queryUsingTcxo())
+        writeReg(RegTcxo, readReg(RegTcxo) | RegTcxo_TcxoInputOn);
+
     // seed 15-byte randomness via noise rssi
     rxlora(RXMODE_RSSI);
     while( (readReg(RegOpMode) & OPMODE_MASK) != OPMODE_RX ); // continuous rx

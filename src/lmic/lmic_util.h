@@ -9,7 +9,7 @@ Copyright & License:
         See accompanying LICENSE file.
 
 Author:
-        Terry Moore, MCCI       September 2019
+        Terry Moore, MCCI       September 2018
 
 */
 
