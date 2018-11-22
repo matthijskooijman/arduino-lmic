@@ -47,7 +47,6 @@ struct HalPinmap_t {
 	static constexpr uint8_t UNUSED_PIN = 0xff;
 	static constexpr int NUM_DIO = 3;
 	// for backward compatibility...
-	[[deprecated]]
 	static constexpr uint8_t LMIC_UNUSED_PIN = UNUSED_PIN;
 
 	/* the contents */
