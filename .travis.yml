@@ -34,7 +34,7 @@ before_install:
   # Changes to the BSP may break this build, sorry!
   #
   - "function _samdopts { echo mcci:samd:${1:-mcci_catena_4450}:lorawan_region=${2:-us915} ; }"
-  - "function _stm32l0opts { echo mcci:stm32:${1:-mcci_catena_4551}:lorawan_region=${2:-us915},opt=${3:-osstd},xserial=${4:-generic},usb=${5:-none},upload_method=${6:-STLink} ; }"
+  - "function _stm32l0opts { echo mcci:stm32:${1:-mcci_catena_4551}:lorawan_region=${2:-us915},opt=${3:-osstd},xserial=${4:-generic},upload_method=${6:-STLink},sysclk=${7:-pll32m} ; }"
   - "function _avropts { echo adafruit:avr:${1:-feather32u4} ; }"
   - "function _esp32opts { echo esp32:esp32:${1:-heltec_wifi_lora_32}:FlashFreq=80 ; }"
   #
