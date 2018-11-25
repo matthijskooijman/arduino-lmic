@@ -35,9 +35,13 @@ const HalPinmap_t *GetPinmap_ThisBoard(void)
         return GetPinmap_Catena4551();
 #elif defined(ARDUINO_MCCI_CATENA_4610)
         return GetPinmap_Catena4610();
-#elif defined(ARDUINO_MCCI_CATENA_4611) || defined(ARDUINO_MCCI_CATENA_4612) || \
+#elif defined(ARDUINO_MCCI_CATENA_4611) || \
       /* legacy names */ \
-      defined(ARDUINO_CATENA_4611) || defined(ARDUINO_CATENA_4612)
+      defined(ARDUINO_CATENA_4611)
+        return GetPinmap_Catena4611();
+#elif defined(ARDUINO_MCCI_CATENA_4612) || \
+      /* legacy names */ \
+      defined(ARDUINO_CATENA_4612)
         return GetPinmap_Catena4612();
 #elif defined(ARDUINO_MCCI_CATENA_4801)
         return GetPinmap_Catena4801();
