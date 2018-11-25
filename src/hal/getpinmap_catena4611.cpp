@@ -1,6 +1,6 @@
 /*
 
-Module:  getconfig_catena4612.cpp
+Module:  getconfig_catena4611.cpp
 
 Function:
         Arduino-LMIC C++ HAL pinmaps for various boards
@@ -13,9 +13,7 @@ Author:
 
 */
 
-#if defined(ARDUINO_MCCI_CATENA_4612) || \
-    /* legacy name */ \
-    defined(ARDUINO_CATENA_4612)
+#if defined(ARDUINO_MCCI_CATENA_4611)
 
 #include <arduino_lmic_hal_boards.h>
 #include <Arduino.h>
@@ -75,17 +73,17 @@ public:
         };
 
 // save some typing by bringing the pin numbers into scope
-static HalConfiguration_Catena4612_t myConfig;
+static HalConfiguration_Catena4611_t myConfig;
 
 static const HalPinmap_t myPinmap =
         {
-        .nss = HalConfiguration_Catena4612_t::PIN_SX1276_NSS,      // chip select is D7
-        .rxtx = HalConfiguration_Catena4612_t::PIN_SX1276_ANT_SWITCH_RX, // RXTX is D29
-        .rst = HalConfiguration_Catena4612_t::PIN_SX1276_NRESET,   // NRESET is D8
+        .nss = HalConfiguration_Catena4611_t::PIN_SX1276_NSS,      // chip select is D7
+        .rxtx = HalConfiguration_Catena4611_t::PIN_SX1276_ANT_SWITCH_RX, // RXTX is D29
+        .rst = HalConfiguration_Catena4611_t::PIN_SX1276_NRESET,   // NRESET is D8
 
-        .dio = {HalConfiguration_Catena4612_t::PIN_SX1276_DIO0,    // DIO0 (IRQ) is D25
-                HalConfiguration_Catena4612_t::PIN_SX1276_DIO1,    // DIO1 is D26
-                HalConfiguration_Catena4612_t::PIN_SX1276_DIO2,    // DIO2 is D27
+        .dio = {HalConfiguration_Catena4611_t::PIN_SX1276_DIO0,    // DIO0 (IRQ) is D25
+                HalConfiguration_Catena4611_t::PIN_SX1276_DIO1,    // DIO1 is D26
+                HalConfiguration_Catena4611_t::PIN_SX1276_DIO2,    // DIO2 is D27
                },
         .rxtx_rx_active = 1,
         .rssi_cal = 10,
@@ -93,11 +91,11 @@ static const HalPinmap_t myPinmap =
         .pConfig = &myConfig
         };
 
-const HalPinmap_t *GetPinmap_Catena4612(void)
+const HalPinmap_t *GetPinmap_Catena4611(void)
         {
         return &myPinmap;
         }
 
 }; // namespace Arduino_LMIC
 
-#endif /* defined(ARDUINO_MCCI_CATENA_4612) || defined(ARDUINO_CATENA_4612) */
+#endif /* defined(ARDUINO_MCCI_CATENA_4611) */
