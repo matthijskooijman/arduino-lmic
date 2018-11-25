@@ -56,7 +56,8 @@ requires C99 mode to be enabled by default.
 		- [Disabling Class B MAC commands](#disabling-class-b-mac-commands)
 		- [Special purpose](#special-purpose)
 - [Supported hardware](#supported-hardware)
-- [Connections](#connections)
+- [Pre-Integrated Boards](#pre-integrated-boards)
+- [Manual configuration](#manual-configuration)
 	- [Power](#power)
 	- [SPI](#spi)
 	- [DIO pins](#dio-pins)
@@ -64,11 +65,7 @@ requires C99 mode to be enabled by default.
 	- [RXTX](#rxtx)
 	- [RXTX Polarity](#rxtx-polarity)
 	- [Pin mapping](#pin-mapping)
-		- [Adafruit Feather M0 LoRa](#adafruit-feather-m0-lora)
-		- [Adafruit Feather 32u4 LoRa](#adafruit-feather-32u4-lora)
 		- [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
-		- [MCCI Catena 4450/4460](#mcci-catena-44504460)
-		- [MCCI Catena 4551](#mcci-catena-4551)
 - [Example Sketches](#example-sketches)
 - [Timing](#timing)
 	- [`LMIC_setClockError()`](#lmic_setclockerror)
@@ -336,10 +333,7 @@ LoRaWAN stack and exposes a high-level serial interface instead of the
 low-level SPI transceiver interface.
 
 This library is intended to be used inside the Arduino environment. It
-should be architecture-independent, so it should run on "normal" AVR
-arduinos, but also on the ARM-based ones, and some success has been seen
-running on the ESP8266 board as well. It was tested on the Arduino Uno,
-Pinoccio Scout, Teensy LC and 3.x, ESP8266, Arduino 101, Adafruit Feather M0 LoRa 900. It has been tested on the Lattice RISC-V CPU soft core running in an iCE40 UltraPlus, and also on the Murata LoRaWAN module on the MCCI Catena 4551.
+should be architecture-independent. Users have tested this on AVR, ARM, Xtensa-based, and RISC-V based system.
 
 This library an be quite heavy on small systems, especially if the fairly small ATmega
 328p (such as in the Arduino Uno) is used. In the default configuration,
@@ -348,19 +342,36 @@ debug output overhead, though). By disabling some features in `project_settings/
 (like beacon tracking and ping slots, which are not needed for Class A devices),
 some space can be freed up.
 
-## Connections
+## Pre-Integrated Boards
 
-To make this library work, your Arduino (or whatever Arduino-compatible
-board you are using) should be connected to the transceiver. In some cases (such as the Adafruit Feather series and Murata-based boards such as the MCCI Catena 4551), the settings are fixed by the board, and you won't have to worry about many of these details. However, you'll need to find the configuration that's suitable for your board.
+There are two ways of using this library, either with pre-integrated boards or with manualy configured boards.
+
+The following boards are pre-integrated.
+
+- Adafruit [Feather 32u4 LoRa 900 MHz][1] (SX1276)
+- Adafruit [Feather M0 LoRa 900 MHz][2] (SX1276)
+- MCCI Catena 4410, 4420, [4450][3], [4460][4] and [4470][5] boards (based on Adafruit Feather boards plus wings) (SX1276)
+- MCCI Catena [4551][6], 4610, 4611, 4612, and 4801 boards (based on the Murata CMWX1ZZABZ-078 module) (SX1276)
+
+[1]: https://www.adafruit.com/products/3078
+[2]: https://www.adafruit.com/products/3178
+[3]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4450-lorawan-iot-device
+[4]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4460-sensor-wing-w-bme680
+[5]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/mcci-catena-4470-modbus-node-for-lorawan-technology
+[6]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4551-integrated-lorawan-node
 
 > To help you know if you have to worry, we'll call such boards "pre-integrated" and prefix each section with suitable guidance.
 
-The exact
+## Manual configuration
+
+If your desired transceiver board is not pre-integrated, you need to provide the library with the reqruied information.
+
+You may need to wire up your transceiver. The exact
 connections are a bit dependent on the transceiver board and Arduino
 used, so this section tries to explain what each connection is for and
 in what cases it is (not) required.
 
-Note that the SX1272 module runs at 3.3V and likely does not like 5V on
+Note that the SX127x module runs at 3.3V and likely does not like 5V on
 its pins (though the datasheet is not say anything about this, and my
 transceiver did not obviously break after accidentally using 5V I/O for
 a few hours). To be safe, make sure to use a level shifter, or an
@@ -370,7 +381,7 @@ count on that.
 
 ### Power
 
-> If you're using a pre-integrated board, you can skip this section.
+> If you're using a [pre-integrated board](#pre-integrated-boards), you can skip this section.
 
 The SX127x transceivers need a supply voltage between 1.8V and 3.9V.
 Using a 3.3V supply is typical. Some modules have a single power pin
@@ -381,7 +392,7 @@ Any *GND* pins need to be connected to the Arduino *GND* pin(s).
 
 ### SPI
 
-> If you're using a pre-integrated board, you can skip this section, and instead refer to your board's documentation on the pins to be used.
+> If you're using a [pre-integrated board](#pre-integrated-boards), you can skip this section.
 
 The primary way of communicating with the transceiver is through SPI
 (Serial Peripheral Interface). This uses four pins: MOSI, MISO, SCK and
@@ -402,7 +413,7 @@ library what pin you used through the pin mapping (see [below](#pin-mapping)).
 
 ### DIO pins
 
-> If you're using a pre-integrated board, you can ignore this section; refer to your board's documentation for information on what DIO pins need to be used.
+> If you're using a [pre-integrated board](#pre-integrated-boards), you can skip this section.
 
 The DIO (digital I/O) pins on the SX127x can be configured
 for various functions. The LMIC library uses them to get instant status
@@ -436,7 +447,7 @@ mapping in your sketch, by setting the values of `lmic_pinmap::dio[0]`, `[1]`, a
 
 ### Reset
 
-> If you're using a pre-configured module, refer to the documentation for your board.
+> If you're using a [pre-integrated board](#pre-integrated-boards), you can skip this section.
 
 The transceiver has a reset pin that can be used to explicitly reset
 it. The LMIC library uses this to ensure the chip is in a consistent
@@ -449,7 +460,7 @@ be configured in the pin mapping `lmic_pinmap::rst` field (see [below](#pin-mapp
 
 ### RXTX
 
-> If you're using a pre-configured module, refer to the documentation for your board.
+> If you're using a [pre-integrated board](#pre-integrated-boards), you can skip this section.
 
 The transceiver contains two separate antenna connections: One for RX
 and one for TX. A typical transceiver board contains an antenna switch
@@ -478,19 +489,23 @@ The configuration entry `lmic_pinmap::rxtx` configures the pin to be used for th
 
 ### RXTX Polarity
 
+> If you're using a [pre-integrated board](#pre-integrated-boards), you can skip this section.
+
 If an external switch is used, you also must specify the polarity. Some modules want *RXTX* to be high for transmit, low for receive; Others want it to be low for transmit, high for receive. The Murata module, for example, requires that *RXTX* be *high* for receive, *low* for transmit.
 
 The configuration entry `lmic_pinmap::rxtx_rx_active` should be set to the state to be written to the *RXTX* pin to make the receiver active. The opposite state is written to make the transmitter active. If `lmic_pinmap::rxtx` is `LMIC_UNUSED_PIN`, then the value of `lmic_pinmap::rxtx_rx_active` is ignored.
 
 ### Pin mapping
 
-> For pre-configured boards, refer to the documentation on your board for the required settings. See the following:
->
-> - [Adafruit Feather M0 LoRa](#adafruit-feather-m0-lora)
-> - [Adafruit Feather 32u4 LoRa](#adafruit-feather-32u4-lora)
-> - [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
-> - [MCCI Catena 4450/4460](#mcci-catena-44504460)
-> - [MCCI Catena 4551](#mcci-catena-4551)
+> If you're using a [pre-integrated board](#pre-integrated-boards), you can skip this section.
+
+Refer to the documentation on your board for the required settings.
+
+Remember, for pre-integrated boards, you don't worry about this.
+
+We have details for the following manually-configured boards here:
+
+- [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
 
 If you don't have the board documentation, you need to provide your own `lmic_pinmap` values. As described above, a variety of configurations are possible. To tell the LMIC library how your board is configured, you must declare a variable containing a pin mapping struct in the sketch file.
 
@@ -526,31 +541,6 @@ see the notes above for when a pin can or cannot be left out).
 The name of the variable containing this struct must always be `lmic_pins`, which is a special name recognized by the library.
 
 <!-- there are links to the following section, so be careful when renaming -->
-#### Adafruit Feather M0 LoRa
-
-See Adafruit's [Feather M0 LoRa product page](https://www.adafruit.com/product/3178).
-This board uses the following pin mapping, as shown in the various "...-feather"
-sketches.
-
-DIO0 is hard-wired by Adafruit to Arduino D3, but DIO1 is not connected to any Arduino pin (it comes to JP1 pin 1, but is not otherwise connected). This pin table assumes that you have manually wired JP1 pin 1 to Arduino JP3 pin 9 (Arduino D6).
-
-DIO2 is not connected.
-
-```c++
-const lmic_pinmap lmic_pins = {
-    .nss = 8,
-    .rxtx = LMIC_UNUSED_PIN,
-    .rst = 4,
-    .dio = {3, 6, LMIC_UNUSED_PIN},
-};
-```
-
-<!-- there are links to the following section, so be careful when renaming -->
-#### Adafruit Feather 32u4 LoRa
-
-See Adafruit's [Feather 32u4 LoRa product page](https://www.adafruit.com/product/3078).  This board is supported by the [ttn-otaa-feather-us915.ino](examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino) example sketch. It uses the same pin mapping as the [Feather M0 LoRa](#adafruit-feather-m0-lora).
-
-<!-- there are links to the following section, so be careful when renaming -->
 #### LoRa Nexus by Ideetron
 
 This board uses the following pin mapping:
@@ -562,41 +552,6 @@ This board uses the following pin mapping:
       .rst = LMIC_UNUSED_PIN, // hardwired to AtMega RESET
       .dio = {4, 5, 7},
   };
-```
-
-<!-- there are links to the following section, so be careful when renaming -->
-#### MCCI Catena 4450/4460
-
-See [MCCI Catena 4450](https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4450-lorawan-iot-device) and [MCCI Catena 4460](https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4460-sensor-wing-w-bme680).
-
-These modules are based on the [Feather M0 LoRa](https://www.adafruit.com/product/3178). Since they include an extra Feather wing for the sensors, the Feather wing includes the trace connecting DIO1 to Arduino D6. No user wiring is needed on the Feather M0.
-
-```c++
-const lmic_pinmap lmic_pins = {
-    .nss = 8,
-    .rxtx = LMIC_UNUSED_PIN,
-    .rst = 4,
-    .dio = {3, 6, LMIC_UNUSED_PIN},
-};
-```
-
-<!-- there are links to the following section, so be careful when renaming -->
-#### MCCI Catena 4551
-
-See [MCCI Catena 4551](https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4551-integrated-lorawan-node).
-This board uses a Murata LoRa module and has the following pin mapping:
-
-```c++
-const lmic_pinmap lmic_pins = {
-    .nss = 7,
-    .rxtx = 29,
-    .rst = 8,
-    .dio = {25, 26, 27},
-    // the Murata module needs D29 high for RX, low for TX.
-    .rxtx_rx_active = 1,
-    // the Murata module is direct-wired, we can use 8 MHz for SPI.
-    .spi_freq = 8000000
-};
 ```
 
 ## Example Sketches
