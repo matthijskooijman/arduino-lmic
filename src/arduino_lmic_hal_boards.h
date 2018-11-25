@@ -29,6 +29,7 @@ const HalPinmap_t *GetPinmap_Catena4420();
 const HalPinmap_t *GetPinmap_Catena4551();
 const HalPinmap_t *GetPinmap_Catena4610();
 const HalPinmap_t *GetPinmap_Catena4610();
+const HalPinmap_t *GetPinmap_Catena4611();
 const HalPinmap_t *GetPinmap_Catena4612();
 const HalPinmap_t *GetPinmap_Catena4801();
 

@@ -201,6 +201,18 @@ script:
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino ; }
 
+ - _notsamd ||  arduino --verify --board $(_samdopts 'mcci_catena_4410' us915  ) $PWD/examples/raw-halconfig/raw-halconfig.ino
+ - _notsamd ||  arduino --verify --board $(_samdopts 'mcci_catena_4420' us915  ) $PWD/examples/raw-halconfig/raw-halconfig.ino
+ - _notsamd ||  arduino --verify --board $(_samdopts 'mcci_catena_4450' us915  ) $PWD/examples/raw-halconfig/raw-halconfig.ino
+ - _notsamd ||  arduino --verify --board $(_samdopts 'mcci_catena_4460' us915  ) $PWD/examples/raw-halconfig/raw-halconfig.ino
+ - _notsamd ||  arduino --verify --board $(_samdopts 'mcci_catena_4470' us915  ) $PWD/examples/raw-halconfig/raw-halconfig.ino
+ 
+ - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4410' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
+ - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4420' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
+ - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4450' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
+ - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4460' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
+ - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4470' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
+ 
 #
 # some tests that should generate build failures.
 #
@@ -226,5 +238,18 @@ script:
  - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
  - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
  - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-abp/ttn-abp.ino ; }
+
+#
+# *** test all boards ***
+ - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts 'mcci_catena_4610' us915  ) $MCCI_STM32_OPTS $PWD/examples/raw-halconfig/raw-halconfig.ino
+ - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts 'mcci_catena_4611' us915  ) $MCCI_STM32_OPTS $PWD/examples/raw-halconfig/raw-halconfig.ino
+ - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts 'mcci_catena_4612' us915  ) $MCCI_STM32_OPTS $PWD/examples/raw-halconfig/raw-halconfig.ino
+ - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts 'mcci_catena_4801' us915  ) $MCCI_STM32_OPTS $PWD/examples/raw-halconfig/raw-halconfig.ino
+
+ - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts 'mcci_catena_4551' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
+ - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts 'mcci_catena_4610' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
+ - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts 'mcci_catena_4611' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
+ - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts 'mcci_catena_4612' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
+ - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts 'mcci_catena_4801' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
 
  ### end of file ###

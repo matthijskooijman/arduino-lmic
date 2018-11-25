@@ -22,7 +22,7 @@ Author:
 
 namespace Arduino_LMIC {
 
-class HalConfiguration_Catena4612_t : public HalConfiguration_t
+class HalConfiguration_Catena4611_t : public HalConfiguration_t
         {
 public:
         enum DIGITAL_PINS : uint8_t
