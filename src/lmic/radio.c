@@ -316,8 +316,8 @@ static void readBuf (u1_t addr, xref2u1_t buf, u1_t len) {
     hal_spi_read(addr & 0x7f, buf, len);
 }
 
-static void requestTcxo(bit_t state) {
-    ostime_t const ticks = hal_setTcxoPower(state);
+static void requestModuleActive(bit_t state) {
+    ostime_t const ticks = hal_setModuleActive(state);
 
     if (ticks)
         hal_waitUntil(os_getTime() + ticks);;
@@ -326,10 +326,10 @@ static void requestTcxo(bit_t state) {
 static void writeOpmode(u1_t mode) {
     u1_t const maskedMode = mode & OPMODE_MASK;
     if (maskedMode != OPMODE_SLEEP)
-        requestTcxo(1);
+        requestModuleActive(1);
     writeReg(RegOpMode, mode);
     if (maskedMode == OPMODE_SLEEP)
-        requestTcxo(0);
+        requestModuleActive(0);
 }
 
 static void opmode (u1_t mode) {
@@ -757,7 +757,7 @@ static void startrx (u1_t rxmode) {
 int radio_init () {
     hal_disableIRQs();
 
-    requestTcxo(1);
+    requestModuleActive(1);
 
     // manually reset radio
 #ifdef CFG_sx1276_radio

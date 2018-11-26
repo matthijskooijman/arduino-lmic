@@ -396,8 +396,11 @@ void hal_failed (const char *file, u2_t line) {
     while(1);
 }
 
-ostime_t hal_setTcxoPower (u1_t val) {
-    return pHalConfig->setTcxoPower(val);
+ostime_t hal_setModuleActive (bit_t val) {
+    // setModuleActive() takes a c++ bool, so
+    // it effectively says "val != 0". We
+    // don't have to.
+    return pHalConfig->setModuleActive(val);
 }
 
 bit_t hal_queryUsingTcxo(void) {

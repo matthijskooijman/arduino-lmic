@@ -44,7 +44,7 @@ public:
 
 	// virtual void end(void) override
 
-	// virtual ostime_t setTcxoPower(uint8_t state) override
+	// virtual ostime_t setModuleActive(bool state) override
 	
 	};
 

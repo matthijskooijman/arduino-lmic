@@ -25,7 +25,7 @@ namespace Arduino_LMIC {
 /* these types should match the types used by the LMIC */
 typedef	int32_t	ostime_t;
 
-// this type is used when we need to represent a threee-state signal 
+// this type is used when we need to represent a threee-state signal
 enum class ThreeState_t : uint8_t {
 	Off = 0,
 	On = 1,
@@ -70,13 +70,7 @@ class HalConfiguration_t
 public:
 	HalConfiguration_t() {};
 
-	// putting this into lmic_pinmap breaks old code.
-	// so we have to have the weird hierarchy.
-	// Old code uses lmic_pinmap and calls os_init().
-	// New code uses HalConfiguration_t or other type, and
-	// calls os_init_ex(). Note that code that calls 
-	// os_init_ex() with lmic_pinmap must be converted.
-	virtual ostime_t setTcxoPower(uint8_t state) 
+	virtual ostime_t setModuleActive(bool state)
 		{
 		// by default, if not overridden, do nothing
 		// and return 0 to indicate that the caller
