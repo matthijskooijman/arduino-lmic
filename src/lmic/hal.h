@@ -122,13 +122,12 @@ void hal_failed (const char *file, u2_t line);
 s1_t hal_getRssiCal (void);
 
 /*
- * control the tcxo power pin state
- *   - if val == 0, turn tcxo off
- *   - if val == 1, turn tcxo on
- *   - if val == 2, put tcxo control in high-Z (if that matters)
+ * control the radio state
+ *   - if val == 0, turn tcxo off and otherwise prepare for sleep
+ *   - if val == 1, turn tcxo on and otherwise prep for activity
  *   - return the number of ticks that we need to wait
  */
-ostime_t hal_setTcxoPower (u1_t val);
+ostime_t hal_setModuleActive (bit_t val);
 
 bit_t hal_queryUsingTcxo(void);
 

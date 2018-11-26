@@ -51,7 +51,7 @@ public:
 
 	// On the 4551, we can't control the TCXO; it's always on.
 	// So we use the default.
-	// virtual ostime_t setTcxoPower(uint8_t state) override
+	// virtual ostime_t setModuleActive(bool state) override
 	virtual bool queryUsingTcxo(void) override { return true; };
         };
 

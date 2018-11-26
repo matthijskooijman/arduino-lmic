@@ -55,7 +55,7 @@ public:
 
         virtual bool queryUsingTcxo(void) override { return true; };
 
-        virtual ostime_t setTcxoPower(uint8_t state) override
+        virtual ostime_t setModuleActive(bool state) override
                 {
                 ostime_t result;
                 const int oldState = digitalRead(PIN_TCXO_VDD);
