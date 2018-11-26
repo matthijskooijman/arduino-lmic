@@ -26,8 +26,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _hal_hpp_
-#define _hal_hpp_
+#ifndef _lmic_hal_h_
+#define _lmic_hal_h_
+
+#ifndef _oslmic_types_h_
+# include "oslmic_types.h"
+#endif
 
 #ifdef __cplusplus
 extern "C"{
@@ -35,21 +39,20 @@ extern "C"{
 
 /*
  * initialize hardware (IO, SPI, TIMER, IRQ).
+ * This API is deprecated as it uses the const global lmic_pins,
+ * which the platform can't control or change.
  */
 void hal_init (void);
 
 /*
- * initialize hardware, passing in platform-specific context
+ * Initialize hardware, passing in platform-specific context
+ * The pointer is to a HalPinmap_t.
  */
 void hal_init_ex (const void *pContext);
 
 /*
- * drive radio NSS pin (0=low, 1=high).
- */
-void hal_pin_nss (u1_t val);
-
-/*
- * drive radio RX/TX pins (0=rx, 1=tx).
+ * drive radio RX/TX pins (0=rx, 1=tx). Actual polarity
+ * is determined by the value of HalPinmap_t::rxtx_rx_active.
  */
 void hal_pin_rxtx (u1_t val);
 
@@ -59,11 +62,18 @@ void hal_pin_rxtx (u1_t val);
 void hal_pin_rst (u1_t val);
 
 /*
- * perform 8-bit SPI transaction with radio.
- *   - write given byte 'outval'
- *   - read byte and return value
+ * Perform SPI write transaction with radio chip
+ *   - write the command byte 'cmd'
+ *   - write 'len' bytes out of 'buf'
  */
-u1_t hal_spi (u1_t outval);
+void hal_spi_write(u1_t cmd, const u1_t* buf, size_t len);
+
+/*
+ * Perform SPI read transaction with radio chip
+ *   - write the command byte 'cmd'
+ *   - read 'len' bytes into 'buf'
+ */
+void hal_spi_read(u1_t cmd, u1_t* buf, size_t len);
 
 /*
  * disable all CPU interrupts.
@@ -111,8 +121,18 @@ void hal_failed (const char *file, u2_t line);
  */
 s1_t hal_getRssiCal (void);
 
+/*
+ * control the radio state
+ *   - if val == 0, turn tcxo off and otherwise prepare for sleep
+ *   - if val == 1, turn tcxo on and otherwise prep for activity
+ *   - return the number of ticks that we need to wait
+ */
+ostime_t hal_setModuleActive (bit_t val);
+
+bit_t hal_queryUsingTcxo(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-#endif // _hal_hpp_
+#endif // _lmic_hal_h_

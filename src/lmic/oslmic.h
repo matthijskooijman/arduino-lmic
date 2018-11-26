@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2016 IBM Corporation.
+ * Copyright (c) 2018 MCCI Corporation
  * All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -29,29 +30,22 @@
 #ifndef _oslmic_h_
 #define _oslmic_h_
 
-// Dependencies required for the LoRa MAC in C to run.
+// Dependencies required for the LMIC to run.
 // These settings can be adapted to the underlying system.
-// You should not, however, change the lmic.[hc]
+// You should not, however, change the lmic merely for porting purposes.[hc]
 
 #include "config.h"
-#include <stdint.h>
 
-#ifdef __cplusplus
-extern "C"{
+#ifndef _lmic_env_h_
+# include "lmic_env.h"
 #endif
 
-//================================================================================
-//================================================================================
-// Target platform as C library
-typedef uint8_t            bit_t;
-typedef uint8_t            u1_t;
-typedef int8_t             s1_t;
-typedef uint16_t           u2_t;
-typedef int16_t            s2_t;
-typedef uint32_t           u4_t;
-typedef int32_t            s4_t;
-typedef unsigned int       uint;
-typedef const char* str_t;
+#ifndef _oslmic_types_h_
+# include "oslmic_types.h"
+#endif
+
+LMIC_BEGIN_DECLS
+
 
 #include <string.h>
 #include "hal.h"
@@ -73,7 +67,6 @@ typedef   struct rxsched_t rxsched_t;
 typedef   struct bcninfo_t bcninfo_t;
 typedef        const u1_t* xref2cu1_t;
 typedef              u1_t* xref2u1_t;
-typedef              s4_t  ostime_t;
 
 // int32_t == s4_t is long on some platforms; and someday
 // we will want 64-bit ostime_t. So, we will use a macro for the
@@ -90,105 +83,6 @@ typedef              s4_t  ostime_t;
 #define TYPEDEF_xref2osjob_t   typedef       osjob_t* xref2osjob_t
 
 #define SIZEOFEXPR(x) sizeof(x)
-
-//----------------------------------------------------------------------------
-// Annotations to avoid various "unused" warnings. These must appear as a
-// statement in the function body; the macro annotates the variable to quiet
-// compiler warnings.  The way this is done is compiler-specific, and so these
-// definitions are fall-backs, which might be overridden.
-//
-// Although these are all similar, we don't want extra macro expansions,
-// so we define each one explicitly rather than relying on a common macro.
-//----------------------------------------------------------------------------
-
-// signal that a parameter is intentionally unused.
-#ifndef LMIC_UNREFERENCED_PARAMETER
-# define LMIC_UNREFERENCED_PARAMETER(v)      do { (void) (v); } while (0)
-#endif
-
-// an API parameter is a parameter that is required by an API definition, but
-// happens to be unreferenced in this implementation. This is a stronger
-// assertion than LMIC_UNREFERENCED_PARAMETER(): this parameter is here
-// becuase of an API contract, but we have no use for it in this function.
-#ifndef LMIC_API_PARAMETER
-# define LMIC_API_PARAMETER(v)               do { (void) (v); } while (0)
-#endif
-
-// an intentionally-unreferenced variable.
-#ifndef LMIC_UNREFERENCED_VARIABLE
-# define LMIC_UNREFERENCED_VARIABLE(v)       do { (void) (v); } while (0)
-#endif
-
-// we have three (!) debug levels (LMIC_DEBUG_LEVEL > 0, LMIC_DEBUG_LEVEL > 1,
-// and LMIC_X_DEBUG_LEVEL > 0. In each case we might have parameters or
-// or varables that are only refereneced at the target debug level.
-
-// Parameter referenced only if debugging at level > 0.
-#ifndef LMIC_DEBUG1_PARAMETER
-# if LMIC_DEBUG_LEVEL > 0
-#  define LMIC_DEBUG1_PARAMETER(v)           do { ; } while (0)
-# else
-#  define LMIC_DEBUG1_PARAMETER(v)           do { (void) (v); } while (0)
-# endif
-#endif
-
-// variable referenced only if debugging at level > 0
-#ifndef LMIC_DEBUG1_VARIABLE
-# if LMIC_DEBUG_LEVEL > 0
-#  define LMIC_DEBUG1_VARIABLE(v)            do { ; } while (0)
-# else
-#  define LMIC_DEBUG1_VARIABLE(v)            do { (void) (v); } while (0)
-# endif
-#endif
-
-// parameter referenced only if debugging at level > 1
-#ifndef LMIC_DEBUG2_PARAMETER
-# if LMIC_DEBUG_LEVEL > 1
-#  define LMIC_DEBUG2_PARAMETER(v)           do { ; } while (0)
-# else
-#  define LMIC_DEBUG2_PARAMETER(v)           do { (void) (v); } while (0)
-# endif
-#endif
-
-// variable referenced only if debugging at level > 1
-#ifndef LMIC_DEBUG2_VARIABLE
-# if LMIC_DEBUG_LEVEL > 1
-#  define LMIC_DEBUG2_VARIABLE(v)            do { ; } while (0)
-# else
-#  define LMIC_DEBUG2_VARIABLE(v)            do { (void) (v); } while (0)
-# endif
-#endif
-
-// parameter referenced only if LMIC_X_DEBUG_LEVEL > 0
-#ifndef LMIC_X_DEBUG_PARAMETER
-# if LMIC_X_DEBUG_LEVEL > 0
-#  define LMIC_X_DEBUG_PARAMETER(v)           do { ; } while (0)
-# else
-#  define LMIC_X_DEBUG_PARAMETER(v)           do { (void) (v); } while (0)
-# endif
-#endif
-
-// variable referenced only if LMIC_X_DEBUG_LEVEL > 0
-#ifndef LMIC_X_DEBUG_VARIABLE
-# if LMIC_X_DEBUG_LEVEL > 0
-#  define LMIC_X_DEBUG_VARIABLE(v)            do { ; } while (0)
-# else
-#  define LMIC_X_DEBUG_VARIABLE(v)            do { (void) (v); } while (0)
-# endif
-#endif
-
-// parameter referenced only if EV() macro is enabled (which it never is)
-// TODO(tmm@mcci.com) take out the EV() framework as it reuqires C++, and
-// this code is really C-99 to its bones.
-#ifndef LMIC_EV_PARAMETER
-# define LMIC_EV_PARAMETER(v)                 do { (void) (v); } while (0)
-#endif
-
-// variable referenced only if EV() macro is defined.
-#ifndef LMIC_EV_VARIABLE
-# define LMIC_EV_VARIABLE(v)                  do { (void) (v); } while (0)
-#endif
-
 
 #define ON_LMIC_EVENT(ev)  onEvent(ev)
 #define DECL_ON_LMIC_EVENT void onEvent(ev_t e)
@@ -416,8 +310,6 @@ extern xref2u1_t AESaux;
 u4_t os_aes (u1_t mode, xref2u1_t buf, u2_t len);
 #endif
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+LMIC_END_DECLS
 
 #endif // _oslmic_h_
