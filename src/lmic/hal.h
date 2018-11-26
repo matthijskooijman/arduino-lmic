@@ -39,17 +39,20 @@ extern "C"{
 
 /*
  * initialize hardware (IO, SPI, TIMER, IRQ).
+ * This API is deprecated as it uses the const global lmic_pins,
+ * which the platform can't control or change.
  */
 void hal_init (void);
 
 /*
  * Initialize hardware, passing in platform-specific context
- * This API is deprecated.
+ * The pointer is to a HalPinmap_t.
  */
 void hal_init_ex (const void *pContext);
 
 /*
- * drive radio RX/TX pins (0=rx, 1=tx).
+ * drive radio RX/TX pins (0=rx, 1=tx). Actual polarity
+ * is determined by the value of HalPinmap_t::rxtx_rx_active.
  */
 void hal_pin_rxtx (u1_t val);
 
@@ -63,14 +66,14 @@ void hal_pin_rst (u1_t val);
  *   - write the command byte 'cmd'
  *   - write 'len' bytes out of 'buf'
  */
-void hal_spi_write(u1_t cmd, const u1_t* buf, int len);
+void hal_spi_write(u1_t cmd, const u1_t* buf, size_t len);
 
 /*
  * Perform SPI read transaction with radio chip
  *   - write the command byte 'cmd'
  *   - read 'len' bytes into 'buf'
  */
-void hal_spi_read(u1_t cmd, u1_t* buf, int len);
+void hal_spi_read(u1_t cmd, u1_t* buf, size_t len);
 
 /*
  * disable all CPU interrupts.

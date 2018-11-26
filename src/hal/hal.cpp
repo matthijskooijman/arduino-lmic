@@ -156,7 +156,7 @@ static void hal_spi_init () {
     SPI.begin();
 }
 
-static void hal_spi_trx(u1_t cmd, u1_t* buf, int len, u1_t is_read) {
+static void hal_spi_trx(u1_t cmd, u1_t* buf, size_t len, bit_t is_read) {
     uint32_t spi_freq;
     u1_t nss = plmic_pins->nss;
 
@@ -169,23 +169,22 @@ static void hal_spi_trx(u1_t cmd, u1_t* buf, int len, u1_t is_read) {
 
     SPI.transfer(cmd);
 
-    for (u1_t i = 0; i < len; i++) {
-        u1_t* p = buf + i;
-        u1_t data = is_read ? 0x00 : *p;
+    for (; len > 0; --len, ++buf) {
+        u1_t data = is_read ? 0x00 : *buf;
         data = SPI.transfer(data);
         if (is_read)
-            *p = data;
+            *buf = data;
     }
 
     digitalWrite(nss, 1);
     SPI.endTransaction();
 }
 
-void hal_spi_write(u1_t cmd, const u1_t* buf, int len) {
+void hal_spi_write(u1_t cmd, const u1_t* buf, size_t len) {
     hal_spi_trx(cmd, (u1_t*)buf, len, 0);
 }
 
-void hal_spi_read(u1_t cmd, u1_t* buf, int len) {
+void hal_spi_read(u1_t cmd, u1_t* buf, size_t len) {
     hal_spi_trx(cmd, buf, len, 1);
 }
 
