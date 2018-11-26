@@ -49,11 +49,6 @@ void hal_init (void);
 void hal_init_ex (const void *pContext);
 
 /*
- * drive radio NSS pin (0=low, 1=high).
- */
-void hal_pin_nss (u1_t val);
-
-/*
  * drive radio RX/TX pins (0=rx, 1=tx).
  */
 void hal_pin_rxtx (u1_t val);
@@ -64,11 +59,18 @@ void hal_pin_rxtx (u1_t val);
 void hal_pin_rst (u1_t val);
 
 /*
- * perform 8-bit SPI transaction with radio.
- *   - write given byte 'outval'
- *   - read byte and return value
+ * Perform SPI write transaction with radio chip
+ *   - write the command byte 'cmd'
+ *   - write 'len' bytes out of 'buf'
  */
-u1_t hal_spi (u1_t outval);
+void hal_spi_write(u1_t cmd, const u1_t* buf, int len);
+
+/*
+ * Perform SPI read transaction with radio chip
+ *   - write the command byte 'cmd'
+ *   - read 'len' bytes into 'buf'
+ */
+void hal_spi_read(u1_t cmd, u1_t* buf, int len);
 
 /*
  * disable all CPU interrupts.
