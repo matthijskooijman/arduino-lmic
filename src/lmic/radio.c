@@ -299,36 +299,21 @@ static u1_t randbuf[16];
 
 
 static void writeReg (u1_t addr, u1_t data ) {
-    hal_pin_nss(0);
-    hal_spi(addr | 0x80);
-    hal_spi(data);
-    hal_pin_nss(1);
+    hal_spi_write(addr | 0x80, &data, 1);
 }
 
 static u1_t readReg (u1_t addr) {
-    hal_pin_nss(0);
-    hal_spi(addr & 0x7F);
-    u1_t val = hal_spi(0x00);
-    hal_pin_nss(1);
-    return val;
+    u1_t buf[1];
+    hal_spi_read(addr & 0x7f, buf, 1);
+    return buf[0];
 }
 
 static void writeBuf (u1_t addr, xref2u1_t buf, u1_t len) {
-    hal_pin_nss(0);
-    hal_spi(addr | 0x80);
-    for (u1_t i=0; i<len; i++) {
-        hal_spi(buf[i]);
-    }
-    hal_pin_nss(1);
+    hal_spi_write(addr | 0x80, buf, len);
 }
 
 static void readBuf (u1_t addr, xref2u1_t buf, u1_t len) {
-    hal_pin_nss(0);
-    hal_spi(addr & 0x7F);
-    for (u1_t i=0; i<len; i++) {
-        buf[i] = hal_spi(0x00);
-    }
-    hal_pin_nss(1);
+    hal_spi_read(addr & 0x7f, buf, len);
 }
 
 static void requestTcxo(bit_t state) {
