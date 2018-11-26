@@ -1171,7 +1171,8 @@ static bit_t processJoinAccept (void) {
         LMIC.datarate = AS923_DR_SF10;
 #endif
     }
-    LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_REJOIN|OP_TXRXPEND|OP_PINGINI) | OP_NEXTCHNL;
+    LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_REJOIN|OP_TXRXPEND|OP_PINGINI);
+    LMIC.opmode |= OP_NEXTCHNL;
     LMIC.txCnt = 0;
     stateJustJoined();
     LMIC.dn2Dr = LMIC.frame[OFF_JA_DLSET] & 0x0F;
