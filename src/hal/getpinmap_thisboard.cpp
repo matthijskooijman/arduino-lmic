@@ -48,7 +48,7 @@ const HalPinmap_t *GetPinmap_ThisBoard(void)
 #elif defined(PINNOCHIO_SCOUT)
         return GetPinmap_PinnochioScount();
 #else
-        #warning Board not supported -- use an explicit pinmap
+        #pragma message("Board not supported -- use an explicit pinmap")
         return nullptr;
 #endif
         }
