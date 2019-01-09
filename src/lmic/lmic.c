@@ -1186,7 +1186,6 @@ static void reportEvent (ev_t ev) {
 static void runReset (xref2osjob_t osjob) {
     // Disable session
     LMIC_reset();
-    printf("  ----> Run reset !!!\n");
 #if !defined(DISABLE_JOIN)
     LMIC_startJoining();
 #endif // !DISABLE_JOIN
@@ -1590,7 +1589,6 @@ static void setupRx2 (void) {
 
 
 static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
-    printf("Rx DR=%d\n",dr );
     ostime_t hsym = dr2hsym(dr);
 
     LMIC.rxsyms = MINRX_SYMS;
@@ -1673,16 +1671,13 @@ static void onJoinFailed (xref2osjob_t osjob) {
 
 
 static bit_t processJoinAccept (void) {
-    printf("  ---> Process join accept!\n");
     ASSERT(LMIC.txrxFlags != TXRX_DNW1 || LMIC.dataLen != 0);
     ASSERT((LMIC.opmode & OP_TXRXPEND)!=0);
 
     if( LMIC.dataLen == 0 ) {
       nojoinframe:
-        printf("  ----> No join frame!\n");
         if( (LMIC.opmode & OP_JOINING) == 0 ) {
             ASSERT((LMIC.opmode & OP_REJOIN) != 0);
-            printf("  ----> Rejoin!\n");
             // REJOIN attempt for roaming
             LMIC.opmode &= ~(OP_REJOIN|OP_TXRXPEND);
             if( LMIC.rejoinCnt < 10 )
@@ -1699,7 +1694,6 @@ static bit_t processJoinAccept (void) {
         // Build next JOIN REQUEST with next engineUpdate call
         // Optionally, report join failed.
         // Both after a random/chosen amount of ticks.
-        printf("  ----> Reg runEngUpdate Callback\n");
         os_setTimedCallback(&LMIC.osjob, os_getTime()+delay,
                             (delay&1) != 0
                             ? FUNC_ADDR(onJoinFailed)      // one JOIN iteration done and failed
@@ -1716,7 +1710,6 @@ static bit_t processJoinAccept (void) {
                            e_.info   = dlen < 4 ? 0 : mic,
                            e_.info2  = hdr + (dlen<<8)));
       badframe:
-        printf("  ----> Bad frame!\n");
         if( (LMIC.txrxFlags & TXRX_DNW1) != 0 )
             return 0;
         goto nojoinframe;
@@ -1725,7 +1718,6 @@ static bit_t processJoinAccept (void) {
     if( !aes_verifyMic0(LMIC.frame, dlen-4) ) {
         EV(specCond, ERR, (e_.reason = EV::specCond_t::JOIN_BAD_MIC,
                            e_.info   = mic));
-        printf ("   ======> Will goto badframe: BAD MIC!!!  <======\n");
         goto badframe;
     }
 
@@ -1846,13 +1838,11 @@ static void setupRx2DnData (xref2osjob_t osjob) {
 static void processRx1DnData (xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 || !processDnData() ){
         schedRx12(sec2osticks(LMIC.rxDelay +(int)DELAY_EXTDNW2), FUNC_ADDR(setupRx2DnData), LMIC.dn2Dr);
-        //printf(" ----> Rx2 scheduled for %lu osticks from now!\n", sec2osticks(LMIC.rxDelay +(int)DELAY_EXTDNW2));
     }
 }
 
 
 static void setupRx1DnData (xref2osjob_t osjob) {
-    printf(" = = =>>> Call setupRx1DnData\n\n");
     setupRx1(FUNC_ADDR(processRx1DnData));
     digitalWrite(4, LOW); //------- Marca o fim da temporizacao da espera Rx1
     digitalWrite(5, HIGH); //------ Marca o inicio da recepcao
@@ -1860,9 +1850,7 @@ static void setupRx1DnData (xref2osjob_t osjob) {
 
 
 static void updataDone (xref2osjob_t osjob) {
-    printf(" = = =>>> Call updataDone\n\n");
     txDone(sec2osticks(LMIC.rxDelay), FUNC_ADDR(setupRx1DnData));
-    //printf(" ----> Rx1 scheduled for %lu osticks from now!\n", sec2osticks(LMIC.rxDelay)-30000);
     digitalWrite(4, HIGH); //-------Marca o fim da transmissao (inicio da temporizacao)
 }
 
@@ -2082,8 +2070,6 @@ static void buildJoinRequest (u1_t ftype) {
     os_wlsbf2(d + OFF_JR_DEVNONCE, LMIC.devNonce);
     aes_appendMic0(d, OFF_JR_MIC);
 
-    printf (" ----> In buildJoinRequest!\n");
-
     EV(joininfo,INFO,(e_.deveui  = MAIN::CDEV->getEui(),
                       e_.arteui  = MAIN::CDEV->getArtEui(),
                       e_.nonce   = LMIC.devNonce,
@@ -2095,7 +2081,6 @@ static void buildJoinRequest (u1_t ftype) {
     LMIC.dataLen = LEN_JR;
     LMIC.devNonce++;
     DO_DEVDB(LMIC.devNonce,devNonce);
-    printf (" ----> JoinInfo: Nonce:%8x\t \n", LMIC.devNonce);
 }
 
 static void startJoining (xref2osjob_t osjob) {
@@ -2104,7 +2089,6 @@ static void startJoining (xref2osjob_t osjob) {
 
 // Start join procedure if not already joined.
 bit_t LMIC_startJoining (void) {
-    printf (" ----> In LMIC_startJoining\n");
     if( LMIC.devaddr == 0 ) {
         // There should be no TX/RX going on
         ASSERT((LMIC.opmode & (OP_POLL|OP_TXRXPEND)) == 0);
@@ -2114,12 +2098,10 @@ bit_t LMIC_startJoining (void) {
         LMIC.opmode &= ~(OP_SCAN|OP_REJOIN|OP_LINKDEAD|OP_NEXTCHNL);
         // Setup state
         LMIC.rejoinCnt = LMIC.txCnt = 0;
-        printf (" ----> Call initJoinLoop\n");
         initJoinLoop();
         LMIC.opmode |= OP_JOINING;
         // reportEvent will call engineUpdate which then starts sending JOIN REQUESTS
         os_setCallback(&LMIC.osjob, FUNC_ADDR(startJoining));
-        printf (" ----> Set callback startJoining\n");
         return 1;
     }
     return 0; // already joined
@@ -2153,7 +2135,6 @@ static bit_t processDnData (void) {
 
     if( LMIC.dataLen == 0 ) {
       norx:
-        printf (" --==-->> No RX ! <---\n");
         if( LMIC.txCnt != 0 ) {
             if( LMIC.txCnt < TXCONF_ATTEMPTS ) {
                 LMIC.txCnt += 1;
@@ -2167,7 +2148,6 @@ static bit_t processDnData (void) {
             LMIC.txrxFlags = TXRX_NACK | TXRX_NOPORT;
         } else {
             // Nothing received - implies no port
-            printf (" =========> Nothing received - implies no port\n");
             LMIC.txrxFlags = TXRX_NOPORT;
         }
         if( LMIC.adrAckReq != LINK_CHECK_OFF )
@@ -2208,7 +2188,6 @@ static bit_t processDnData (void) {
         return 1;
     }
     if( !decodeFrame() ) {
-        printf ("------->>> !decodeFrame\n");
         if( (LMIC.txrxFlags & TXRX_DNW1) != 0 )
             return 0;
         goto norx;
@@ -2405,7 +2384,6 @@ static void engineUpdate (void) {
                     // Device has to react! NWK will not roll over and just stop sending.
                     // Thus, we have N frames to detect a possible lock up.
                   reset:
-                    printf("  ----> Reg runReset callback!\n");
                     os_setCallback(&LMIC.osjob, FUNC_ADDR(runReset));
                     return;
                 }
