@@ -34,6 +34,7 @@ TYPEDEF_xref2rps_t;
 enum { ILLEGAL_RPS = 0xFF };
 enum { DR_PAGE_EU868 = 0x00 };
 enum { DR_PAGE_US915 = 0x10 };
+enum { DR_PAGE_AU915 = 0x20 };
 
 // Global maximum frame length
 enum { STD_PREAMBLE_LEN  =  8 };
@@ -130,6 +131,48 @@ enum { FREQ_PING         = US915_500kHz_DNFBASE + CHNL_PING*US915_500kHz_DNFSTEP
 enum { DR_PING           = DR_SF10CR };       // default ping DR
 enum { CHNL_DNW2         = 0 };
 enum { FREQ_DNW2         = US915_500kHz_DNFBASE + CHNL_DNW2*US915_500kHz_DNFSTEP };
+enum { DR_DNW2           = DR_SF12CR };
+enum { CHNL_BCN          = 0 }; // used only for default init of state (rotating beacon scheme)
+enum { DR_BCN            = DR_SF10CR };
+enum { AIRTIME_BCN       = 72192 };  // micros
+
+enum {
+    // Beacon frame format US SF10
+    OFF_BCN_NETID    = 0,
+    OFF_BCN_TIME     = 3,
+    OFF_BCN_CRC1     = 7,
+    OFF_BCN_INFO     = 9,
+    OFF_BCN_LAT      = 10,
+    OFF_BCN_LON      = 13,
+    OFF_BCN_RFU1     = 16,
+    OFF_BCN_CRC2     = 17,
+    LEN_BCN          = 19
+};
+
+#elif defined(CFG_au915)  // =========================================
+
+enum _dr_au915_t { DR_SF12=0, DR_SF11, DR_SF10, DR_SF9, DR_SF8, DR_SF7, DR_SF8C, DR_NONE,
+                   // Devices behind a router:
+                   DR_SF12CR, DR_SF11CR, DR_SF10CR, DR_SF9CR, DR_SF8CR, DR_SF7CR };
+enum { DR_DFLTMIN = DR_SF8C };
+enum { DR_PAGE = DR_PAGE_AU915 };
+
+// Default frequency plan for US 915MHz
+enum { AU915_125kHz_UPFBASE = 915200000,
+       AU915_125kHz_UPFSTEP =    200000,
+       AU915_500kHz_UPFBASE = 915900000,
+       AU915_500kHz_UPFSTEP =   1600000,
+       AU915_500kHz_DNFBASE = 923300000,
+       AU915_500kHz_DNFSTEP =    600000
+};
+enum { AU915_FREQ_MIN = 915000000,
+       AU915_FREQ_MAX = 928000000 };
+
+enum { CHNL_PING         = 0 }; // used only for default init of state (follows beacon - rotating)
+enum { FREQ_PING         = AU915_500kHz_DNFBASE + CHNL_PING*AU915_500kHz_DNFSTEP };  // default ping freq
+enum { DR_PING           = DR_SF10CR };       // default ping DR
+enum { CHNL_DNW2         = 0 };
+enum { FREQ_DNW2         = AU915_500kHz_DNFBASE + CHNL_DNW2*AU915_500kHz_DNFSTEP }; // @mjr - recheck values! ###
 enum { DR_DNW2           = DR_SF12CR };
 enum { CHNL_BCN          = 0 }; // used only for default init of state (rotating beacon scheme)
 enum { DR_BCN            = DR_SF10CR };
@@ -335,6 +378,32 @@ enum {
     MCMD_LADR_14dBm     = 8,
     MCMD_LADR_12dBm     = 9,
     MCMD_LADR_10dBm     = 10
+#elif defined(CFG_au915)
+    MCMD_LADR_SF12      = DR_SF12<<4,
+    MCMD_LADR_SF11      = DR_SF11<<4,
+    MCMD_LADR_SF10      = DR_SF10<<4,
+    MCMD_LADR_SF9       = DR_SF9 <<4,
+    MCMD_LADR_SF8       = DR_SF8 <<4,
+    MCMD_LADR_SF7       = DR_SF7 <<4,
+    MCMD_LADR_SF8C      = DR_SF8C<<4,
+    MCMD_LADR_SF12CR    = DR_SF12CR<<4,
+    MCMD_LADR_SF11CR    = DR_SF11CR<<4,
+    MCMD_LADR_SF10CR    = DR_SF10CR<<4,
+    MCMD_LADR_SF9CR     = DR_SF9CR<<4,
+    MCMD_LADR_SF8CR     = DR_SF8CR<<4,
+    MCMD_LADR_SF7CR     = DR_SF7CR<<4,
+
+    MCMD_LADR_30dBm     = 0,
+    MCMD_LADR_28dBm     = 1,
+    MCMD_LADR_26dBm     = 2,
+    MCMD_LADR_24dBm     = 3,
+    MCMD_LADR_22dBm     = 4,
+    MCMD_LADR_20dBm     = 5,
+    MCMD_LADR_18dBm     = 6,
+    MCMD_LADR_16dBm     = 7,
+    MCMD_LADR_14dBm     = 8,
+    MCMD_LADR_12dBm     = 9,
+    MCMD_LADR_10dBm     = 10
 #endif
 };
 
@@ -347,7 +416,7 @@ enum { RSSI_OFF=64, SNR_SCALEUP=4 };
 inline sf_t  getSf   (rps_t params)            { return   (sf_t)(params &  0x7); }
 inline rps_t setSf   (rps_t params, sf_t sf)   { return (rps_t)((params & ~0x7) | sf); }
 inline bw_t  getBw   (rps_t params)            { return  (bw_t)((params >> 3) & 0x3); }
-inline rps_t setBw   (rps_t params, bw_t cr)   { return (rps_t)((params & ~0x18) | (cr<<3)); }
+inline rps_t setBw   (rps_t params, bw_t bw)   { return (rps_t)((params & ~0x18) | (bw<<3)); }
 inline cr_t  getCr   (rps_t params)            { return  (cr_t)((params >> 5) & 0x3); }
 inline rps_t setCr   (rps_t params, cr_t cr)   { return (rps_t)((params & ~0x60) | (cr<<5)); }
 inline int   getNocrc(rps_t params)            { return        ((params >> 7) & 0x1); }
