@@ -70,7 +70,7 @@ class HalConfiguration_t
 public:
 	HalConfiguration_t() {};
 
-	virtual ostime_t setModuleActive(bool state)
+	virtual ostime_t setModuleActive(bool __attribute__((unused)) state)
 		{
 		// by default, if not overridden, do nothing
 		// and return 0 to indicate that the caller
