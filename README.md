@@ -294,7 +294,9 @@ also define `DISABLE_LMIC_FAILURE_TO` to any value, in which case assert failure
 
 #### Defining custom failure handling
 
-`#define LMIC_FAILURE_HANDLER my_failure_handler	/* function with signature "void my_failure_handler(const char *file, uint16_t line)"  */`
+```C
+#define LMIC_FAILURE_HANDLER my_failure_handler	/* "my_failure_handler()" defined later
+```
 
 Define a custom function for handling failures of the LMIC library.
 
@@ -302,12 +304,14 @@ By default when an unrecoverable error occurs in the LMIC library, the code sile
 For example
 
 ```C++
-void my_failure_handler(const char *file, uint16_t line) {
+void my_failure_handler(const char *file_name, uint16_t line) {
     Serial.println("MY FAILURE HANDLER WAS TRIGGERED");
     save_sensitive_data_to_nonvolatile_memory();
     reboot();
 }
 ```
+
+The `file_name` and `line` paramters correspond, respectively, to the name of the file and the line of the file where the failure occured.
 
 #### Disabling JOIN
 
