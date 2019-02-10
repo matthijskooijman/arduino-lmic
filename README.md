@@ -15,7 +15,7 @@ The [MCCI arduino-lorawan](https://github.com/mcci-catena/arduino-lorawan) libra
 This library requires Arduino IDE version 1.6.6 or above, since it
 requires C99 mode to be enabled by default.
 
-[![GitHub release](https://img.shields.io/github/release/mcci-catena/arduino-lmic.svg)](https://github.com/mcci-catena/arduino-lmic/releases/latest) [![GitHub commits](https://img.shields.io/github/commits-since/mcci-catena/arduino-lmic/latest.svg)](https://github.com/mcci-catena/arduino-lmic/compare/v2.3.1...master) [![Build Status](https://travis-ci.com/mcci-catena/arduino-lmic.svg?branch=master)](https://travis-ci.com/mcci-catena/arduino-lmic)
+[![GitHub release](https://img.shields.io/github/release/mcci-catena/arduino-lmic.svg)](https://github.com/mcci-catena/arduino-lmic/releases/latest) [![GitHub commits](https://img.shields.io/github/commits-since/mcci-catena/arduino-lmic/latest.svg)](https://github.com/mcci-catena/arduino-lmic/compare/v2.3.2...master) [![Build Status](https://travis-ci.com/mcci-catena/arduino-lmic.svg?branch=master)](https://travis-ci.com/mcci-catena/arduino-lmic)
 
 **Contents:**
 
@@ -1008,6 +1008,11 @@ function uflt122f(rawUflt12)
 ```
 
 ## Release History
+
+- v2.3.2 is a patch release. It incorporates two pull requests.
+
+  - [#204](https://github.com/mcci-catena/arduino-lmic/pull/204) eliminates a warning if using a custom pinmap.
+  - [#206](https://github.com/mcci-catena/arduino-lmic/pull/206) updates CI testing to Arduino IDE v1.8.8.
 
 - v2.3.1 is a patch release. It adds `<arduino_lmic_user_configuration.h>`, which loads the pre-proceesor LMIC configuration variables into scope (issue [#199](https://github.com/mcci-catena/arduino-lmic/issues/199)).
 
