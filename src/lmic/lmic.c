@@ -1658,9 +1658,16 @@ static bit_t processDnData (void) {
             EV(devCond, ERR, (e_.reason = EV::devCond_t::LINK_DEAD,
                               e_.eui    = MAIN::CDEV->getEui(),
                               e_.info   = LMIC.adrAckReq));
-            setDrTxpow(DRCHG_NOADRACK, decDR((dr_t)LMIC.datarate), KEEP_TXPOW);
+            dr_t newDr = decDR((dr_t)LMIC.datarate);
+            if( newDr == (dr_t)LMIC.datarate) {
+                // We are already at the minimum datarate
+                // try to REJOIN
+                LMIC.opmode |= OP_REJOIN;
+            }
+            // Decrease DataRate and restore fullpower.
+            setDrTxpow(DRCHG_NOADRACK, newDr, pow2dBm(0));
             LMIC.adrAckReq = LINK_CHECK_CONT;
-            LMIC.opmode |= OP_REJOIN|OP_LINKDEAD;
+            LMIC.opmode |= OP_LINKDEAD;
             reportEvent(EV_LINK_DEAD);
         }
 #if !defined(DISABLE_BEACONS)
