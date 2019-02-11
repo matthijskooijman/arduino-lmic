@@ -1837,10 +1837,8 @@ static void engineUpdate (void) {
                     // in AS923 v1.1 or older, no need to change the datarate.
                     txdr = lowerDR(txdr, LMIC.rejoinCnt);
 #endif
-                    ftype = HDR_FTYPE_REJOIN;
-                } else {
-                    ftype = HDR_FTYPE_JREQ;
                 }
+                ftype = HDR_FTYPE_JREQ;
                 buildJoinRequest(ftype);
                 LMIC.osjob.func = FUNC_ADDR(jreqDone);
             } else
