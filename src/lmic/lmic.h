@@ -129,7 +129,7 @@ enum { MAX_RXSYMS         = 100 };   // stop tracking beacon beyond this
 
 enum { LINK_CHECK_CONT    =  0  ,    // continue with this after reported dead link
        LINK_CHECK_DEAD    =  32 ,    // after this UP frames and no response to ack from NWK assume link is dead (ADR_ACK_DELAY)
-       LINK_CHECK_INIT    = -64 ,    // UP frame count until we ark for ack (ADR_ACK_LIMIT)
+       LINK_CHECK_INIT    = -64 ,    // UP frame count until we ask for ack (ADR_ACK_LIMIT)
        LINK_CHECK_OFF     =-128 };   // link check disabled
 
 enum { TIME_RESYNC        = 6*128 }; // secs
