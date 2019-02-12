@@ -1880,7 +1880,7 @@ static void engineUpdate (void) {
             LMIC.opmode = (LMIC.opmode & ~(OP_POLL|OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
             LMICbandplan_updateTx(txbeg);
             // limit power to value asked in adr
-            LMIC.txpow = LMIC.txpow > LMIC.adrTxPow ? LMIC.adrTxPow : LMIC.txpow;
+            LMIC.radio_txpow = LMIC.txpow > LMIC.adrTxPow ? LMIC.adrTxPow : LMIC.txpow;
             reportEvent(EV_TXSTART);
             os_radio(RADIO_TX);
             return;

@@ -287,7 +287,8 @@ struct lmic_t {
     rps_t       rps;
     u1_t        rxsyms;
     u1_t        dndr;
-    s1_t        txpow;     // dBm
+    s1_t        txpow;          // transmit dBm (administrative)
+    s1_t	radio_txpow;    // the radio driver's copy of txpow, limited by adrTxPow.
 
     osjob_t     osjob;
 
