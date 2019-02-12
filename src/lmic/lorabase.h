@@ -414,7 +414,6 @@ enum {
     HDR_FTYPE_DADN   = 0x60,  // data (unconfirmed) dn
     HDR_FTYPE_DCUP   = 0x80,  // data confirmed up
     HDR_FTYPE_DCDN   = 0xA0,  // data confirmed dn
-    HDR_FTYPE_REJOIN = 0xC0,  // rejoin for roaming
     HDR_FTYPE_PROP   = 0xE0
 };
 enum {

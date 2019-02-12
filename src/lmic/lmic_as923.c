@@ -138,7 +138,7 @@ int8_t LMICas923_pow2dBm(uint8_t mcmd_ladr_p1) {
 			(mcmd_ladr_p1&MCMD_LADR_POW_MASK)>>MCMD_LADR_POW_SHIFT
 			);
 			
-	return adj;
+	return LMICas923_getMaxEIRP(LMIC.txParam) + adj;
 }
 
 // only used in this module, but used by variant macro dr2hsym().
