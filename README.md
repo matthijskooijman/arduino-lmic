@@ -292,23 +292,6 @@ control the handling of runtime assertion failures. By default, assertion messag
 the `Serial` object. You can define LMIC_FAILURE_TO to be the name of some other `Print`-like obect. You can
 also define `DISABLE_LMIC_FAILURE_TO` to any value, in which case assert failures will silently halt execution.
 
-#### Defining custom failure handling
-
-`#define LMIC_FAILURE_HANDLER my_failure_handler	/* function with signature "void my_failure_handler(const char *file, uint16_t line)"  */`
-
-Define a custom function for handling failures of the LMIC library.
-
-By default when an unrecoverable error occurs in the LMIC library, the code silently halts execution. To implement a different failure handling behaviour, define the variable `LMIC_FAILURE_HANDLER` in "lmic_project_config.h" as shown above and include a failure-handling function in your sketch.
-For example
-
-```C++
-void my_failure_handler(const char *file, uint16_t line) {
-    Serial.println("MY FAILURE HANDLER WAS TRIGGERED");
-    save_sensitive_data_to_nonvolatile_memory();
-    reboot();
-}
-```
-
 #### Disabling JOIN
 
 `#define DISABLE_JOIN`
