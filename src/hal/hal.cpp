@@ -385,15 +385,19 @@ bool hal_init_with_pinmap(const HalPinmap_t *pPinmap)
 }; // namespace Arduino_LMIC
 
 void hal_failed (const char *file, u2_t line) {
+    if (LMIC.hal_failure_handler != NULL) {
+        (*LMIC.hal_failure_handler)(file, line);
+    } else {
 #if defined(LMIC_FAILURE_TO)
-    LMIC_FAILURE_TO.println("FAILURE ");
-    LMIC_FAILURE_TO.print(file);
-    LMIC_FAILURE_TO.print(':');
-    LMIC_FAILURE_TO.println(line);
-    LMIC_FAILURE_TO.flush();
+        LMIC_FAILURE_TO.println("FAILURE ");
+        LMIC_FAILURE_TO.print(file);
+        LMIC_FAILURE_TO.print(':');
+        LMIC_FAILURE_TO.println(line);
+        LMIC_FAILURE_TO.flush();
 #endif
-    hal_disableIRQs();
-    while(1);
+        hal_disableIRQs();
+        while(1);
+    }
 }
 
 ostime_t hal_setModuleActive (bit_t val) {

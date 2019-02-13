@@ -272,6 +272,8 @@ enum lmic_request_time_state_e {
 
 typedef u1_t lmic_request_time_state_t;
 
+typedef void LMIC_ABI_STD hal_failure_handler_t(const char *file, uint16_t line);
+
 struct lmic_t {
     // Radio settings TX/RX (also accessed by HAL)
     ostime_t    txend;
@@ -409,6 +411,8 @@ struct lmic_t {
 #endif
 
     u1_t        noRXIQinversion;
+
+    hal_failure_handler_t* hal_failure_handler;
 };
 
 //! \var struct lmic_t LMIC
@@ -462,6 +466,8 @@ void LMIC_getSessionKeys (u4_t *netid, devaddr_t *devaddr, xref2u1_t nwkKey, xre
 
 void LMIC_requestNetworkTime(lmic_request_network_time_cb_t *pCallbackfn, void *pUserData);
 int LMIC_getNetworkTimeReference(lmic_time_reference_t *pReference);
+
+void LMIC_setHalFailureHandler(hal_failure_handler_t* handler);
 
 // Declare onEvent() function, to make sure any definition will have the
 // C conventions, even when in a C++ file.
