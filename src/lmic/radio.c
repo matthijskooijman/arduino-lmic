@@ -445,7 +445,7 @@ static void configChannel () {
 static void configPower () {
 #ifdef CFG_sx1276_radio
     // PA_BOOST output is assumed but not 20 dBm.
-    s1_t pw = (s1_t)LMIC.txpow;
+    s1_t pw = (s1_t)LMIC.radio_txpow;
     if(pw > 17) {
         pw = 17;
     } else if(pw < 2) {
@@ -461,7 +461,7 @@ static void configPower () {
 
 #elif CFG_sx1272_radio
     // set PA config (2-17 dBm using PA_BOOST)
-    s1_t pw = (s1_t)LMIC.txpow;
+    s1_t pw = (s1_t)LMIC.radio_txpow;
     if(pw > 17) {
         pw = 17;
     } else if(pw < 2) {

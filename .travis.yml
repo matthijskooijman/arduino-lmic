@@ -5,7 +5,7 @@ sudo: false
 
 env:
  global:
-  - IDE_VERSION=1.8.7
+  - IDE_VERSION=1.8.8
  matrix:
   - TARGET=samd
   - TARGET=stm32l0
@@ -206,13 +206,13 @@ script:
  - _notsamd ||  arduino --verify --board $(_samdopts 'mcci_catena_4450' us915  ) $PWD/examples/raw-halconfig/raw-halconfig.ino
  - _notsamd ||  arduino --verify --board $(_samdopts 'mcci_catena_4460' us915  ) $PWD/examples/raw-halconfig/raw-halconfig.ino
  - _notsamd ||  arduino --verify --board $(_samdopts 'mcci_catena_4470' us915  ) $PWD/examples/raw-halconfig/raw-halconfig.ino
- 
+
  - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4410' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
  - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4420' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
  - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4450' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
  - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4460' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
  - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4470' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
- 
+
 #
 # some tests that should generate build failures.
 #

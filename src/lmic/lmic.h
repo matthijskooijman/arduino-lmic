@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2014-2016 IBM Corporation.
  * Copyright (c) 2016 Matthijs Kooijman.
- * Copyright (c) 2016-2018 MCCI Corporation.
+ * Copyright (c) 2016-2019 MCCI Corporation.
  * All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -105,7 +105,7 @@ extern "C"{
 #define ARDUINO_LMIC_VERSION_CALC(major, minor, patch, local)	\
 	(((major) << 24u) | ((minor) << 16u) | ((patch) << 8u) | (local))
 
-#define	ARDUINO_LMIC_VERSION	ARDUINO_LMIC_VERSION_CALC(2, 3, 1, 0)	/* v2.3.1 */
+#define	ARDUINO_LMIC_VERSION	ARDUINO_LMIC_VERSION_CALC(2, 3, 2, 0)	/* v2.3.2 */
 
 #define	ARDUINO_LMIC_VERSION_GET_MAJOR(v)	\
 	(((v) >> 24u) & 0xFFu)
@@ -127,9 +127,9 @@ enum { TXCONF_ATTEMPTS    =   8 };   //!< Transmit attempts for confirmed frames
 enum { MAX_MISSED_BCNS    =  20 };   // threshold for triggering rejoin requests
 enum { MAX_RXSYMS         = 100 };   // stop tracking beacon beyond this
 
-enum { LINK_CHECK_CONT    =  12 ,    // continue with this after reported dead link
-       LINK_CHECK_DEAD    =  24 ,    // after this UP frames and no response from NWK assume link is dead
-       LINK_CHECK_INIT    = -12 ,    // UP frame count until we inc datarate
+enum { LINK_CHECK_CONT    =  0  ,    // continue with this after reported dead link
+       LINK_CHECK_DEAD    =  32 ,    // after this UP frames and no response to ack from NWK assume link is dead (ADR_ACK_DELAY)
+       LINK_CHECK_INIT    = -64 ,    // UP frame count until we ask for ack (ADR_ACK_LIMIT)
        LINK_CHECK_OFF     =-128 };   // link check disabled
 
 enum { TIME_RESYNC        = 6*128 }; // secs
@@ -287,7 +287,8 @@ struct lmic_t {
     rps_t       rps;
     u1_t        rxsyms;
     u1_t        dndr;
-    s1_t        txpow;     // dBm
+    s1_t        txpow;          // transmit dBm (administrative)
+    s1_t	radio_txpow;    // the radio driver's copy of txpow, limited by adrTxPow.
 
     osjob_t     osjob;
 
