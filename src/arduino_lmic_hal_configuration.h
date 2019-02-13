@@ -78,11 +78,11 @@ public:
 		// and return 0 to indicate that the caller
 		// need not delay.
 		return 0;
-		};
+	}
 
-	virtual void begin(void) {};
-	virtual void end(void) {};
-	virtual bool queryUsingTcxo(void) { return false; };
+	virtual void begin(void) {}
+	virtual void end(void) {}
+	virtual bool queryUsingTcxo(void) { return false; }
 	};
 
 bool hal_init_with_pinmap(const HalPinmap_t *pPinmap);
