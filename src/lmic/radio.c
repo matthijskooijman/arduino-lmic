@@ -264,7 +264,7 @@
 #define MAP_DIO0_LORA_TXDONE   0x40  // 01------
 #define MAP_DIO1_LORA_RXTOUT   0x00  // --00----
 #define MAP_DIO1_LORA_NOP      0x30  // --11----
-#define MAP_DIO2_LORA_NOP      0xC0  // ----11--
+#define MAP_DIO2_LORA_NOP      0x0C  // ----11--
 
 #define MAP_DIO0_FSK_READY     0x00  // 00------ (packet sent / payload ready)
 #define MAP_DIO1_FSK_NOP       0x30  // --11----
