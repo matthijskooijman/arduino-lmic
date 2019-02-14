@@ -19,6 +19,7 @@ Author:
 # define _arduino_lmic_hal_configuration_h_
 
 #include <stdint.h>
+#include "lmic/lmic_env.h"
 
 namespace Arduino_LMIC {
 
@@ -70,17 +71,18 @@ class HalConfiguration_t
 public:
 	HalConfiguration_t() {};
 
-	virtual ostime_t setModuleActive(bool state)
-		{
+	virtual ostime_t setModuleActive(bool state) {
+		LMIC_API_PARAMETER(state);
+
 		// by default, if not overridden, do nothing
 		// and return 0 to indicate that the caller
 		// need not delay.
 		return 0;
-		};
+	}
 
-	virtual void begin(void) {};
-	virtual void end(void) {};
-	virtual bool queryUsingTcxo(void) { return false; };
+	virtual void begin(void) {}
+	virtual void end(void) {}
+	virtual bool queryUsingTcxo(void) { return false; }
 	};
 
 bool hal_init_with_pinmap(const HalPinmap_t *pPinmap);
