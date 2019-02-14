@@ -72,7 +72,7 @@ public:
 	HalConfiguration_t() {};
 
 	virtual ostime_t setModuleActive(bool state) {
-        LMIC_API_PARAMETER(state);
+		LMIC_API_PARAMETER(state);
 
 		// by default, if not overridden, do nothing
 		// and return 0 to indicate that the caller
