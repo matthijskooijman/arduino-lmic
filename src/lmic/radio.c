@@ -786,7 +786,7 @@ void radio_irq_handler (u1_t dio) {
             readBuf(RegFifo, LMIC.frame, LMIC.dataLen);
             // read rx quality parameters
             LMIC.snr  = ((s1_t)readReg(LORARegPktSnrValue)) / SNR_SCALEUP;
-            LMIC.rssi = (s2_t)(0x00FF & (u2_t)readReg(LORARegPktRssiValue)) - 157 + RSSI_OFF; // use RSSI_OFF to compensate any loss
+            LMIC.rssi = radio_rssi() - 157 + RSSI_OFF; // use RSSI_OFF to compensate any loss
                                                                                               // in the matching network or even the gain of an
                                                                                               // additional LNA //HERE
             if (LMIC.snr < 0)
