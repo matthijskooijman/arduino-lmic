@@ -1134,7 +1134,7 @@ static bit_t decodeFrame (void) {
         LMIC.adrAckReq = LINK_CHECK_INIT;
 
     // Process OPTS
-    int m = LMIC.rssi - RSSI_OFF - getSensitivity(LMIC.rps);
+    int m = (int)LMIC.rssi - getSensitivity(LMIC.rps);
     LMIC.margin = m < 0 ? 0 : m > 254 ? 254 : m;
 
     xref2u1_t opts = &d[OFF_DAT_OPTS];

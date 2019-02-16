@@ -342,7 +342,9 @@ enum {
 typedef u4_t devaddr_t;
 
 // RX quality (device)
-enum { RSSI_OFF=64, SNR_SCALEUP=4 };
+enum { RSSI_OFF=0, SNR_SCALEUP=4 }; // use RSSI_OFF to compensate any loss
+                                    // in the matching network or even the gain of an
+                                    // additional LNA
 
 inline sf_t  getSf   (rps_t params)            { return   (sf_t)(params &  0x7); }
 inline rps_t setSf   (rps_t params, sf_t sf)   { return (rps_t)((params & ~0x7) | sf); }
