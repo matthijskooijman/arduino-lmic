@@ -744,7 +744,7 @@ u1_t radio_rand1 () {
 
 s2_t radio_rssi () {
     hal_disableIRQs();
-    s2_t r = (s2_t) (0x00FF & (u2_t)readReg(LORARegRssiValue)); //HERE
+    s2_t r = (s2_t) (0x00FF & (u2_t)readReg(LORARegRssiValue));
     hal_enableIRQs();
     return r;
 }
@@ -788,9 +788,9 @@ void radio_irq_handler (u1_t dio) {
             LMIC.snr  = ((s1_t)readReg(LORARegPktSnrValue)) / SNR_SCALEUP;
             LMIC.rssi = radio_rssi() - 157 + RSSI_OFF; // use RSSI_OFF to compensate any loss
                                                                                               // in the matching network or even the gain of an
-                                                                                              // additional LNA //HERE
+                                                                                              // additional LNA
             if (LMIC.snr < 0)
-                LMIC.rssi += (s2_t)LMIC.snr;	//HERE
+                LMIC.rssi += (s2_t)LMIC.snr;
         } else if( flags & IRQ_LORA_RXTOUT_MASK ) {
             // indicate timeout
             LMIC.dataLen = 0;
