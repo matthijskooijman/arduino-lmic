@@ -1998,7 +1998,6 @@ void LMIC_reset (void) {
     LMIC.netDeviceTime = 0;     // the "invalid" time.
     LMIC.netDeviceTimeFrac = 0;
 #endif // LMIC_ENABLE_DeviceTimeReq
-    LMIC.hal_failure_handler = NULL;
 }
 
 
@@ -2169,8 +2168,4 @@ int LMIC_getNetworkTimeReference(lmic_time_reference_t *pReference) {
     }
 #endif // LMIC_ENABLE_DeviceTimeReq
     return 0;
-}
-
-void LMIC_setHalFailureHandler(hal_failure_handler_t* handler) {
-    LMIC.hal_failure_handler = handler;
 }
