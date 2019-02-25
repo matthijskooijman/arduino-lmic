@@ -33,9 +33,16 @@
 # include "oslmic_types.h"
 #endif
 
+#ifndef _lmic_env_h_
+# include "lmic_env.h"
+#endif
+
 #ifdef __cplusplus
 extern "C"{
 #endif
+
+// The type of an optional user-defined failure handler routine
+typedef void LMIC_ABI_STD hal_failure_handler_t(const char* const file, const uint16_t line);
 
 /*
  * initialize hardware (IO, SPI, TIMER, IRQ).
@@ -115,6 +122,12 @@ u1_t hal_checkTimer (u4_t targettime);
  *   - action could be HALT or reboot
  */
 void hal_failed (const char *file, u2_t line);
+
+/*
+ * set a custom hal failure handler routine. The default behaviour, defined in
+ * hal_failed(), is to halt by looping infintely.
+ */
+void hal_set_failure_handler(const hal_failure_handler_t* const);
 
 /*
  * get the calibration value for radio_rssi
