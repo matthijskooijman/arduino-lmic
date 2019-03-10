@@ -84,8 +84,7 @@ typedef              u1_t* xref2u1_t;
 
 #define SIZEOFEXPR(x) sizeof(x)
 
-#define ON_LMIC_EVENT(ev)  onEvent(ev)
-#define DECL_ON_LMIC_EVENT void onEvent(ev_t e)
+#define DECL_ON_LMIC_EVENT LMIC_DECLARE_FUNCTION_WEAK(void, onEvent, (ev_t e))
 
 extern u4_t AESAUX[];
 extern u4_t AESKEY[];

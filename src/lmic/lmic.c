@@ -455,10 +455,85 @@ static void reportEvent (ev_t ev) {
     EV(devCond, INFO, (e_.reason = EV::devCond_t::LMIC_EV,
                        e_.eui    = MAIN::CDEV->getEui(),
                        e_.info   = ev));
-    ON_LMIC_EVENT(ev);
+#ifndef LMIC_CFG_disable_onEvent
+    void (*pOnEvent)(ev_t) = onEvent;
+    if (pOnEvent != NULL)
+        pOnEvent(ev);
+#endif // ndef LMIC_Cfg_disable_event
+
+    // we want people who need tiny RAM footprints to be able
+    // to use onEvent and overide the dynamic mechanism.
+#ifndef LMIC_CFG_disable_user_events
+    // create a mask to test against sets of events.
+    uint32_t const evSet = 1u << ev;
+
+    // if a message was received, notify the user.
+    if ((evSet & ((1u<<EV_TXCOMPLETE) | (1u<<EV_RXCOMPLETE))) != 0 &&
+        LMIC.rxMessageCb != NULL && 
+        (LMIC.dataLen  != 0 || LMIC.dataBeg != 0)) {
+        uint8_t port;
+
+        // assume no port.
+        port = 0;
+
+        // correct assumption if a port was provided.
+        if (LMIC.txrxFlags & TXRX_PORT)
+            port = LMIC.frame[LMIC.dataBeg - 1];
+
+        // notify the user.
+        LMIC.rxMessageCb(
+                LMIC.rxMessageUserData,
+                port,
+                LMIC.frame + LMIC.dataBeg,
+                LMIC.dataLen
+                );
+    }
+
+    // tell the client about completed transmits -- the buffer
+    // is now available again.  We use set notation again in case
+    // we later discover another event completes messages
+    if ((evSet & (1u<EV_TXCOMPLETE)) != 0) {
+        lmic_txmessage_cb_t * const pTxMessageCb = LMIC.txMessageCb;
+
+        if (pTxMessageCb != NULL) {
+            // reset before notifying user. If we reset after
+            // notifying, then if user does a recursive call
+            // in their message processing
+            // function, we would clobber the value 
+            LMIC.txMessageCb = NULL;
+
+            // notify the user.
+            pTxMessageCb(LMIC.txMessageUserData, ! (LMIC.txrxFlags & TXRX_NACK));
+        }
+    }
+
+    // tell the client about events in general
+    if (LMIC.eventCb != NULL)
+        LMIC.eventCb(LMIC.eventUserData, ev);
+#endif // !defined(LMIC_CFG_disable_user_events)
+
     engineUpdate();
 }
 
+int LMIC_registerRxMessageCb(lmic_rxmessage_cb_t *pRxMessageCb, void *pUserData) {
+#ifndef LMIC_CFG_disable_user_events
+    LMIC.rxMessageCb = pRxMessageCb;
+    LMIC.rxMessageUserData = pUserData;
+    return 1;
+#else // defined(LMIC_CFG_disable_user_events)
+    return 0;
+#endif // defined(LMIC_CFG_disable_user_events)
+}
+
+int LMIC_registerEventCb(lmic_event_cb_t *pEventCb, void *pUserData) {
+#ifndef LMIC_CFG_disable_user_events
+    LMIC.eventCb = pEventCb;
+    LMIC.eventUserData = pUserData;
+    return 1;
+#else // defined(LMIC_CFG_disable_user_events)
+    return 0;
+#endif // defined(LMIC_CFG_disable_user_events)
+}
 
 static void runReset (xref2osjob_t osjob) {
     LMIC_API_PARAMETER(osjob);

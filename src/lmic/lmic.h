@@ -243,6 +243,12 @@ enum {
         MAX_CLOCK_ERROR = 65536,
 };
 
+// callbacks for client alerts.
+// types and functions are always defined, to reduce #ifs in example code and libraries.
+typedef void LMIC_ABI_STD lmic_rxmessage_cb_t(void *pUserData, uint8_t port, const uint8_t *pMessage, size_t nMessage);
+typedef void LMIC_ABI_STD lmic_txmessage_cb_t(void *pUserData, int fSuccess);
+typedef void LMIC_ABI_STD lmic_event_cb_t(void *pUserData, ev_t e);
+
 // network time request callback function
 // defined unconditionally, because APIs and types can't change based on config.
 // This is called when a time-request succeeds or when we get a downlink
@@ -394,6 +400,18 @@ struct lmic_t {
     rxsched_t   ping;         // pingable setup
 #endif
 
+#if !defined(LMIC_CFG_disable_user_events)
+    // pointer alignment
+
+    lmic_event_cb_t     *eventCb;           //! user-supplied callback function.
+    void                *eventUserData;     //! data for eventCb
+    lmic_rxmessage_cb_t *rxMessageCb;       //! user-supplied message-received callback
+    void                *rxMessageUserData; //! data for rxMessageCb
+    lmic_txmessage_cb_t *txMessageCb;       //! transmit-complete message handler; reset on each tx complete.
+    void                *txMessageUserData; //! data for txMessageCb.
+
+#endif // !defined(LMIC_CFG_disable_user_events)
+
     // Public part of MAC state
     u1_t        txCnt;
     u1_t        txrxFlags;  // transaction flags (TX-RX combo)
@@ -462,6 +480,9 @@ void LMIC_getSessionKeys (u4_t *netid, devaddr_t *devaddr, xref2u1_t nwkKey, xre
 
 void LMIC_requestNetworkTime(lmic_request_network_time_cb_t *pCallbackfn, void *pUserData);
 int LMIC_getNetworkTimeReference(lmic_time_reference_t *pReference);
+
+int LMIC_registerRxMessageCb(lmic_rxmessage_cb_t *pRxMessageCb, void *pUserData);
+int LMIC_registerEventCb(lmic_event_cb_t *pEventCb, void *pUserData);
 
 // Declare onEvent() function, to make sure any definition will have the
 // C conventions, even when in a C++ file.
