@@ -139,8 +139,6 @@ void myEventCb(void *pUserData, ev_t ev) {
             Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
             if (LMIC.txrxFlags & TXRX_ACK)
               Serial.println(F("Received ack"));
-            // Schedule next transmission
-            os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
             break;
         case EV_LOST_TSYNC:
             Serial.println(F("EV_LOST_TSYNC"));
@@ -248,16 +246,38 @@ void myRxMessageCb(
     Serial.println(F(" bytes"));
     }
 
+lmic_txmessage_cb_t sendComplete;
+
 void do_send(osjob_t* j){
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
         Serial.println(F("OP_TXRXPEND, not sending"));
+    } else if (g_fTestMode) {
+        Serial.println(F("test mode, not sending"));
     } else {
         // Prepare upstream data transmission at the next possible time.
-        LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 0);
-        Serial.println(F("Packet queued"));
+        if (LMIC_sendWithCallback(1, mydata, sizeof(mydata)-1, 0, sendComplete, j) == 0) {
+            Serial.println(F("Packet queued"));
+        } else {
+            Serial.println(F("Packet queue failure; sleeping"));
+            sendComplete(j, 0);
+        }
     }
-    // Next TX is scheduled after TX_COMPLETE event.
+}
+
+void sendComplete(
+        void *pUserData,
+        int fSuccess
+) {
+    osjob_t * const j = pUserData;
+
+    if (! fSuccess)
+        Serial.println(F("sendComplete: uplink failed"));
+
+    if (! g_fTestMode) {
+            // Schedule next transmission
+            os_setTimedCallback(j, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
+    }        
 }
 
 void myFail(const char *pMessage) {
