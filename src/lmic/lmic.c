@@ -2101,7 +2101,7 @@ void LMIC_setTxData (void) {
 }
 
 
-//
+// send a message w/o callback
 int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
     if( dlen > SIZEOFEXPR(LMIC.pendTxData) )
         return -2;
@@ -2113,6 +2113,20 @@ int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
     LMIC_setTxData();
     return 0;
 }
+
+// send a message with callback
+int LMIC_sendWithCallback(
+    u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed,
+    lmic_txmessage_cb_t *pCb, void *pUserData
+) {
+    int const result = LMIC_setTxData2(port, data, dlen, confirmed);
+    if (result == 0) {
+        LMIC.txMessageCb = pCb;
+        LMIC.txMessageUserData = pUserData;
+    }
+    return result;
+}
+
 
 // Send a payload-less message to signal device is alive
 void LMIC_sendAlive (void) {
