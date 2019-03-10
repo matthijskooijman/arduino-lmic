@@ -9,10 +9,11 @@
  *
  *******************************************************************************/
 
-#include <lmic.h>
+#include <arduino_lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
 #include <arduino_lmic_hal_boards.h>
+#include <arduino_lmic_lorawan_cert.h>
 
 //
 // For certification tests with the RWC5020A, we use the default addresses
@@ -41,7 +42,32 @@ static osjob_t sendjob;
 // cycle limitations).
 const unsigned TX_INTERVAL = 60;
 
+// global flag for test mode.
+bool g_fTestMode = false;
+
+// forward declarations
 lmic_event_cb_t myEventCb;
+lmic_rxmessage_cb_t myRxMessageCb;
+
+
+/*
+
+Name:	myEventCb()
+
+Function:
+        lmic_event_cb_t myEventCb;
+
+        extern "C" { void myEventCb(void *pUserData, ev_t ev); }
+
+Description:
+        This function is registered for event notifications from the LMIC
+        during setup() processing. Its main job is to display events in a
+        user-friendly way.
+
+Returns:
+        No explicit result.
+
+*/
 
 void myEventCb(void *pUserData, ev_t ev) {
     Serial.print(os_getTime());
@@ -150,21 +176,77 @@ void myEventCb(void *pUserData, ev_t ev) {
     }
 }
 
-lmic_rxmessage_cb_t myRxMessageCb;
+/*
+
+Name:   myRxMessageCb()
+
+Function:
+        Handle received LoRaWAN downlink messages.
+
+Definition:
+        lmic_rxmessage_cb_t myRxMessageCb;
+
+        extern "C" {
+            void myRxMessageCb(
+                void *pUserData,
+                uint8_t port,
+                const uint8_t *pMessage,
+                size_t nMessage
+                ); 
+        }
+
+Description:
+        This function is called whenever a non-Join downlink message
+        is received over LoRaWAN by LMIC. Its job is to invoke the
+        certification handler (if certification support is needed), and
+        then decode any non-certification messages.
+
+Returns:
+        No explicit result.
+
+*/
 
 void myRxMessageCb(
-	void *pUserData,
-	uint8_t port,
-	const uint8_t *pMessage,
-	size_t nMessage
-	)
-	{
-	Serial.print(F("Received message on port "));
-	Serial.print(port);
-	Serial.print(F(": "));
-	Serial.print(nMessage);
-	Serial.println(F(" bytes"));
-	}
+    void *pUserData,
+    uint8_t port,
+    const uint8_t *pMessage,
+    size_t nMessage
+) {
+    lmic_cert_rx_action_t const action = LMIC_certRxMessage(port, pMessage, nMessage);
+    switch (action) {
+        case LMIC_CERT_RX_ACTION_START: {
+            Serial.println(F("Enter test mode"));
+            os_clearCallback(&sendjob);
+            g_fTestMode = true;
+            return;
+        }
+        case LMIC_CERT_RX_ACTION_END: {
+            Serial.println(F("Exit test mode"));
+            g_fTestMode = false;
+            do_send(&sendjob);
+            return;
+        }
+        case LMIC_CERT_RX_ACTION_IGNORE: {
+            if (port == LORAWAN_PORT_CERT) {
+                Serial.print(F("Received test packet "));
+                if (nMessage > 0)
+                    Serial.print(pMessage[0], HEX);
+                Serial.print(F(" length 0x"));
+                Serial.println(nMessage);
+            }
+            return;
+        }
+        default:
+            // continue.
+            break;
+    }
+
+    Serial.print(F("Received message on port "));
+    Serial.print(port);
+    Serial.print(F(": "));
+    Serial.print(nMessage);
+    Serial.println(F(" bytes"));
+    }
 
 void do_send(osjob_t* j){
     // Check if there is not a current TX/RX job running
