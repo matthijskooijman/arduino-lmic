@@ -503,7 +503,7 @@ static void reportEvent (ev_t ev) {
             // reset before notifying user. If we reset after
             // notifying, then if user does a recursive call
             // in their message processing
-            // function, we would clobber the value 
+            // function, we would clobber the value
             LMIC.client.txMessageCb = NULL;
 
             // compute exit status
