@@ -122,7 +122,10 @@ extern "C"{
 //! Only For Antenna Tuning Tests !
 //#define CFG_TxContinuousMode 1
 
-enum { MAX_FRAME_LEN      =  64 };   //!< Library cap on max frame length
+// since this was annouunced as the API variable, we keep it. But it's not used,
+// MAX_LEN_FRAME is what the code uses.
+enum { MAX_FRAME_LEN      =  MAX_LEN_FRAME };   //!< Library cap on max frame length
+
 enum { TXCONF_ATTEMPTS    =   8 };   //!< Transmit attempts for confirmed frames
 enum { MAX_MISSED_BCNS    =  20 };   // threshold for triggering rejoin requests
 enum { MAX_RXSYMS         = 100 };   // stop tracking beacon beyond this
