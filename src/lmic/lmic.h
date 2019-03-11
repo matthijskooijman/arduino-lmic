@@ -308,14 +308,14 @@ struct lmic_client_data_s {
     void        *pNetworkTimeUserData;              //! call-back data for network time.
 #endif
 
-#if !defined(LMIC_CFG_disable_user_events)
+#if LMIC_ENABLE_user_events
     lmic_event_cb_t     *eventCb;           //! user-supplied callback function for events.
     void                *eventUserData;     //! data for eventCb
     lmic_rxmessage_cb_t *rxMessageCb;       //! user-supplied message-received callback
     void                *rxMessageUserData; //! data for rxMessageCb
     lmic_txmessage_cb_t *txMessageCb;       //! transmit-complete message handler; reset on each tx complete.
     void                *txMessageUserData; //! data for txMessageCb.
-#endif // !defined(LMIC_CFG_disable_user_events)
+#endif // LMIC_ENABLE_user_events
 
     /* next we have things that are (u)int32_t */
     /* none at the moment */
@@ -544,9 +544,9 @@ lmic_cert_rx_action_t LMIC_certRxMessage(u1_t port, const u1_t *pMessage, size_t
 
 // Declare onEvent() function, to make sure any definition will have the
 // C conventions, even when in a C++ file.
-#ifndef LMIC_CFG_disable_onEvent
+#if LMIC_ENABLE_onEvent
 DECL_ON_LMIC_EVENT;
-#endif /* ndef LMIC_CFG_disable_onEvent */
+#endif /* LMIC_ENABLE_onEvent */
 
 // Special APIs - for development or testing
 // !!!See implementation for caveats!!!

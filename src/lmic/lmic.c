@@ -458,15 +458,15 @@ static void reportEvent (ev_t ev) {
     EV(devCond, INFO, (e_.reason = EV::devCond_t::LMIC_EV,
                        e_.eui    = MAIN::CDEV->getEui(),
                        e_.info   = ev));
-#ifndef LMIC_CFG_disable_onEvent
+#if LMIC_ENABLE_onEvent
     void (*pOnEvent)(ev_t) = onEvent;
     if (pOnEvent != NULL)
         pOnEvent(ev);
-#endif // ndef LMIC_Cfg_disable_event
+#endif // LMIC_ENABLE_onEvent
 
     // we want people who need tiny RAM footprints to be able
     // to use onEvent and overide the dynamic mechanism.
-#ifndef LMIC_CFG_disable_user_events
+#if LMIC_ENABLE_user_events
     // create a mask to test against sets of events.
     uint32_t const evSet = 1u << ev;
 
@@ -525,29 +525,29 @@ static void reportEvent (ev_t ev) {
     // tell the client about events in general
     if (LMIC.client.eventCb != NULL)
         LMIC.client.eventCb(LMIC.client.eventUserData, ev);
-#endif // !defined(LMIC_CFG_disable_user_events)
+#endif // LMIC_ENABLE_user_events
 
     engineUpdate();
 }
 
 int LMIC_registerRxMessageCb(lmic_rxmessage_cb_t *pRxMessageCb, void *pUserData) {
-#ifndef LMIC_CFG_disable_user_events
+#if LMIC_ENABLE_user_events
     LMIC.client.rxMessageCb = pRxMessageCb;
     LMIC.client.rxMessageUserData = pUserData;
     return 1;
-#else // defined(LMIC_CFG_disable_user_events)
+#else // !LMIC_ENABLE_user_events
     return 0;
-#endif // defined(LMIC_CFG_disable_user_events)
+#endif // !LMIC_ENABLE_user_events
 }
 
 int LMIC_registerEventCb(lmic_event_cb_t *pEventCb, void *pUserData) {
-#ifndef LMIC_CFG_disable_user_events
+#if LMIC_ENABLE_user_events
     LMIC.client.eventCb = pEventCb;
     LMIC.client.eventUserData = pUserData;
     return 1;
-#else // defined(LMIC_CFG_disable_user_events)
+#else // ! LMIC_ENABLE_user_events
     return 0;
-#endif // defined(LMIC_CFG_disable_user_events)
+#endif // ! LMIC_ENABLE_user_events
 }
 
 static void runReset (xref2osjob_t osjob) {

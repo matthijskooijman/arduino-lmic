@@ -178,4 +178,18 @@
 # define LMIC_ENABLE_DeviceTimeReq 0
 #endif
 
+// LMIC_ENABLE_user_events
+// Enable/disable support for programmable callbacks for events, rx, and tx.
+// This is always defined, and non-zero to enable.  Default is enabled.
+#if !defined(LMIC_ENABLE_user_events)
+# define LMIC_ENABLE_user_events 1
+#endif
+
+// LMIC_ENABLE_onEvent
+// Enable/disable support for out-call to user-supplied `onEvent()` function.
+// This is always defined, and non-zero to enable. Default is enabled.
+#if !defined(LMIC_ENABLE_onEvent)
+# define LMIC_ENABLE_onEvent 1
+#endif
+
 #endif // _lmic_config_h_
