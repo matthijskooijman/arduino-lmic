@@ -492,7 +492,7 @@ static void reportEvent (ev_t ev) {
     // tell the client about completed transmits -- the buffer
     // is now available again.  We use set notation again in case
     // we later discover another event completes messages
-    if ((evSet & (1u<EV_TXCOMPLETE)) != 0) {
+    if ((evSet & (1u<<EV_TXCOMPLETE)) != 0) {
         lmic_txmessage_cb_t * const pTxMessageCb = LMIC.txMessageCb;
 
         if (pTxMessageCb != NULL) {
