@@ -55,6 +55,8 @@ enum lmic_cert_eventflags_e {
     LMIC_CERT_EVENT_DEACTIVATE  = 1u << 1,
     LMIC_CERT_EVENT_SEND_UPLINK = 1u << 2,
     LMIC_CERT_EVENT_UPLINK_COMPLETE = 1u << 3,
+    LMIC_CERT_EVENT_JOIN_CMD	= 1u << 4,
+    LMIC_CERT_EVENT_JOINED	= 1u << 5,
 };
 
 typedef uint8_t lmic_cert_fsmflags_t;
@@ -62,6 +64,7 @@ enum lmic_cert_fsmflags_e {
     LMIC_CERT_FSM_ACTIVE        = 1u << 0,
     LMIC_CERT_FSM_REENTERED     = 1u << 1,
     LMIC_CERT_FSM_CONFIRM       = 1u << 2,
+    LMIC_CERT_FSM_UPLINK_BUSY	= 1u << 3,
 };
 
 typedef uint8_t lmic_cert_fsmstate_t;
@@ -70,6 +73,19 @@ enum lmic_cert_fsmstate_e {
     LMIC_CERT_FSMSTATE_NOCHANGE = 1,
     LMIC_CERT_FSMSTATE_ACTIVE = 2,
     LMIC_CERT_FSMSTATE_INACTIVE = 3,
+    LMIC_CERT_FSMSTATE_TESTMODE = 4,   // sending test uplinks
+    LMIC_CERT_FSMSTATE_JOINING = 5,    // joining (under command)
+};
+
+#define LMIC_CERT_FSMSTATE__NAMES   \
+    "INITIAL", "NOCHANGE", "ACTIVE", "INACTIVE", "TESTMODE", "JOINING"
+
+typedef struct lmic_cert_eventcb_s lmic_cert_eventcb_t;
+struct lmic_cert_eventcb_s {
+	// save the user's event CB while active.
+	lmic_event_cb_t		*pEventCb;
+	// save the user's event data while active.
+	void			*pUserData;
 };
 
 // the state of the certification engine.
@@ -77,6 +93,7 @@ struct lmic_cert_s {
         // uint64
         // uintptr
         osjob_t                 uplinkJob;  // the job for driving uplinks
+	lmic_cert_eventcb_t	saveEvent;
 
         // uint32
         // uint16

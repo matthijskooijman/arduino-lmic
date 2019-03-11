@@ -35,11 +35,15 @@ Description:
 |
 \****************************************************************************/
 
+static void acDoJoin(void);
+static void acEnterActiveMode(void);
 static void acEnterTestMode(void);
+static void acExitActiveMode(void);
 static void acScheduleNextUplink(void);
 static void acSendUplink(void);
 static void evActivate(void);
 static void evDeactivate(void);
+static void evJoinCommand(void);
 static void evMessage(const uint8_t *pMessage, size_t nMessage);
 static void fsmEval(void);
 static lmic_cert_fsmstate_t fsmDispatch(lmic_cert_fsmstate_t, bool);
@@ -47,6 +51,7 @@ static bool isActivateMessage(const uint8_t *pMessage, size_t nMessage);
 static void sendCryptoResponse(const uint8_t *pMessage, size_t nMessage);
 static lmic_txmessage_cb_t sendUplinkCompleteCb;
 static osjobcbfn_t timeToSendTestMessageCb;
+static lmic_event_cb_t lmicEventCb;
 
 /****************************************************************************\
 |
@@ -274,14 +279,63 @@ static void evMessage(
             break;
         }
         case LORAWAN_CERT_CMD_JOIN: {
-            // TODO(tmm@mcci.com) -- fix the LMIC to make this cleaner.
-            LMIC_tryRejoin();
+            evJoinCommand();
             break;
         }
         default:
             break;
     }
 }
+
+/*
+
+Name:   evJoinCommand()
+
+Function:
+        Report that a join has been commanded.
+
+Definition:
+        void evJoinCommand(void);
+
+Description:
+        We report a join-command event, and the kick the FSM. This
+        will cause the FSM to coordinate sending and the other activities.
+
+Returns:
+        No explicit result.
+
+*/
+
+static void evJoinCommand(
+    void
+) {
+    LMIC_Cert.eventflags |= LMIC_CERT_EVENT_JOIN_CMD;
+    fsmEval();
+}
+
+/*
+
+Name:   sendCryptoResponse()
+
+Function:
+        Format and transmit the response to a crypto downlink (aka echo request).
+
+Definition:
+        void sendCryptoResponse(
+                const uint8_t *pMessage,
+                size_t nMessage
+                );
+
+Description:
+        The crypto response is formatted and transmitted. Since we just received
+        a downlink, it's always safe to do this.
+
+Returns:
+        No explicit result.
+
+*/
+
+static lmic_txmessage_cb_t sendCryptoResponseCb;
 
 static void sendCryptoResponse(
     const uint8_t *pMessage,
@@ -309,11 +363,23 @@ static void sendCryptoResponse(
     // first, that the response goes to the cert port;
     // second, that the confirmation bit must track the
     // confirmed state.
-    LMIC_setTxData2(
-        LORAWAN_PORT_CERT,
-        pResponse, pResponse - response,
-        /* confirmed? */ LMIC_Cert.fsmFlags & LMIC_CERT_FSM_CONFIRM
-    );
+    if (LMIC_sendWithCallback(
+            LORAWAN_PORT_CERT,
+            pResponse, pResponse - response,
+            /* confirmed? */ LMIC_Cert.fsmFlags & LMIC_CERT_FSM_CONFIRM,
+            sendCryptoResponseCb,
+            NULL) == 0)
+            {
+            LMIC_Cert.fsmFlags |= LMIC_CERT_FSM_UPLINK_BUSY;
+            }
+}
+
+void sendCryptoResponseCb(void *pUserData, int fSuccess) {
+    LMIC_API_PARAMETER(pUserData);
+    LMIC_API_PARAMETER(fSuccess);
+
+    LMIC_Cert.fsmFlags &= ~LMIC_CERT_FSM_UPLINK_BUSY;
+    fsmEval();
 }
 
 /*
@@ -421,6 +487,8 @@ fsmDispatch(
     switch (state) {
         case LMIC_CERT_FSMSTATE_INITIAL: {
             newState = LMIC_CERT_FSMSTATE_INACTIVE;
+            LMIC_Cert.saveEvent.pEventCb = LMIC.eventCb;
+            LMIC_Cert.saveEvent.pUserData = LMIC.eventUserData;
             break;
         }
 
@@ -428,9 +496,7 @@ fsmDispatch(
             LMIC_Cert.eventflags &= ~LMIC_CERT_EVENT_DEACTIVATE;
 
             if (fEntry) {
-                LMIC_Cert.state = LMIC_CERT_STATE_IDLE;
-                os_clearCallback(&LMIC_Cert.uplinkJob);
-                LMIC_clrTxData();
+                acExitActiveMode();
             }
 
             if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_ACTIVATE) {
@@ -443,17 +509,38 @@ fsmDispatch(
             LMIC_Cert.eventflags &= ~LMIC_CERT_EVENT_ACTIVATE;
 
             if (fEntry) {
+                acEnterActiveMode();
+            }
+            newState = LMIC_CERT_FSMSTATE_TESTMODE;
+            break;
+        }
+
+        case LMIC_CERT_FSMSTATE_TESTMODE: {
+            if (fEntry) {
                 acEnterTestMode();
             }
 
             if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_DEACTIVATE) {
                 newState = LMIC_CERT_FSMSTATE_INACTIVE;
+            } else if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_JOIN_CMD) {
+                newState = LMIC_CERT_FSMSTATE_JOINING;
             } else if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_SEND_UPLINK) {
                 acSendUplink();
             } else if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_UPLINK_COMPLETE) {
                 acScheduleNextUplink();
             }
             break;
+        }
+
+        case LMIC_CERT_FSMSTATE_JOINING: {
+            LMIC_Cert.eventflags &= ~LMIC_CERT_EVENT_JOIN_CMD;
+
+            if (fEntry)
+                acDoJoin();
+
+            if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_JOINED) {
+                newState = LMIC_CERT_FSMSTATE_TESTMODE;
+            }
         }
 
         default: {
@@ -464,11 +551,14 @@ fsmDispatch(
     return newState;
 }
 
-
-static void acEnterTestMode(void) {
+static void acEnterActiveMode(void) {
     // indicate to the outer world that we're active.
     LMIC_Cert.state = LMIC_CERT_STATE_ACTIVE;
 
+    LMIC_registerEventCb(lmicEventCb, NULL);
+}
+
+static void acEnterTestMode(void) {
     LMIC_Cert.eventflags &= ~(LMIC_CERT_EVENT_SEND_UPLINK | LMIC_CERT_EVENT_UPLINK_COMPLETE);
 
     // schedule an uplink.
@@ -479,14 +569,47 @@ static void acEnterTestMode(void) {
         );
 }
 
+static void lmicEventCb(
+    void *pUserData,
+    ev_t ev
+) {
+    LMIC_API_PARAMETER(pUserData);
+
+    // pass to user handler
+    if (LMIC_Cert.saveEvent.pEventCb) {
+        LMIC_Cert.saveEvent.pEventCb(
+            LMIC_Cert.saveEvent.pUserData, ev
+            );
+    }
+
+    // if it's a EV_JOINED, we should tell the FSM.
+    if (ev == EV_JOINED) {
+        LMIC_Cert.eventflags |= LMIC_CERT_EVENT_JOINED;
+        fsmEval();
+    }
+}
+
 static void timeToSendTestMessageCb(osjob_t *j) {
     LMIC_Cert.eventflags |= LMIC_CERT_EVENT_SEND_UPLINK;
     fsmEval();
 }
 
+
+static void acExitActiveMode(void) {
+    LMIC_Cert.state = LMIC_CERT_STATE_IDLE;
+    os_clearCallback(&LMIC_Cert.uplinkJob);
+    LMIC_clrTxData();
+    LMIC_registerEventCb(LMIC_Cert.saveEvent.pEventCb, LMIC_Cert.saveEvent.pUserData);
+}
+
+
 static void acSendUplink(void) {
     uint8_t payload[2];
-    uint32_t downlink = LMIC.seqnoDn;
+    uint32_t const downlink = LMIC.seqnoDn;
+
+    // ignore event if uplink is busy.
+    if (LMIC_Cert.fsmFlags & LMIC_CERT_FSM_UPLINK_BUSY)
+        return;
 
     // build the uplink message
     payload[0] = (uint8_t) (downlink >> 8);
@@ -530,4 +653,13 @@ static void acScheduleNextUplink(void) {
         os_getTime() + sec2osticks(5),
         timeToSendTestMessageCb
         );
+}
+
+static void acDoJoin(void) {
+    LMIC_CERT_PRINTF("acDoJoin\n");
+
+    LMIC_Cert.eventflags &= ~(LMIC_CERT_EVENT_JOIN_CMD | LMIC_CERT_EVENT_JOINED);
+
+    LMIC_unjoin();
+    LMIC_startJoining();
 }
