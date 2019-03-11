@@ -269,7 +269,7 @@ void sendComplete(
         void *pUserData,
         int fSuccess
 ) {
-    osjob_t * const j = pUserData;
+    osjob_t * const j = (osjob_t *) pUserData;
 
     if (! fSuccess)
         Serial.println(F("sendComplete: uplink failed"));
