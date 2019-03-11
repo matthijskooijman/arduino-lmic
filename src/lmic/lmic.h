@@ -335,6 +335,7 @@ Function:
 */
 
 struct lmic_t {
+    // client setup data, survives LMIC_reset().
     lmic_client_data_t  client;
 
     // Radio settings TX/RX (also accessed by HAL)
@@ -352,7 +353,7 @@ struct lmic_t {
     u1_t        rxsyms;
     u1_t        dndr;
     s1_t        txpow;          // transmit dBm (administrative)
-    s1_t	radio_txpow;    // the radio driver's copy of txpow, limited by adrTxPow.
+    s1_t        radio_txpow;    // the radio driver's copy of txpow, limited by adrTxPow.
 
     osjob_t     osjob;
 
