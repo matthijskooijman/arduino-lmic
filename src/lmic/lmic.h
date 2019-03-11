@@ -278,7 +278,65 @@ enum lmic_request_time_state_e {
 
 typedef u1_t lmic_request_time_state_t;
 
+/*
+
+Structure:  lmic_client_data_t
+
+Function:
+        Holds LMIC client data that must live through LMIC_reset().
+
+Description:
+        There are a variety of client registration linkage items that
+        must live through LMIC_reset(), because LMIC_reset() is called
+        at frame rollover time.  We group them together into a structure
+        to make copies easy.
+
+*/
+
+//! abstract type for collection of client data that survives LMIC_reset().
+typedef struct lmic_client_data_s lmic_client_data_t;
+
+//! contents of lmic_client_data_t
+struct lmic_client_data_s {
+
+    /* pointer-width things come first */
+#if LMIC_ENABLE_DeviceTimeReq
+    lmic_request_network_time_cb_t *pNetworkTimeCb; //! call-back routine for network time
+    void        *pNetworkTimeUserData;              //! call-back data for network time.
+#endif
+
+#if !defined(LMIC_CFG_disable_user_events)
+    lmic_event_cb_t     *eventCb;           //! user-supplied callback function for events.
+    void                *eventUserData;     //! data for eventCb
+    lmic_rxmessage_cb_t *rxMessageCb;       //! user-supplied message-received callback
+    void                *rxMessageUserData; //! data for rxMessageCb
+    lmic_txmessage_cb_t *txMessageCb;       //! transmit-complete message handler; reset on each tx complete.
+    void                *txMessageUserData; //! data for txMessageCb.
+#endif // !defined(LMIC_CFG_disable_user_events)
+
+    /* next we have things that are (u)int32_t */
+    /* none at the moment */
+
+    /* next we have things that are (u)int16_t */
+
+    u2_t        clockError;                 //! Inaccuracy in the clock. CLOCK_ERROR_MAX represents +/-100% error
+
+    /* finally, things that are (u)int8_t */
+    /* none at the moment */
+};
+
+/*
+
+Structure:  lmic_t
+
+Function:
+        Provides the instance data for the LMIC.
+
+*/
+
 struct lmic_t {
+    lmic_client_data_t  client;
+
     // Radio settings TX/RX (also accessed by HAL)
     ostime_t    txend;
     ostime_t    rxtime;
@@ -328,9 +386,6 @@ struct lmic_t {
     s2_t        maxDriftDiff;
 #endif
 
-    u2_t        clockError; // Inaccuracy in the clock. CLOCK_ERROR_MAX
-                            // represents +/-100% error
-
     u1_t        pendTxPort;
     u1_t        pendTxConf;   // confirmed data
     u1_t        pendTxLen;    // +0x80 = confirmed
@@ -347,8 +402,6 @@ struct lmic_t {
     ostime_t    localDeviceTime;    // the LMIC.txend value for last DeviceTimeAns
     lmic_gpstime_t netDeviceTime;   // the netDeviceTime for lastDeviceTimeAns
                                     // zero ==> not valid.
-    lmic_request_network_time_cb_t *pNetworkTimeCb;	// call-back routine
-    void        *pNetworkTimeUserData; // call-back data
 #endif // LMIC_ENABLE_DeviceTimeReq
 
     u1_t        dnConf;       // dn frame confirm pending: LORA::FCT_ACK or 0
@@ -399,18 +452,6 @@ struct lmic_t {
 #if !defined(DISABLE_PING)
     rxsched_t   ping;         // pingable setup
 #endif
-
-#if !defined(LMIC_CFG_disable_user_events)
-    // pointer alignment
-
-    lmic_event_cb_t     *eventCb;           //! user-supplied callback function.
-    void                *eventUserData;     //! data for eventCb
-    lmic_rxmessage_cb_t *rxMessageCb;       //! user-supplied message-received callback
-    void                *rxMessageUserData; //! data for rxMessageCb
-    lmic_txmessage_cb_t *txMessageCb;       //! transmit-complete message handler; reset on each tx complete.
-    void                *txMessageUserData; //! data for txMessageCb.
-
-#endif // !defined(LMIC_CFG_disable_user_events)
 
     // Public part of MAC state
     u1_t        txCnt;

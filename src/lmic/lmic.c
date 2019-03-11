@@ -472,7 +472,7 @@ static void reportEvent (ev_t ev) {
 
     // if a message was received, notify the user.
     if ((evSet & ((1u<<EV_TXCOMPLETE) | (1u<<EV_RXCOMPLETE))) != 0 &&
-        LMIC.rxMessageCb != NULL && 
+        LMIC.client.rxMessageCb != NULL &&
         (LMIC.dataLen  != 0 || LMIC.dataBeg != 0)) {
         uint8_t port;
 
@@ -484,8 +484,8 @@ static void reportEvent (ev_t ev) {
             port = LMIC.frame[LMIC.dataBeg - 1];
 
         // notify the user.
-        LMIC.rxMessageCb(
-                LMIC.rxMessageUserData,
+        LMIC.client.rxMessageCb(
+                LMIC.client.rxMessageUserData,
                 port,
                 LMIC.frame + LMIC.dataBeg,
                 LMIC.dataLen
@@ -496,7 +496,7 @@ static void reportEvent (ev_t ev) {
     // is now available again.  We use set notation again in case
     // we later discover another event completes messages
     if ((evSet & ((1u<<EV_TXCOMPLETE) | (1u<<EV_TXCANCELED))) != 0) {
-        lmic_txmessage_cb_t * const pTxMessageCb = LMIC.txMessageCb;
+        lmic_txmessage_cb_t * const pTxMessageCb = LMIC.client.txMessageCb;
 
         if (pTxMessageCb != NULL) {
             int fSuccess;
@@ -504,7 +504,7 @@ static void reportEvent (ev_t ev) {
             // notifying, then if user does a recursive call
             // in their message processing
             // function, we would clobber the value 
-            LMIC.txMessageCb = NULL;
+            LMIC.client.txMessageCb = NULL;
 
             // compute exit status
             if (ev == EV_TXCANCELED) {
@@ -518,13 +518,13 @@ static void reportEvent (ev_t ev) {
             }
 
             // notify the user.
-            pTxMessageCb(LMIC.txMessageUserData, fSuccess);
+            pTxMessageCb(LMIC.client.txMessageUserData, fSuccess);
         }
     }
 
     // tell the client about events in general
-    if (LMIC.eventCb != NULL)
-        LMIC.eventCb(LMIC.eventUserData, ev);
+    if (LMIC.client.eventCb != NULL)
+        LMIC.client.eventCb(LMIC.client.eventUserData, ev);
 #endif // !defined(LMIC_CFG_disable_user_events)
 
     engineUpdate();
@@ -532,8 +532,8 @@ static void reportEvent (ev_t ev) {
 
 int LMIC_registerRxMessageCb(lmic_rxmessage_cb_t *pRxMessageCb, void *pUserData) {
 #ifndef LMIC_CFG_disable_user_events
-    LMIC.rxMessageCb = pRxMessageCb;
-    LMIC.rxMessageUserData = pUserData;
+    LMIC.client.rxMessageCb = pRxMessageCb;
+    LMIC.client.rxMessageUserData = pUserData;
     return 1;
 #else // defined(LMIC_CFG_disable_user_events)
     return 0;
@@ -542,8 +542,8 @@ int LMIC_registerRxMessageCb(lmic_rxmessage_cb_t *pRxMessageCb, void *pUserData)
 
 int LMIC_registerEventCb(lmic_event_cb_t *pEventCb, void *pUserData) {
 #ifndef LMIC_CFG_disable_user_events
-    LMIC.eventCb = pEventCb;
-    LMIC.eventUserData = pUserData;
+    LMIC.client.eventCb = pEventCb;
+    LMIC.client.eventUserData = pUserData;
     return 1;
 #else // defined(LMIC_CFG_disable_user_events)
     return 0;
@@ -1063,11 +1063,11 @@ static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
 
     // If a clock error is specified, compensate for it by extending the
     // receive window
-    if (LMIC.clockError != 0) {
+    if (LMIC.client.clockError != 0) {
         // Calculate how much the clock will drift maximally after delay has
         // passed. This indicates the amount of time we can be early
         // _or_ late.
-        ostime_t drift = (int64_t)delay * LMIC.clockError / MAX_CLOCK_ERROR;
+        ostime_t drift = (int64_t)delay * LMIC.client.clockError / MAX_CLOCK_ERROR;
 
         // Increase the receive window by twice the maximum drift (to
         // compensate for a slow or a fast clock).
@@ -2088,7 +2088,10 @@ void LMIC_shutdown (void) {
     LMIC.opmode |= OP_SHUTDOWN;
 }
 
-
+// reset the LMIC. This is called at startup; the clear of LMIC.osjob
+// only works because the LMIC is guaranteed to be zero in that case.
+// But it's also called at frame-count rollover; in that case we have
+// to ensure that the user callback pointers are not clobbered.
 void LMIC_reset (void) {
     EV(devCond, INFO, (e_.reason = EV::devCond_t::LMIC_EV,
                        e_.eui    = MAIN::CDEV->getEui(),
@@ -2096,8 +2099,16 @@ void LMIC_reset (void) {
     os_radio(RADIO_RST);
     os_clearCallback(&LMIC.osjob);
 
-    os_clearMem((xref2u1_t)&LMIC,SIZEOFEXPR(LMIC));
-    LMIC.devaddr      =  0;
+    // save callback info, clear LMIC, restore.
+    do {
+        lmic_client_data_t  client = LMIC.client;
+
+        os_clearMem((xref2u1_t)&LMIC,SIZEOFEXPR(LMIC));
+
+        LMIC.client = client;
+    } while (0);
+
+    // LMIC.devaddr      =  0;      // true from os_clearMem().
     LMIC.devNonce     =  os_getRndU2();
     LMIC.opmode       =  OP_NONE;
     LMIC.errcr        =  CR_4_5;
@@ -2178,8 +2189,8 @@ int LMIC_sendWithCallback(
 ) {
     int const result = LMIC_setTxData2(port, data, dlen, confirmed);
     if (result == 0) {
-        LMIC.txMessageCb = pCb;
-        LMIC.txMessageUserData = pUserData;
+        LMIC.client.txMessageCb = pCb;
+        LMIC.client.txMessageUserData = pUserData;
     }
     return result;
 }
@@ -2253,7 +2264,7 @@ void LMIC_setLinkCheckMode (bit_t enabled) {
 // allows for +/- 640 at SF7BW250). MAX_CLOCK_ERROR represents +/-100%,
 // so e.g. for a +/-1% error you would pass MAX_CLOCK_ERROR * 1 / 100.
 void LMIC_setClockError(u2_t error) {
-    LMIC.clockError = error;
+    LMIC.client.clockError = error;
 }
 
 // \brief return the uplink sequence number for the next transmission.

@@ -487,8 +487,8 @@ fsmDispatch(
     switch (state) {
         case LMIC_CERT_FSMSTATE_INITIAL: {
             newState = LMIC_CERT_FSMSTATE_INACTIVE;
-            LMIC_Cert.saveEvent.pEventCb = LMIC.eventCb;
-            LMIC_Cert.saveEvent.pUserData = LMIC.eventUserData;
+            LMIC_Cert.saveEvent.pEventCb = LMIC.client.eventCb;
+            LMIC_Cert.saveEvent.pUserData = LMIC.client.eventUserData;
             break;
         }
 
@@ -628,9 +628,9 @@ static void acSendUplink(void) {
             sendUplinkCompleteCb, NULL) == 0) {
         // queued successfully
         LMIC_CERT_PRINTF(
-                "queued uplink message(%u, %p)\n", 
+                "lmic_cert.acSendUplink: queued uplink message(%u, %p)\n",
                 (unsigned) downlink & 0xFFFF,
-                LMIC.txMessageCb
+                LMIC.client.txMessageCb
                 );
     } else {
         // failed to queue; just skip this cycle.
