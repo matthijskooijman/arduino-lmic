@@ -41,6 +41,9 @@ DEFINE_LMIC;
 
 // Fwd decls.
 static void engineUpdate(void);
+static bit_t processJoinAccept_badframe(void);
+static bit_t processJoinAccept_nojoinframe(void);
+
 
 #if !defined(DISABLE_BEACONS)
 static void startScan (void);
@@ -1121,50 +1124,16 @@ static void onJoinFailed (xref2osjob_t osjob) {
     reportEvent(EV_JOIN_FAILED);
 }
 
-
+// process join-accept message or deal with no join-accept in slot 2.
 static bit_t processJoinAccept (void) {
-    ASSERT(LMIC.txrxFlags != TXRX_DNW1 || LMIC.dataLen != 0);
+    if ((LMIC.txrxFlags & TXRX_DNW1) != 0 && LMIC.dataLen == 0)
+        return 0;
+
     ASSERT((LMIC.opmode & OP_TXRXPEND)!=0);
 
     if( LMIC.dataLen == 0 ) {
-      nojoinframe:
-        if( (LMIC.opmode & OP_JOINING) == 0 ) {
-            ASSERT((LMIC.opmode & OP_REJOIN) != 0);
-            // REJOIN attempt for roaming
-            LMIC.opmode &= ~(OP_REJOIN|OP_TXRXPEND);
-            if( LMIC.rejoinCnt < 10 )
-                LMIC.rejoinCnt++;
-            reportEvent(EV_REJOIN_FAILED);
-            return 1;
-        }
-        LMIC.opmode &= ~OP_TXRXPEND;
-        int failed = LMICbandplan_nextJoinState();
-        EV(devCond, DEBUG, (e_.reason = EV::devCond_t::NO_JACC,
-                            e_.eui    = MAIN::CDEV->getEui(),
-                            e_.info   = LMIC.datarate|DR_PAGE,
-                            e_.info2  = failed));
-        // Build next JOIN REQUEST with next engineUpdate call
-        // Optionally, report join failed.
-        // Both after a random/chosen amount of ticks. That time
-	// is in LMIC.txend. The delay here is either zero or 1
-	// tick; onJoinFailed()/runEngineUpdate() are responsible
-	// for honoring that. XXX(tmm@mcci.com) The IBM 1.6 code
-	// claimed to return a delay but really returns 0 or 1.
-	// Once we update as923 to return failed after dr2, we
-	// can take out this #if.
-#if CFG_region != LMIC_REGION_as923
-        os_setTimedCallback(&LMIC.osjob, os_getTime()+failed,
-                            failed
-                            ? FUNC_ADDR(onJoinFailed)      // one JOIN iteration done and failed
-                            : FUNC_ADDR(runEngineUpdate)); // next step to be delayed
-#else
-       // in the join of AS923 v1.1 older, only DR2 is used. Therefore,
-       // not much improvement when it handles two different behavior;
-       // onJoinFailed or runEngineUpdate.
-        os_setTimedCallback(&LMIC.osjob, os_getTime()+failed,
-                            FUNC_ADDR(onJoinFailed));
-#endif
-        return 1;
+        // we didn't get any data and we're in slot 2. So... there's no join frame.
+        return processJoinAccept_nojoinframe();
     }
     u1_t hdr  = LMIC.frame[0];
     u1_t dlen = LMIC.dataLen;
@@ -1177,16 +1146,13 @@ static bit_t processJoinAccept (void) {
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = dlen < 4 ? 0 : mic,
                            e_.info2  = hdr + (dlen<<8)));
-      badframe:
-        if( (LMIC.txrxFlags & TXRX_DNW1) != 0 )
-            return 0;
-        goto nojoinframe;
+        return processJoinAccept_badframe();
     }
     aes_encrypt(LMIC.frame+1, dlen-1);
     if( !aes_verifyMic0(LMIC.frame, dlen-4) ) {
         EV(specCond, ERR, (e_.reason = EV::specCond_t::JOIN_BAD_MIC,
                            e_.info   = mic));
-        goto badframe;
+        return processJoinAccept_badframe();
     }
 
     u4_t addr = os_rlsbf4(LMIC.frame+OFF_JA_DEVADDR);
@@ -1234,15 +1200,19 @@ static bit_t processJoinAccept (void) {
     //
     // XXX(tmm@mcci.com) OP_REJOIN confuses me, and I'm not sure why we're
     // adjusting DRs here. We've just recevied a join accept, and the
-    // datarate therefore shouldn't be in play.
+    // datarate therefore shouldn't be in play.  In effect, we set the
+    // initial data rate based on the number of times we tried to rejoin.
     //
     if( (LMIC.opmode & OP_REJOIN) != 0 ) {
 #if CFG_region != LMIC_REGION_as923
-	// TODO(tmm@mcci.com) regionalize
+	    // TODO(tmm@mcci.com) regionalize
         // Lower DR every try below current UP DR
         LMIC.datarate = lowerDR(LMIC.datarate, LMIC.rejoinCnt);
 #else
         // in the join of AS923 v1.1 or older, only DR2 (SF10) is used.
+        // TODO(tmm@mcci.com) if the rejoin logic is at all correct, we
+        // should be setting the uplink datarate based on the number of
+        // tries; this doesn't set the AS923 join data rate.
         LMIC.datarate = AS923_DR_SF10;
 #endif
     }
@@ -1258,6 +1228,62 @@ static bit_t processJoinAccept (void) {
     return 1;
 }
 
+static bit_t processJoinAccept_badframe(void) {
+        if( (LMIC.txrxFlags & TXRX_DNW1) != 0 )
+            // continue the join process: there's another window.
+            return 0;
+        else
+            // stop the join process
+            return processJoinAccept_nojoinframe();
+}
+
+static bit_t processJoinAccept_nojoinframe(void) {
+        // Valid states are JOINING (in which caise REJOIN is ignored)
+        // or ~JOINING and REJOIN. If it's a REJOIN,
+        // we need to turn off rejoin, signal an event, and increment
+        // the rejoin-sent count. Internal callers will turn on rejoin
+        // occasionally.
+        if( (LMIC.opmode & OP_JOINING) == 0) {
+            ASSERT((LMIC.opmode & OP_REJOIN) != 0);
+            LMIC.opmode &= ~(OP_REJOIN|OP_TXRXPEND);
+            if( LMIC.rejoinCnt < 10 )
+                LMIC.rejoinCnt++;
+            reportEvent(EV_REJOIN_FAILED);
+            // stop the join process.
+            return 1;
+        }
+        // otherwise it's a normal join. At end of rx2, so we
+        // need to schedule something.
+        LMIC.opmode &= ~OP_TXRXPEND;
+        int failed = LMICbandplan_nextJoinState();
+        EV(devCond, DEBUG, (e_.reason = EV::devCond_t::NO_JACC,
+                            e_.eui    = MAIN::CDEV->getEui(),
+                            e_.info   = LMIC.datarate|DR_PAGE,
+                            e_.info2  = failed));
+        // Build next JOIN REQUEST with next engineUpdate call
+        // Optionally, report join failed.
+        // Both after a random/chosen amount of ticks. That time
+        // is in LMIC.txend. The delay here is either zero or 1
+        // tick; onJoinFailed()/runEngineUpdate() are responsible
+        // for honoring that. XXX(tmm@mcci.com) The IBM 1.6 code
+        // claimed to return a delay but really returns 0 or 1.
+        // Once we update as923 to return failed after dr2, we
+        // can take out this #if.
+#if CFG_region != LMIC_REGION_as923
+        os_setTimedCallback(&LMIC.osjob, os_getTime()+failed,
+                            failed
+                            ? FUNC_ADDR(onJoinFailed)      // one JOIN iteration done and failed
+                            : FUNC_ADDR(runEngineUpdate)); // next step to be delayed
+#else
+       // in the join of AS923 v1.1 older, only DR2 is used. Therefore,
+       // not much improvement when it handles two different behavior;
+       // onJoinFailed or runEngineUpdate.
+        os_setTimedCallback(&LMIC.osjob, os_getTime()+failed,
+                            FUNC_ADDR(onJoinFailed));
+#endif
+        // stop this join process.
+        return 1;
+}
 
 static void processRx2Jacc (xref2osjob_t osjob) {
     LMIC_API_PARAMETER(osjob);
@@ -1265,7 +1291,9 @@ static void processRx2Jacc (xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 ) {
         initTxrxFlags(__func__, 0);  // nothing in 1st/2nd DN slot
     }
-    processJoinAccept();
+    // we're done with this join cycle anyway, so ignore the
+    // result of processJoinAccept()
+    (void) processJoinAccept();
 }
 
 
