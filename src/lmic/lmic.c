@@ -553,12 +553,18 @@ int LMIC_registerEventCb(lmic_event_cb_t *pEventCb, void *pUserData) {
 static void runReset (xref2osjob_t osjob) {
     LMIC_API_PARAMETER(osjob);
 
+    // clear pending TX.
+    LMIC_clrTxData();
+
     // Disable session
     LMIC_reset();
+
+    // report event before the join event.
+    reportEvent(EV_RESET);
+
 #if !defined(DISABLE_JOIN)
     LMIC_startJoining();
 #endif // !DISABLE_JOIN
-    reportEvent(EV_RESET);
 }
 
 static void stateJustJoined (void) {
