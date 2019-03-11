@@ -235,7 +235,7 @@ enum _ev_t { EV_SCAN_TIMEOUT=1, EV_BEACON_FOUND,
              EV_JOINED, EV_RFU1, EV_JOIN_FAILED, EV_REJOIN_FAILED,
              EV_TXCOMPLETE, EV_LOST_TSYNC, EV_RESET,
              EV_RXCOMPLETE, EV_LINK_DEAD, EV_LINK_ALIVE, EV_SCAN_FOUND,
-             EV_TXSTART };
+             EV_TXSTART, EV_TXCANCELED };
 typedef enum _ev_t ev_t;
 
 enum {
@@ -445,8 +445,11 @@ void  LMIC_selectSubBand(u1_t band);
 
 void  LMIC_setDrTxpow   (dr_t dr, s1_t txpow);  // set default/start DR/txpow
 void  LMIC_setAdrMode   (bit_t enabled);        // set ADR mode (if mobile turn off)
+
 #if !defined(DISABLE_JOIN)
 bit_t LMIC_startJoining (void);
+void  LMIC_tryRejoin    (void);
+void  LMIC_unjoin       (void);
 #endif
 
 void  LMIC_shutdown     (void);
@@ -466,9 +469,6 @@ void  LMIC_disableTracking (void);
 #if !defined(DISABLE_PING)
 void  LMIC_stopPingable  (void);
 void  LMIC_setPingable   (u1_t intvExp);
-#endif
-#if !defined(DISABLE_JOIN)
-void  LMIC_tryRejoin     (void);
 #endif
 
 void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t artKey);

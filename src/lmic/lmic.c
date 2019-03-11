@@ -495,18 +495,30 @@ static void reportEvent (ev_t ev) {
     // tell the client about completed transmits -- the buffer
     // is now available again.  We use set notation again in case
     // we later discover another event completes messages
-    if ((evSet & (1u<<EV_TXCOMPLETE)) != 0) {
+    if ((evSet & ((1u<<EV_TXCOMPLETE) | (1u<<EV_TXCANCELED))) != 0) {
         lmic_txmessage_cb_t * const pTxMessageCb = LMIC.txMessageCb;
 
         if (pTxMessageCb != NULL) {
+            int fSuccess;
             // reset before notifying user. If we reset after
             // notifying, then if user does a recursive call
             // in their message processing
             // function, we would clobber the value 
             LMIC.txMessageCb = NULL;
 
+            // compute exit status
+            if (ev == EV_TXCANCELED) {
+                // canceled: unsuccessful.
+                fSuccess = 0;
+            } else if (/* ev == EV_TCCOMPLETE  && */ LMIC.pendTxConf) {
+                fSuccess = (LMIC.txrxFlags & TXRX_ACK) != 0;
+            } else {
+                // unconfirmed uplinks are successul if they were sent.
+                fSuccess = 1;
+            }
+
             // notify the user.
-            pTxMessageCb(LMIC.txMessageUserData, ! (LMIC.txrxFlags & TXRX_NACK));
+            pTxMessageCb(LMIC.txMessageUserData, fSuccess);
         }
     }
 
@@ -1660,6 +1672,18 @@ static void startJoining (xref2osjob_t osjob) {
     reportEvent(EV_JOINING);
 }
 
+// reset the joined-to-network state (and clean up)
+void LMIC_unjoin(void) {
+    // reset any joining flags
+    LMIC.opmode &= ~(OP_SCAN|OP_REJOIN);
+
+    // put us in unjoined state:
+    LMIC.devaddr = 0;
+
+    // clear transmit.
+    LMIC_clrTxData();
+}
+
 // Start join procedure if not already joined.
 bit_t LMIC_startJoining (void) {
     if( LMIC.devaddr == 0 ) {
@@ -2111,8 +2135,13 @@ void LMIC_init (void) {
 
 
 void LMIC_clrTxData (void) {
+    bit_t const txActive = LMIC.opmode & OP_TXDATA;
     LMIC.opmode &= ~(OP_TXDATA|OP_TXRXPEND|OP_POLL);
     LMIC.pendTxLen = 0;
+
+    if (txActive)
+        reportEvent(EV_TXCANCELED);
+
     if( (LMIC.opmode & (OP_JOINING|OP_SCAN)) != 0 ) // do not interfere with JOINING
         return;
     os_clearCallback(&LMIC.osjob);
