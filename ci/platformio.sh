@@ -35,12 +35,12 @@ then
     PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST'                                                                              platformio ci --lib . --board feather32u4 'examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino'
     PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_au921   -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino'
 
-    # PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13'                                                                              platformio ci --lib . --board feather32u4 'examples/raw-feather/raw-feather.ino'
-    # PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13 -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_eu868   -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/raw-feather/raw-feather.ino'
-    # PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13 -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_au921   -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/raw-feather/raw-feather.ino'
-    # PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13 -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_as923   -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/raw-feather/raw-feather.ino'
-    # PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13 -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_as923jp -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/raw-feather/raw-feather.ino'
-    # PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13 -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_in866   -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/raw-feather/raw-feather.ino'
+    PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13'                                                                              platformio ci --lib . --board feather32u4 'examples/raw-feather/raw-feather.ino'
+    PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13 -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_eu868   -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/raw-feather/raw-feather.ino'
+    PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13 -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_au921   -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/raw-feather/raw-feather.ino'
+    PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13 -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_as923   -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/raw-feather/raw-feather.ino'
+    PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13 -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_as923jp -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/raw-feather/raw-feather.ino'
+    PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13 -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_in866   -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/raw-feather/raw-feather.ino'
 
     # Test the raw sketch
     PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13'                                                                            platformio ci --lib . --board feather32u4 'examples/raw/raw.ino'
