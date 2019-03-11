@@ -22,12 +22,22 @@ Description:
 #include <stdbool.h>
 #include <string.h>
 
+#if defined(LMIC_PRINTF_TO)
+# include <stdio.h>
+# define LMIC_CERT_PRINTF(f, ...) printf(f, ## __VA_ARGS__)
+#else
+# define LMIC_CERT_PRINTF(f, ...) do { ; } while (0)
+#endif
+
 /****************************************************************************\
 |
 |   Manifest constants and local declarations.
 |
 \****************************************************************************/
 
+static void acEnterTestMode(void);
+static void acScheduleNextUplink(void);
+static void acSendUplink(void);
 static void evActivate(void);
 static void evDeactivate(void);
 static void evMessage(const uint8_t *pMessage, size_t nMessage);
@@ -35,6 +45,8 @@ static void fsmEval(void);
 static lmic_cert_fsmstate_t fsmDispatch(lmic_cert_fsmstate_t, bool);
 static bool isActivateMessage(const uint8_t *pMessage, size_t nMessage);
 static void sendCryptoResponse(const uint8_t *pMessage, size_t nMessage);
+static lmic_txmessage_cb_t sendUplinkCompleteCb;
+static osjobcbfn_t timeToSendTestMessageCb;
 
 /****************************************************************************\
 |
@@ -418,6 +430,7 @@ fsmDispatch(
             if (fEntry) {
                 LMIC_Cert.state = LMIC_CERT_STATE_IDLE;
                 os_clearCallback(&LMIC_Cert.uplinkJob);
+                LMIC_clrTxData();
             }
 
             if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_ACTIVATE) {
@@ -430,12 +443,15 @@ fsmDispatch(
             LMIC_Cert.eventflags &= ~LMIC_CERT_EVENT_ACTIVATE;
 
             if (fEntry) {
-                // todo: start the uplink signaling process.
-                LMIC_Cert.state = LMIC_CERT_STATE_ACTIVE;
+                acEnterTestMode();
             }
 
             if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_DEACTIVATE) {
                 newState = LMIC_CERT_FSMSTATE_INACTIVE;
+            } else if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_SEND_UPLINK) {
+                acSendUplink();
+            } else if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_UPLINK_COMPLETE) {
+                acScheduleNextUplink();
             }
             break;
         }
@@ -446,4 +462,72 @@ fsmDispatch(
     }
 
     return newState;
+}
+
+
+static void acEnterTestMode(void) {
+    // indicate to the outer world that we're active.
+    LMIC_Cert.state = LMIC_CERT_STATE_ACTIVE;
+
+    LMIC_Cert.eventflags &= ~(LMIC_CERT_EVENT_SEND_UPLINK | LMIC_CERT_EVENT_UPLINK_COMPLETE);
+
+    // schedule an uplink.
+    os_setTimedCallback(
+        &LMIC_Cert.uplinkJob,
+        os_getTime() + ms2osticks(10),
+        timeToSendTestMessageCb
+        );
+}
+
+static void timeToSendTestMessageCb(osjob_t *j) {
+    LMIC_Cert.eventflags |= LMIC_CERT_EVENT_SEND_UPLINK;
+    fsmEval();
+}
+
+static void acSendUplink(void) {
+    uint8_t payload[2];
+    uint32_t downlink = LMIC.seqnoDn;
+
+    // build the uplink message
+    payload[0] = (uint8_t) (downlink >> 8);
+    payload[1] = (uint8_t) downlink;
+
+    // reset the flags
+    LMIC_Cert.eventflags &= ~(LMIC_CERT_EVENT_SEND_UPLINK | LMIC_CERT_EVENT_UPLINK_COMPLETE);
+
+    // don't try to send if busy; might be sending crypto message.
+    if ((LMIC.opmode & OP_TXRXPEND) == 0 &&
+        LMIC_sendWithCallback(
+            LORAWAN_PORT_CERT,
+            payload, sizeof(payload),
+            /* confirmed? */
+            !! (LMIC_Cert.fsmFlags & LMIC_CERT_FSM_CONFIRM),
+            sendUplinkCompleteCb, NULL) == 0) {
+        // queued successfully
+        LMIC_CERT_PRINTF(
+                "queued uplink message(%u, %p)\n", 
+                (unsigned) downlink & 0xFFFF,
+                LMIC.txMessageCb
+                );
+    } else {
+        // failed to queue; just skip this cycle.
+        sendUplinkCompleteCb(NULL, false);
+    }
+}
+
+static void sendUplinkCompleteCb(void *pUserData, int fSuccess) {
+    LMIC_Cert.eventflags |= LMIC_CERT_EVENT_UPLINK_COMPLETE;
+    LMIC_CERT_PRINTF("sendUplinkCompleteCb\n");
+    fsmEval();
+}
+
+static void acScheduleNextUplink(void) {
+    LMIC_Cert.eventflags &= ~(LMIC_CERT_EVENT_SEND_UPLINK | LMIC_CERT_EVENT_UPLINK_COMPLETE);
+
+    // schedule an uplink.
+    os_setTimedCallback(
+        &LMIC_Cert.uplinkJob,
+        os_getTime() + sec2osticks(5),
+        timeToSendTestMessageCb
+        );
 }

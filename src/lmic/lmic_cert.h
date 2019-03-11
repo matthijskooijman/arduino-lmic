@@ -53,6 +53,8 @@ typedef uint8_t lmic_cert_eventflags_t;
 enum lmic_cert_eventflags_e {
     LMIC_CERT_EVENT_ACTIVATE    = 1u << 0,
     LMIC_CERT_EVENT_DEACTIVATE  = 1u << 1,
+    LMIC_CERT_EVENT_SEND_UPLINK = 1u << 2,
+    LMIC_CERT_EVENT_UPLINK_COMPLETE = 1u << 3,
 };
 
 typedef uint8_t lmic_cert_fsmflags_t;
