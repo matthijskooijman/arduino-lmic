@@ -192,14 +192,14 @@ enum { BCN_NONE    = 0x00,   //!< No beacon received
 //! Information about the last and previous beacons.
 struct bcninfo_t {
     ostime_t txtime;  //!< Time when the beacon was sent
+    u4_t     time;    //!< GPS time in seconds of last beacon (received or surrogate)
+    s4_t     lat;     //!< Lat field of last beacon (valid only if BCN_FULL set)
+    s4_t     lon;     //!< Lon field of last beacon (valid only if BCN_FULL set)
     s1_t     rssi;    //!< Adjusted RSSI value of last received beacon
     s1_t     snr;     //!< Scaled SNR value of last received beacon
     u1_t     flags;   //!< Last beacon reception and tracking states. See BCN_* values.
-    u4_t     time;    //!< GPS time in seconds of last beacon (received or surrogate)
     //
     u1_t     info;    //!< Info field of last beacon (valid only if BCN_FULL set)
-    s4_t     lat;     //!< Lat field of last beacon (valid only if BCN_FULL set)
-    s4_t     lon;     //!< Lon field of last beacon (valid only if BCN_FULL set)
 };
 #endif // !DISABLE_BEACONS
 
@@ -341,26 +341,48 @@ struct lmic_t {
     // client setup data, survives LMIC_reset().
     lmic_client_data_t  client;
 
+    // the OS job object. pointer alignment.
+    osjob_t     osjob;
+
+#if !defined(DISABLE_BEACONS)
+    bcninfo_t   bcninfo;      // Last received beacon info
+#endif
+
+#if !defined(DISABLE_PING)
+    rxsched_t   ping;         // pingable setup
+#endif
+
+    /* (u)int32_t things */
+
     // Radio settings TX/RX (also accessed by HAL)
     ostime_t    txend;
     ostime_t    rxtime;
 
     // LBT info
     ostime_t    lbt_ticks;      // ticks to listen
-    s1_t        lbt_dbmax;      // max permissible dB on our channel (eg -80)
 
     u4_t        freq;
-    s1_t        rssi;
-    s1_t        snr;            // LMIC.snr is SNR times 4
-    rps_t       rps;
-    u1_t        rxsyms;
-    u1_t        dndr;
-    s1_t        txpow;          // transmit dBm (administrative)
-    s1_t        radio_txpow;    // the radio driver's copy of txpow, limited by adrTxPow.
 
-    osjob_t     osjob;
+    ostime_t    globalDutyAvail; // time device can send again
 
-    // Channel scheduling
+    u4_t        netid;        // current network id (~0 - none)
+    devaddr_t   devaddr;
+    u4_t        seqnoDn;      // device level down stream seqno
+    u4_t        seqnoUp;
+    u4_t        dn2Freq;
+
+#if !defined(DISABLE_BEACONS)
+    ostime_t    bcnRxtime;
+#endif
+
+#if LMIC_ENABLE_DeviceTimeReq
+    // put here for alignment, to reduce RAM use.
+    ostime_t    localDeviceTime;    // the LMIC.txend value for last DeviceTimeAns
+    lmic_gpstime_t netDeviceTime;   // the netDeviceTime for lastDeviceTimeAns
+                                    // zero ==> not valid.
+#endif // LMIC_ENABLE_DeviceTimeReq
+
+    // Channel scheduling -- very much private
 #if CFG_LMIC_EU_like
     band_t      bands[MAX_BANDS];
     u4_t        channelFreq[MAX_CHANNELS];
@@ -373,40 +395,44 @@ struct lmic_t {
     u2_t        activeChannels125khz;
     u2_t        activeChannels500khz;
 #endif
-    u1_t        txChnl;          // channel for next TX
-    u1_t        globalDutyRate;  // max rate: 1/2^k
-    ostime_t    globalDutyAvail; // time device can send again
 
-    u4_t        netid;        // current network id (~0 - none)
+    /* (u)int16_t things */
+
+    rps_t       rps;
     u2_t        opmode;
-    u1_t        upRepeat;     // configured up repeat
-    s1_t        adrTxPow;     // ADR adjusted TX power
-    u1_t        datarate;     // current data rate
-    u1_t        errcr;        // error coding rate (used for TX only)
-    u1_t        rejoinCnt;    // adjustment for rejoin datarate
+    u2_t        devNonce;     // last generated nonce
+
 #if !defined(DISABLE_BEACONS)
     s2_t        drift;        // last measured drift
     s2_t        lastDriftDiff;
     s2_t        maxDriftDiff;
 #endif
 
+    /* (u)int8_t things */
+    s1_t        rssi;
+    s1_t        snr;            // LMIC.snr is SNR times 4
+    u1_t        rxsyms;
+    u1_t        dndr;
+    s1_t        txpow;          // transmit dBm (administrative)
+    s1_t        radio_txpow;    // the radio driver's copy of txpow, limited by adrTxPow.
+    s1_t        lbt_dbmax;      // max permissible dB on our channel (eg -80)
+
+    u1_t        txChnl;          // channel for next TX
+    u1_t        globalDutyRate;  // max rate: 1/2^k
+
+    u1_t        upRepeat;     // configured up repeat
+    s1_t        adrTxPow;     // ADR adjusted TX power
+    u1_t        datarate;     // current data rate
+    u1_t        errcr;        // error coding rate (used for TX only)
+    u1_t        rejoinCnt;    // adjustment for rejoin datarate
+
     u1_t        pendTxPort;
     u1_t        pendTxConf;   // confirmed data
     u1_t        pendTxLen;    // +0x80 = confirmed
     u1_t        pendTxData[MAX_LEN_PAYLOAD];
 
-    u2_t        devNonce;     // last generated nonce
     u1_t        nwkKey[16];   // network session key
     u1_t        artKey[16];   // application router session key
-    devaddr_t   devaddr;
-    u4_t        seqnoDn;      // device level down stream seqno
-    u4_t        seqnoUp;
-#if LMIC_ENABLE_DeviceTimeReq
-    // put here for alignment, to reduce RAM use.
-    ostime_t    localDeviceTime;    // the LMIC.txend value for last DeviceTimeAns
-    lmic_gpstime_t netDeviceTime;   // the netDeviceTime for lastDeviceTimeAns
-                                    // zero ==> not valid.
-#endif // LMIC_ENABLE_DeviceTimeReq
 
     u1_t        dnConf;       // dn frame confirm pending: LORA::FCT_ACK or 0
     s1_t        adrAckReq;    // counter until we reset data rate (0=off)
@@ -440,7 +466,6 @@ struct lmic_t {
 
     // 2nd RX window (after up stream)
     u1_t        dn2Dr;
-    u4_t        dn2Freq;
 #if !defined(DISABLE_MCMD_DN2P_SET)
     u1_t        dn2Ans;       // 0=no answer pend, 0x80+ACKs
 #endif
@@ -453,10 +478,6 @@ struct lmic_t {
 #if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
     u1_t        pingSetAns;   // answer set cmd and ACK bits
 #endif
-#if !defined(DISABLE_PING)
-    rxsched_t   ping;         // pingable setup
-#endif
-
     // Public part of MAC state
     u1_t        txCnt;
     u1_t        txrxFlags;  // transaction flags (TX-RX combo)
@@ -467,8 +488,6 @@ struct lmic_t {
 #if !defined(DISABLE_BEACONS)
     u1_t        bcnChnl;
     u1_t        bcnRxsyms;    //
-    ostime_t    bcnRxtime;
-    bcninfo_t   bcninfo;      // Last received beacon info
 #endif
 
     u1_t        noRXIQinversion;
