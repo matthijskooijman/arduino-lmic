@@ -1675,6 +1675,15 @@ static void buildJoinRequest (u1_t ftype) {
 static void startJoining (xref2osjob_t osjob) {
     LMIC_API_PARAMETER(osjob);
 
+    // see issue #244: for backwards compatibility
+    // don't override what the user does after os_init().
+    if (LMIC.initBandplanAfterReset)
+        LMICbandplan_resetDefaultChannels();
+    else
+        LMIC.initBandplanAfterReset = 1;
+
+    // let the client know that now's the time to update
+    // network settings.
     reportEvent(EV_JOINING);
 }
 

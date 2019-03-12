@@ -85,9 +85,14 @@ void myEventCb(void *pUserData, ev_t ev) {
         case EV_BEACON_TRACKED:
             Serial.println(F("EV_BEACON_TRACKED"));
             break;
+
         case EV_JOINING:
             Serial.println(F("EV_JOINING"));
+
+            // this is our moment to set up pre-join network parameters.
+            setupForNetwork();
             break;
+
         case EV_JOINED:
             Serial.println(F("EV_JOINED"));
             {
@@ -115,10 +120,6 @@ void myEventCb(void *pUserData, ev_t ev) {
               }
               Serial.println("");
             }
-            // Disable link check validation (automatically enabled
-            // during join, but because slow data rates change max TX
-            // size, we don't use it in this example.
-            LMIC_setLinkCheckMode(0);
             break;
         /*
         || This event is defined but not used in the code. No
@@ -129,12 +130,19 @@ void myEventCb(void *pUserData, ev_t ev) {
         ||     break;
         */
         case EV_JOIN_FAILED:
+            // this event is just advisory (though it looks fearsome) --
+            // we've just wrapped through all our join cycles, and
+            // we will start over. You could use this to disable the radio
+            // for a while.
             Serial.println(F("EV_JOIN_FAILED"));
             break;
+
         case EV_REJOIN_FAILED:
+            // this event means that someone tried a rejoin, and it failed.
+            // it doesn't really mean anything bad, it's just advisory.
             Serial.println(F("EV_REJOIN_FAILED"));
             break;
-            break;
+
         case EV_TXCOMPLETE:
             Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
             if (LMIC.txrxFlags & TXRX_ACK)
@@ -144,6 +152,9 @@ void myEventCb(void *pUserData, ev_t ev) {
             Serial.println(F("EV_LOST_TSYNC"));
             break;
         case EV_RESET:
+            // this event means that we saturated the uplink or downlink counter.
+            // this forces the entire LMIC to be reset. A join is necessary. If
+            // join is not configured, then time is up for this device.
             Serial.println(F("EV_RESET"));
             break;
         case EV_RXCOMPLETE:
@@ -165,7 +176,9 @@ void myEventCb(void *pUserData, ev_t ev) {
         ||    break;
         */
         case EV_TXSTART:
-            Serial.println(F("EV_TXSTART"));
+            // this event tells us that a transmit is about to start.
+            Serial.print(F("EV_TXSTART: channel "));
+            Serial.println(LMIC.txChnl);
             break;
         default:
             Serial.print(F("Unknown event: "));
@@ -322,12 +335,19 @@ void setup() {
         myFail("couldn't register callbacks");
     }
 
-    LMIC_setLinkCheckMode(0);
-    LMIC_setDrTxpow(DR_SF7, 14);
-    LMIC_selectSubBand(1);
+    // do the network-specific setup.
+    setupForNetwork();
 
     // Start job (sending automatically starts OTAA too)
     do_send(&sendjob);
+}
+
+void setupForNetwork(void) {
+#if defined(CFG_us915)
+    LMIC_setLinkCheckMode(0);
+    LMIC_setDrTxpow(DR_SF7, 14);
+    LMIC_selectSubBand(1);
+#endif
 }
 
 void loop() {

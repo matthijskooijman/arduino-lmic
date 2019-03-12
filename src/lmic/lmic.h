@@ -426,6 +426,8 @@ struct lmic_t {
     u1_t        errcr;        // error coding rate (used for TX only)
     u1_t        rejoinCnt;    // adjustment for rejoin datarate
 
+    bit_t       initBandplanAfterReset; // cleared by LMIC_reset(), set by first join. See issue #244
+
     u1_t        pendTxPort;
     u1_t        pendTxConf;   // confirmed data
     u1_t        pendTxLen;    // +0x80 = confirmed
