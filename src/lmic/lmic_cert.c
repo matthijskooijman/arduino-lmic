@@ -370,7 +370,10 @@ static void sendEchoResponse(
             sendEchoResponseCb,
             NULL) == 0
         ) {
+        LMIC_CERT_PRINTF("%s: queued %u bytes\n", __func__, (unsigned)(pResponse - response));
         LMIC_Cert.fsmFlags |= LMIC_CERT_FSM_UPLINK_BUSY;
+    } else {
+        LMIC_CERT_PRINTF("%s: uplink %u bytes failed\n", __func__, (unsigned)(pResponse - response));
     }
 }
 
