@@ -409,6 +409,15 @@ Returns:
 
 */
 
+static const char * lmic_cert_fsmstate_Getname(lmic_cert_fsmstate_t state) {
+    const char * const names[] = { LMIC_CERT_FSMSTATE__NAMES };
+
+    if ((unsigned) state > sizeof(names)/sizeof(names[0]))
+        return "<<unknown>>";
+    else
+        return names[state];
+}
+
 static void fsmEval(void) {
     bool fNewState;
 
@@ -447,6 +456,11 @@ static void fsmEval(void) {
             }
         } else {
             // state change!
+            LMIC_CERT_PRINTF("%s: change state %s(%u) => %s(%u)\n",
+                __func__,
+                lmic_cert_fsmstate_Getname(oldState), (unsigned) oldState,
+                lmic_cert_fsmstate_Getname(newState), (unsigned) newState
+                );
             fNewState = true;
             LMIC_Cert.fsmState = newState;
         }
