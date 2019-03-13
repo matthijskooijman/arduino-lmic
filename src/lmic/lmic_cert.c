@@ -365,7 +365,7 @@ static void sendEchoResponse(
     // confirmed state.
     if (LMIC_sendWithCallback(
             LORAWAN_PORT_CERT,
-            pResponse, pResponse - response,
+            response, pResponse - response,
             /* confirmed? */ LMIC_Cert.fsmFlags & LMIC_CERT_FSM_CONFIRM,
             sendEchoResponseCb,
             NULL) == 0
