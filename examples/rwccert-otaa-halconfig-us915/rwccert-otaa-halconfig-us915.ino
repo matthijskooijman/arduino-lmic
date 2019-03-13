@@ -326,14 +326,14 @@ void setup() {
     // now that we have a pinmap, initalize the low levels accordingly.
     os_init_ex(pPinMap);
 
-    // Reset the MAC state. Session and pending data transfers will be discarded.
-    LMIC_reset();
-
-    // Reset resets *everything*, so we need to register after the LMIC_reset().
+    // LMIC_reset() doesn't affect callbacks, so we can do this first.
     if (! (LMIC_registerRxMessageCb(myRxMessageCb, /* userData */ nullptr) && 
            LMIC_registerEventCb(myEventCb, /* userData */ nullptr))) {
         myFail("couldn't register callbacks");
     }
+
+    // Reset the MAC state. Session and pending data transfers will be discarded.
+    LMIC_reset();
 
     // do the network-specific setup.
     setupForNetwork();
