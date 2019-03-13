@@ -38,7 +38,7 @@ enum lowawan_cert_cmd_e {
     LORAWAN_CERT_CMD_ACTIVATE = 1u,
     LORAWAN_CERT_CMD_SET_CONFIRM = 2u,
     LORAWAN_CERT_CMD_SET_UNCONFIRM = 3u,
-    LORAWAN_CERT_CMD_CRYPTO = 4u,
+    LORAWAN_CERT_CMD_ECHO = 4u,
     LORAWAN_CERT_CMD_LINK = 5u,
     LORAWAN_CERT_CMD_JOIN = 6u,
     LORAWAN_CERT_CMD_CW = 7u,
@@ -54,7 +54,7 @@ enum {
 
     // Maximum crypto frame size; although the spec says 18, it
     // is also used for testing max packet size.
-    LORAWAN_CERT_CMD_CRYPTO_LEN_MAX = 242u,
+    LORAWAN_CERT_CMD_ECHO_LEN_MAX = 242u,
 };
 
 #ifdef __cplusplus

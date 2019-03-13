@@ -48,7 +48,7 @@ static void evMessage(const uint8_t *pMessage, size_t nMessage);
 static void fsmEval(void);
 static lmic_cert_fsmstate_t fsmDispatch(lmic_cert_fsmstate_t, bool);
 static bool isActivateMessage(const uint8_t *pMessage, size_t nMessage);
-static void sendCryptoResponse(const uint8_t *pMessage, size_t nMessage);
+static void sendEchoResponse(const uint8_t *pMessage, size_t nMessage);
 static lmic_txmessage_cb_t sendUplinkCompleteCb;
 static osjobcbfn_t timeToSendTestMessageCb;
 static lmic_event_cb_t lmicEventCb;
@@ -270,8 +270,8 @@ static void evMessage(
             LMIC_Cert.fsmFlags &= ~LMIC_CERT_FSM_CONFIRM;
             break;
         }
-        case LORAWAN_CERT_CMD_CRYPTO: {
-            sendCryptoResponse(pMessage, nMessage);
+        case LORAWAN_CERT_CMD_ECHO: {
+            sendEchoResponse(pMessage, nMessage);
             break;
             }
         case LORAWAN_CERT_CMD_LINK: {
@@ -315,19 +315,19 @@ static void evJoinCommand(
 
 /*
 
-Name:   sendCryptoResponse()
+Name:   sendEchoResponse()
 
 Function:
-        Format and transmit the response to a crypto downlink (aka echo request).
+        Format and transmit the response to an echo downlink (aka echo request).
 
 Definition:
-        void sendCryptoResponse(
+        void sendEchoResponse(
                 const uint8_t *pMessage,
                 size_t nMessage
                 );
 
 Description:
-        The crypto response is formatted and transmitted. Since we just received
+        The echo response is formatted and transmitted. Since we just received
         a downlink, it's always safe to do this.
 
 Returns:
@@ -335,19 +335,19 @@ Returns:
 
 */
 
-static lmic_txmessage_cb_t sendCryptoResponseCb;
+static lmic_txmessage_cb_t sendEchoResponseCb;
 
-static void sendCryptoResponse(
+static void sendEchoResponse(
     const uint8_t *pMessage,
     size_t nMessage
 ) {
-    uint8_t response[LORAWAN_CERT_CMD_CRYPTO_LEN_MAX];
+    uint8_t response[LORAWAN_CERT_CMD_ECHO_LEN_MAX];
     uint8_t *pResponse;
 
     if (nMessage > sizeof(response))
         return;
 
-    // create the crypto message.
+    // create the echo message.
     pResponse = response;
 
     // copy the command byte unchanged.
@@ -367,17 +367,22 @@ static void sendCryptoResponse(
             LORAWAN_PORT_CERT,
             pResponse, pResponse - response,
             /* confirmed? */ LMIC_Cert.fsmFlags & LMIC_CERT_FSM_CONFIRM,
-            sendCryptoResponseCb,
-            NULL) == 0)
-            {
-            LMIC_Cert.fsmFlags |= LMIC_CERT_FSM_UPLINK_BUSY;
-            }
+            sendEchoResponseCb,
+            NULL) == 0
+        ) {
+        LMIC_Cert.fsmFlags |= LMIC_CERT_FSM_UPLINK_BUSY;
+    }
 }
 
-void sendCryptoResponseCb(void *pUserData, int fSuccess) {
+static const char *txSuccessToString(int fSuccess) {
+    return fSuccess ? "ok" : "failed";
+}
+
+void sendEchoResponseCb(void *pUserData, int fSuccess) {
     LMIC_API_PARAMETER(pUserData);
     LMIC_API_PARAMETER(fSuccess);
 
+    LMIC_CERT_PRINTF("%s: tx complete(%s)\n", __func__, txSuccessToString(fSuccess));
     LMIC_Cert.fsmFlags &= ~LMIC_CERT_FSM_UPLINK_BUSY;
     fsmEval();
 }
@@ -618,7 +623,7 @@ static void acSendUplink(void) {
     // reset the flags
     LMIC_Cert.eventflags &= ~(LMIC_CERT_EVENT_SEND_UPLINK | LMIC_CERT_EVENT_UPLINK_COMPLETE);
 
-    // don't try to send if busy; might be sending crypto message.
+    // don't try to send if busy; might be sending echo message.
     if ((LMIC.opmode & OP_TXRXPEND) == 0 &&
         LMIC_sendWithCallback(
             LORAWAN_PORT_CERT,
@@ -640,7 +645,7 @@ static void acSendUplink(void) {
 
 static void sendUplinkCompleteCb(void *pUserData, int fSuccess) {
     LMIC_Cert.eventflags |= LMIC_CERT_EVENT_UPLINK_COMPLETE;
-    LMIC_CERT_PRINTF("sendUplinkCompleteCb\n");
+    LMIC_CERT_PRINTF("%s(%s)\n", __func__, txSuccessToString(fSuccess));
     fsmEval();
 }
 
