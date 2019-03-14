@@ -89,10 +89,10 @@ ostime_t LMICuslike_nextTx(ostime_t now);
 ostime_t LMICuslike_nextJoinState(void);
 #define LMICbandplan_nextJoinState()    LMICuslike_nextJoinState();
 
-static inline ostime_t LMICeulike_nextJoinTime(ostime_t now) {
+static inline ostime_t LMICuslike_nextJoinTime(ostime_t now) {
         return now;
 }
-#define LMICbandplan_nextJoinTime(now)     LMICeulike_nextJoinTime(now)
+#define LMICbandplan_nextJoinTime(now)     LMICuslike_nextJoinTime(now)
 
 #define LMICbandplan_init()     \
         do { /* nothing */ } while (0)
