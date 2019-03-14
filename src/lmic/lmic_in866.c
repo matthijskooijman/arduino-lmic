@@ -195,6 +195,27 @@ LMICin866_txDoneFSK(ostime_t delay, osjobcb_t func) {
         os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
 }
 
+// set the Rx1 dndr, rps.
+void LMICin866_setRx1Params(void) {
+    u1_t const txdr = LMIC.dndr;
+    s1_t drOffset;
+    s1_t candidateDr;
+
+    if ( LMIC.rx1DrOffset <= 5)
+        drOffset = (s1_t) LMIC.rx1DrOffset;
+    else
+        drOffset = 5 - (s1_t) LMIC.rx1DrOffset;
+
+    candidateDr = (s1_t) txdr - drOffset;
+    if (candidateDr < LORAWAN_DR0)
+            candidateDr = 0;
+    else if (candidateDr > LORAWAN_DR5)
+            candidateDr = LORAWAN_DR5;
+
+    LMIC.dndr = (u1_t) candidateDr;
+    LMIC.rps = dndr2rps(LMIC.dndr);
+}
+
 void
 LMICin866_initJoinLoop(void) {
         LMICeulike_initJoinLoop(NUM_DEFAULT_CHANNELS, /* adr dBm */ IN866_TX_EIRP_MAX_DBM);

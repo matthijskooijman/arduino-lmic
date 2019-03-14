@@ -79,9 +79,6 @@ u1_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap);
 
 void LMICeulike_initJoinLoop(u1_t nDefaultChannels, s1_t adrTxPow);
 
-#define LMICbandplan_setRx1Params() \
-        do { /*LMIC.freq/rps remain unchanged*/ } while (0)
-
 void LMICeulike_updateTx(ostime_t txbeg);
 #define LMICbandplan_updateTx(t)        LMICeulike_updateTx(t)
 
