@@ -40,7 +40,7 @@ static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const unsigned TX_INTERVAL = 60;
+const unsigned TX_INTERVAL = 5;
 
 // global flag for test mode.
 bool g_fTestMode = false;
@@ -69,9 +69,21 @@ Returns:
 
 */
 
+uint8_t lastTxChannel;
+bool lastTxStart;
+
 void myEventCb(void *pUserData, ev_t ev) {
-    Serial.print(os_getTime());
-    Serial.print(": ");
+    if (ev == EV_TXSTART) {
+        lastTxStart == true;
+        Serial.print(F("."));
+    } else {
+        if (lastTxStart) {
+            Serial.println();
+            lastTxStart = false;
+        }
+        Serial.print(os_getTime());
+        Serial.print(F(": "));
+    }
     switch(ev) {
         case EV_SCAN_TIMEOUT:
             Serial.println(F("EV_SCAN_TIMEOUT"));
@@ -94,7 +106,8 @@ void myEventCb(void *pUserData, ev_t ev) {
             break;
 
         case EV_JOINED:
-            Serial.println(F("EV_JOINED"));
+            Serial.print(F("EV_JOINED: ch "));
+            Serial.println(lastTxChannel);
             {
               u4_t netid = 0;
               devaddr_t devaddr = 0;
@@ -144,9 +157,11 @@ void myEventCb(void *pUserData, ev_t ev) {
             break;
 
         case EV_TXCOMPLETE:
-            Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
+            Serial.print(F("EV_TXCOMPLETE: ch "));
+            Serial.print(lastTxChannel);
             if (LMIC.txrxFlags & TXRX_ACK)
-              Serial.println(F("Received ack"));
+                Serial.print(F("; Received ack"));
+            Serial.println(F("."));
             break;
         case EV_LOST_TSYNC:
             Serial.println(F("EV_LOST_TSYNC"));
@@ -177,8 +192,8 @@ void myEventCb(void *pUserData, ev_t ev) {
         */
         case EV_TXSTART:
             // this event tells us that a transmit is about to start.
-            Serial.print(F("EV_TXSTART: channel "));
-            Serial.println(LMIC.txChnl);
+            // but printing here is bad for timing.
+            lastTxChannel = LMIC.txChnl;
             break;
         default:
             Serial.print(F("Unknown event: "));
@@ -234,7 +249,8 @@ void myRxMessageCb(
         case LMIC_CERT_RX_ACTION_END: {
             Serial.println(F("Exit test mode"));
             g_fTestMode = false;
-            do_send(&sendjob);
+            // we're in the LMIC, we don't want to send from here. Schedule a job.
+            os_setTimedCallback(&sendjob, os_getTime() + ms2osticks(10), do_send);
             return;
         }
         case LMIC_CERT_RX_ACTION_IGNORE: {
@@ -243,7 +259,7 @@ void myRxMessageCb(
                 if (nMessage > 0)
                     Serial.print(pMessage[0], HEX);
                 Serial.print(F(" length 0x"));
-                Serial.println(nMessage);
+                Serial.println((unsigned) nMessage);
             }
             return;
         }
