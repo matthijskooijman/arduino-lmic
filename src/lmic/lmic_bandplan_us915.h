@@ -26,8 +26,8 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _lmic_us915_h_
-# define _lmic_us915_h_
+#ifndef _lmic_bandplan_us915_h_
+# define _lmic_bandplan_us915_h_
 
 // preconditions for lmic_us_like.h
 #define LMICuslike_getFirst500kHzDR()   (LORAWAN_DR4)
@@ -63,4 +63,4 @@ void LMICus915_setRx1Params(void);
 void LMICus915_updateTx(ostime_t txbeg);
 #define LMICbandplan_updateTx(txbeg)    LMICus915_updateTx(txbeg)
 
-#endif // _lmic_us915_h_
+#endif // _lmic_bandplan_us915_h_

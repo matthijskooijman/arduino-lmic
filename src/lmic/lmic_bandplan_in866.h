@@ -26,8 +26,8 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _lmic_in866_h_
-# define _lmic_in866_h_
+#ifndef _lmic_bandplan_in866_h_
+# define _lmic_bandplan_in866_h_
 
 #ifndef _lmic_eu_like_h_
 # include "lmic_eu_like.h"
@@ -85,4 +85,4 @@ void LMICin866_initDefaultChannels(bit_t join);
 void LMICin866_setRx1Params(void);
 #define LMICbandplan_setRx1Params()     LMICin866_setRx1Params()
 
-#endif // _lmic_in866_h_
+#endif // _lmic_bandplan_in866_h_

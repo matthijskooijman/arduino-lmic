@@ -26,8 +26,8 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _lmic_au921_h_
-# define _lmic_au921_h_
+#ifndef _lmic_bandplan_au921_h_
+# define _lmic_bandplan_au921_h_
 
 // preconditions for lmic_us_like.h
 #define LMICuslike_getFirst500kHzDR()   (LORAWAN_DR6)
@@ -63,4 +63,4 @@ void LMICau921_setRx1Params(void);
 void LMICau921_updateTx(ostime_t txbeg);
 #define LMICbandplan_updateTx(txbeg)    LMICau921_updateTx(txbeg)
 
-#endif // _lmic_au921_h_
+#endif // _lmic_bandplan_au921_h_
