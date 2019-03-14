@@ -41,17 +41,21 @@ static void acEnterTestMode(void);
 static void acExitActiveMode(void);
 static void acScheduleNextUplink(void);
 static void acSendUplink(void);
+static void acSendUplinkBuffer(void);
 static void evActivate(void);
 static void evDeactivate(void);
 static void evJoinCommand(void);
 static void evMessage(const uint8_t *pMessage, size_t nMessage);
-static void fsmEval(void);
 static lmic_cert_fsmstate_t fsmDispatch(lmic_cert_fsmstate_t, bool);
+static void fsmEval(void);
+static void fsmEvalDeferred(void);
+static osjobcbfn_t fsmJobCb;
 static bool isActivateMessage(const uint8_t *pMessage, size_t nMessage);
-static void sendEchoResponse(const uint8_t *pMessage, size_t nMessage);
+static void evEchoCommand(const uint8_t *pMessage, size_t nMessage);
+static lmic_event_cb_t lmicEventCb;
 static lmic_txmessage_cb_t sendUplinkCompleteCb;
 static osjobcbfn_t timeToSendTestMessageCb;
-static lmic_event_cb_t lmicEventCb;
+static const char *txSuccessToString(int fSuccess);
 
 /****************************************************************************\
 |
@@ -118,7 +122,7 @@ LMIC_certRxMessage(
 
     // it's a message to port 224.
     // if we're not active, ignore everything but activation messages
-    if (certState == LMIC_CERT_STATE_IDLE) {
+    if (! lmic_cert_state_IsActive(certState)) {
         if (isActivateMessage(pMessage, nMessage)) {
             evActivate();
         } // else ignore.
@@ -196,31 +200,19 @@ Returns:
 */
 
 static void evActivate(void) {
-    LMIC_Cert.eventflags |= LMIC_CERT_EVENT_ACTIVATE;
-    fsmEval();
-}
+    if (! lmic_cert_state_IsActive(LMIC_Cert.state)) {
+        LMIC_Cert.eventflags |= LMIC_CERT_EVENT_ACTIVATE;
+        LMIC_Cert.state = LMIC_CERT_STATE_ACTIVATING;
 
-/*
+        LMIC_Cert.saveEvent.pEventCb = LMIC.client.eventCb;
+        LMIC_Cert.saveEvent.pUserData = LMIC.client.eventUserData;
 
-Name:   evDeactivate()
+        LMIC_registerEventCb(lmicEventCb, NULL);
 
-Function:
-        Report an deactivation event to the finite state machine.
-
-Definition:
-        void evDectivate(void);
-
-Description:
-        We report a deactivation event, and re-evaluate the FSM.
-
-Returns:
-        No explicit result.
-
-*/
-
-static void evDeactivate(void) {
-    LMIC_Cert.eventflags |= LMIC_CERT_EVENT_DEACTIVATE;
-    fsmEval();
+        fsmEvalDeferred();
+    } else {
+        LMIC_CERT_PRINTF("Redundant ActivateTM message ignored.\n");
+    }
 }
 
 /*
@@ -271,7 +263,7 @@ static void evMessage(
             break;
         }
         case LORAWAN_CERT_CMD_ECHO: {
-            sendEchoResponse(pMessage, nMessage);
+            evEchoCommand(pMessage, nMessage);
             break;
             }
         case LORAWAN_CERT_CMD_LINK: {
@@ -286,6 +278,35 @@ static void evMessage(
             break;
     }
 }
+
+/*
+
+Name:   evDeactivate()
+
+Function:
+        Report an deactivation event to the finite state machine.
+
+Definition:
+        void evDectivate(void);
+
+Description:
+        We report a deactivation event, and re-evaluate the FSM.
+
+Returns:
+        No explicit result.
+
+*/
+
+static void evDeactivate(void) {
+    LMIC_Cert.eventflags |= LMIC_CERT_EVENT_DEACTIVATE;
+    LMIC_Cert.state = LMIC_CERT_STATE_STOPPING;
+
+    // restore user's event handler.
+    LMIC_registerEventCb(LMIC_Cert.saveEvent.pEventCb, LMIC_Cert.saveEvent.pUserData);
+
+    fsmEvalDeferred();
+}
+
 
 /*
 
@@ -310,18 +331,18 @@ static void evJoinCommand(
     void
 ) {
     LMIC_Cert.eventflags |= LMIC_CERT_EVENT_JOIN_CMD;
-    fsmEval();
+    fsmEvalDeferred();
 }
 
 /*
 
-Name:   sendEchoResponse()
+Name:   evEchoCommand()
 
 Function:
         Format and transmit the response to an echo downlink (aka echo request).
 
 Definition:
-        void sendEchoResponse(
+        void evEchoCommand(
                 const uint8_t *pMessage,
                 size_t nMessage
                 );
@@ -335,20 +356,19 @@ Returns:
 
 */
 
-static lmic_txmessage_cb_t sendEchoResponseCb;
+static lmic_txmessage_cb_t evEchoCommandCb;
 
-static void sendEchoResponse(
+static void evEchoCommand(
     const uint8_t *pMessage,
     size_t nMessage
 ) {
-    uint8_t response[LORAWAN_CERT_CMD_ECHO_LEN_MAX];
     uint8_t *pResponse;
 
-    if (nMessage > sizeof(response))
+    if (nMessage > sizeof(LMIC_Cert.uplinkMessage))
         return;
 
     // create the echo message.
-    pResponse = response;
+    pResponse = LMIC_Cert.uplinkMessage;
 
     // copy the command byte unchanged.
     *pResponse++ = *pMessage++;
@@ -359,36 +379,13 @@ static void sendEchoResponse(
         *pResponse++ = (uint8_t)(*pMessage++ + 1);
     }
 
-    // send the uplink data. Two undocumented things here:
-    // first, that the response goes to the cert port;
-    // second, that the confirmation bit must track the
-    // confirmed state.
-    if (LMIC_sendWithCallback(
-            LORAWAN_PORT_CERT,
-            response, pResponse - response,
-            /* confirmed? */ LMIC_Cert.fsmFlags & LMIC_CERT_FSM_CONFIRM,
-            sendEchoResponseCb,
-            NULL) == 0
-        ) {
-        LMIC_CERT_PRINTF("%s: queued %u bytes\n", __func__, (unsigned)(pResponse - response));
-        LMIC_Cert.fsmFlags |= LMIC_CERT_FSM_UPLINK_BUSY;
-    } else {
-        LMIC_CERT_PRINTF("%s: uplink %u bytes failed\n", __func__, (unsigned)(pResponse - response));
-    }
+    // now that the message is formatted, tell the fsm to send it;
+    // need to use a separate job.
+    LMIC_Cert.uplinkSize = (uint8_t) (pResponse - LMIC_Cert.uplinkMessage);
+    LMIC_Cert.eventflags |= LMIC_CERT_EVENT_ECHO_REQUEST;
+    fsmEvalDeferred();
 }
 
-static const char *txSuccessToString(int fSuccess) {
-    return fSuccess ? "ok" : "failed";
-}
-
-void sendEchoResponseCb(void *pUserData, int fSuccess) {
-    LMIC_API_PARAMETER(pUserData);
-    LMIC_API_PARAMETER(fSuccess);
-
-    LMIC_CERT_PRINTF("%s: tx complete(%s)\n", __func__, txSuccessToString(fSuccess));
-    LMIC_Cert.fsmFlags &= ~LMIC_CERT_FSM_UPLINK_BUSY;
-    fsmEval();
-}
 
 /*
 
@@ -421,8 +418,23 @@ static const char * lmic_cert_fsmstate_Getname(lmic_cert_fsmstate_t state) {
         return names[state];
 }
 
+static void fsmEvalDeferred(void) {
+    if (! (LMIC_Cert.fsmFlags & LMIC_CERT_FSM_JOB_BUSY)) {
+        os_setCallback(&LMIC_Cert.fsmJob, fsmJobCb);
+        LMIC_Cert.fsmFlags |= LMIC_CERT_FSM_JOB_BUSY;
+    }
+}
+
+static void fsmJobCb(osjob_t *j) {
+    LMIC_API_PARAMETER(j);
+    LMIC_Cert.fsmFlags &= ~LMIC_CERT_FSM_JOB_BUSY;
+    fsmEval();
+}
+
 static void fsmEval(void) {
     bool fNewState;
+
+    LMIC_CERT_PRINTF("+%s\n", __func__);
 
     // check for reentry.
     do {
@@ -496,6 +508,17 @@ Returns:
 
 */
 
+static inline lmic_cert_eventflags_t
+eventflags_TestAndClear(lmic_cert_eventflags_t flag) {
+    const lmic_cert_eventflags_t old = LMIC_Cert.eventflags;
+    const lmic_cert_eventflags_t result = old & flag;
+
+    if (result != 0)
+        LMIC_Cert.eventflags = old ^ result;
+
+    return result;
+}
+
 static lmic_cert_fsmstate_t
 fsmDispatch(
     lmic_cert_fsmstate_t state,
@@ -509,27 +532,21 @@ fsmDispatch(
     switch (state) {
         case LMIC_CERT_FSMSTATE_INITIAL: {
             newState = LMIC_CERT_FSMSTATE_INACTIVE;
-            LMIC_Cert.saveEvent.pEventCb = LMIC.client.eventCb;
-            LMIC_Cert.saveEvent.pUserData = LMIC.client.eventUserData;
             break;
         }
 
         case LMIC_CERT_FSMSTATE_INACTIVE: {
-            LMIC_Cert.eventflags &= ~LMIC_CERT_EVENT_DEACTIVATE;
-
             if (fEntry) {
                 acExitActiveMode();
             }
 
-            if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_ACTIVATE) {
+            if (eventflags_TestAndClear(LMIC_CERT_EVENT_ACTIVATE)) {
                 newState = LMIC_CERT_FSMSTATE_ACTIVE;
             }
             break;
         }
 
         case LMIC_CERT_FSMSTATE_ACTIVE: {
-            LMIC_Cert.eventflags &= ~LMIC_CERT_EVENT_ACTIVATE;
-
             if (fEntry) {
                 acEnterActiveMode();
             }
@@ -542,27 +559,47 @@ fsmDispatch(
                 acEnterTestMode();
             }
 
-            if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_DEACTIVATE) {
+            if (eventflags_TestAndClear(LMIC_CERT_EVENT_DEACTIVATE)) {
                 newState = LMIC_CERT_FSMSTATE_INACTIVE;
-            } else if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_JOIN_CMD) {
+            } else if (eventflags_TestAndClear(LMIC_CERT_EVENT_JOIN_CMD)) {
                 newState = LMIC_CERT_FSMSTATE_JOINING;
-            } else if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_SEND_UPLINK) {
-                acSendUplink();
-            } else if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_UPLINK_COMPLETE) {
-                acScheduleNextUplink();
+            } else if (eventflags_TestAndClear(LMIC_CERT_EVENT_ECHO_REQUEST)) {
+                newState = LMIC_CERT_FSMSTATE_ECHOING;
+            } else if (eventflags_TestAndClear(LMIC_CERT_EVENT_SEND_UPLINK)) {
+                newState = LMIC_CERT_FSMSTATE_REPORTING;
             }
             break;
         }
 
         case LMIC_CERT_FSMSTATE_JOINING: {
-            LMIC_Cert.eventflags &= ~LMIC_CERT_EVENT_JOIN_CMD;
-
             if (fEntry)
                 acDoJoin();
 
-            if (LMIC_Cert.eventflags & LMIC_CERT_EVENT_JOINED) {
+            if (eventflags_TestAndClear(LMIC_CERT_EVENT_JOINED)) {
+                newState = LMIC_CERT_FSMSTATE_REPORTING;
+            }
+            break;
+        }
+
+        case LMIC_CERT_FSMSTATE_ECHOING: {
+            if (fEntry)
+                acSendUplinkBuffer();
+
+            if (eventflags_TestAndClear(LMIC_CERT_EVENT_UPLINK_COMPLETE)) {
                 newState = LMIC_CERT_FSMSTATE_TESTMODE;
             }
+            break;
+        }
+
+        case LMIC_CERT_FSMSTATE_REPORTING: {
+            if (fEntry)
+                acSendUplink();
+
+            if (eventflags_TestAndClear(LMIC_CERT_EVENT_UPLINK_COMPLETE)) {
+                acScheduleNextUplink();
+                newState = LMIC_CERT_FSMSTATE_TESTMODE;
+            }
+            break;
         }
 
         default: {
@@ -576,19 +613,19 @@ fsmDispatch(
 static void acEnterActiveMode(void) {
     // indicate to the outer world that we're active.
     LMIC_Cert.state = LMIC_CERT_STATE_ACTIVE;
-
-    LMIC_registerEventCb(lmicEventCb, NULL);
 }
 
 static void acEnterTestMode(void) {
-    LMIC_Cert.eventflags &= ~(LMIC_CERT_EVENT_SEND_UPLINK | LMIC_CERT_EVENT_UPLINK_COMPLETE);
-
     // schedule an uplink.
-    os_setTimedCallback(
+    os_setCallback(
         &LMIC_Cert.uplinkJob,
-        os_getTime() + ms2osticks(10),
         timeToSendTestMessageCb
         );
+}
+
+static void timeToSendTestMessageCb(osjob_t *j) {
+    LMIC_Cert.eventflags |= LMIC_CERT_EVENT_SEND_UPLINK;
+    fsmEval();
 }
 
 static void lmicEventCb(
@@ -607,13 +644,8 @@ static void lmicEventCb(
     // if it's a EV_JOINED, we should tell the FSM.
     if (ev == EV_JOINED) {
         LMIC_Cert.eventflags |= LMIC_CERT_EVENT_JOINED;
-        fsmEval();
+        fsmEvalDeferred();
     }
-}
-
-static void timeToSendTestMessageCb(osjob_t *j) {
-    LMIC_Cert.eventflags |= LMIC_CERT_EVENT_SEND_UPLINK;
-    fsmEval();
 }
 
 
@@ -621,7 +653,6 @@ static void acExitActiveMode(void) {
     LMIC_Cert.state = LMIC_CERT_STATE_IDLE;
     os_clearCallback(&LMIC_Cert.uplinkJob);
     LMIC_clrTxData();
-    LMIC_registerEventCb(LMIC_Cert.saveEvent.pEventCb, LMIC_Cert.saveEvent.pUserData);
 }
 
 
@@ -663,7 +694,26 @@ static void acSendUplink(void) {
 static void sendUplinkCompleteCb(void *pUserData, int fSuccess) {
     LMIC_Cert.eventflags |= LMIC_CERT_EVENT_UPLINK_COMPLETE;
     LMIC_CERT_PRINTF("%s(%s)\n", __func__, txSuccessToString(fSuccess));
-    fsmEval();
+    fsmEvalDeferred();
+}
+
+static void acSendUplinkBuffer(void) {
+    // send uplink data.
+    if (LMIC_sendWithCallback(
+            LORAWAN_PORT_CERT,
+            LMIC_Cert.uplinkMessage, LMIC_Cert.uplinkSize,
+            /* confirmed? */ (LMIC_Cert.fsmFlags & LMIC_CERT_FSM_CONFIRM) != 0,
+            sendUplinkCompleteCb,
+            NULL) == 0
+        ) {
+        LMIC_CERT_PRINTF("%s: queued %u bytes\n", __func__, LMIC_Cert.uplinkSize);
+    } else {
+        LMIC_CERT_PRINTF("%s: uplink %u bytes failed\n", __func__, LMIC_Cert.uplinkSize);
+    }
+}
+
+static const char *txSuccessToString(int fSuccess) {
+    return fSuccess ? "ok" : "failed";
 }
 
 static void acScheduleNextUplink(void) {
