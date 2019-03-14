@@ -13,10 +13,10 @@
 #include <hal/hal.h>
 #include <SPI.h>
 #include <arduino_lmic_hal_boards.h>
-#include <arduino_lmic_lorawan_cert.h>
+#include <arduino_lmic_lorawan_compliance.h>
 
 //
-// For certification tests with the RWC5020A, we use the default addresses
+// For compliance tests with the RWC5020A, we use the default addresses
 // from the tester.
 //
 
@@ -224,8 +224,8 @@ Definition:
 Description:
         This function is called whenever a non-Join downlink message
         is received over LoRaWAN by LMIC. Its job is to invoke the
-        certification handler (if certification support is needed), and
-        then decode any non-certification messages.
+        compliance handler (if compliance support is needed), and
+        then decode any non-compliance messages.
 
 Returns:
         No explicit result.
@@ -238,23 +238,23 @@ void myRxMessageCb(
     const uint8_t *pMessage,
     size_t nMessage
 ) {
-    lmic_cert_rx_action_t const action = LMIC_certRxMessage(port, pMessage, nMessage);
+    lmic_compliance_rx_action_t const action = LMIC_complianceRxMessage(port, pMessage, nMessage);
     switch (action) {
-        case LMIC_CERT_RX_ACTION_START: {
+        case LMIC_COMPLIANCE_RX_ACTION_START: {
             Serial.println(F("Enter test mode"));
             os_clearCallback(&sendjob);
             g_fTestMode = true;
             return;
         }
-        case LMIC_CERT_RX_ACTION_END: {
+        case LMIC_COMPLIANCE_RX_ACTION_END: {
             Serial.println(F("Exit test mode"));
             g_fTestMode = false;
             // we're in the LMIC, we don't want to send from here. Schedule a job.
             os_setTimedCallback(&sendjob, os_getTime() + ms2osticks(10), do_send);
             return;
         }
-        case LMIC_CERT_RX_ACTION_IGNORE: {
-            if (port == LORAWAN_PORT_CERT) {
+        case LMIC_COMPLIANCE_RX_ACTION_IGNORE: {
+            if (port == LORAWAN_PORT_COMPLIANCE) {
                 Serial.print(F("Received test packet "));
                 if (nMessage > 0)
                     Serial.print(pMessage[0], HEX);

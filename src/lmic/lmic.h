@@ -551,17 +551,17 @@ int LMIC_getNetworkTimeReference(lmic_time_reference_t *pReference);
 int LMIC_registerRxMessageCb(lmic_rxmessage_cb_t *pRxMessageCb, void *pUserData);
 int LMIC_registerEventCb(lmic_event_cb_t *pEventCb, void *pUserData);
 
-// APIs for client half of certification.
-typedef u1_t lmic_cert_rx_action_t;
+// APIs for client half of compliance.
+typedef u1_t lmic_compliance_rx_action_t;
 
-enum lmic_sert_rx_action_e {
-    LMIC_CERT_RX_ACTION_PROCESS     = 0,        // process this message normally
-    LMIC_CERT_RX_ACTION_START,                  // enter cert mode, discard this message
-    LMIC_CERT_RX_ACTION_IGNORE,                 // continue in cert mode, discard this message
-    LMIC_CERT_RX_ACTION_END                     // exit cert mode, discard this message
+enum lmic_compliance_rx_action_e {
+    LMIC_COMPLIANCE_RX_ACTION_PROCESS     = 0,        // process this message normally
+    LMIC_COMPLIANCE_RX_ACTION_START,                  // enter compliance mode, discard this message
+    LMIC_COMPLIANCE_RX_ACTION_IGNORE,                 // continue in compliance mode, discard this message
+    LMIC_COMPLIANCE_RX_ACTION_END                     // exit compliance mode, discard this message
 };
 
-lmic_cert_rx_action_t LMIC_certRxMessage(u1_t port, const u1_t *pMessage, size_t nMessage);
+lmic_compliance_rx_action_t LMIC_complianceRxMessage(u1_t port, const u1_t *pMessage, size_t nMessage);
 
 // Declare onEvent() function, to make sure any definition will have the
 // C conventions, even when in a C++ file.
