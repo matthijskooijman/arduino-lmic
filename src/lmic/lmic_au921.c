@@ -213,6 +213,13 @@ void LMICau921_setRx1Params(void) {
         LMIC.rps = dndr2rps(LMIC.dndr);
 }
 
+void LMICau921_initJoinLoop(void) {
+        LMICuslike_initJoinLoop();
+
+        // initialize the adrTxPower.
+        LMIC.adrTxPow = 30; // dBm
+
+}
 
 //
 // END: AU921 related stuff

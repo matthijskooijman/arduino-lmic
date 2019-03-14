@@ -193,7 +193,7 @@ void LMICus915_setBcnRxParams(void) {
 }
 #endif // !DISABLE_BEACONS
 
-// TODO(tmm@mcci.com): parmeterize for US-like
+// set the Rx1 dndr, rps.
 void LMICus915_setRx1Params(void) {
     LMIC.freq = US915_500kHz_DNFBASE + (LMIC.txChnl & 0x7) * US915_500kHz_DNFSTEP;
     if( /* TX datarate */LMIC.dndr < US915_DR_SF8C )
@@ -203,6 +203,12 @@ void LMICus915_setRx1Params(void) {
     LMIC.rps = dndr2rps(LMIC.dndr);
 }
 
+void LMICus915_initJoinLoop(void) {
+    LMICuslike_initJoinLoop();
+
+    // initialize the adrTxPower.
+    LMIC.adrTxPow = 20; // dBm
+}
 
 //
 // END: US915 related stuff

@@ -43,6 +43,9 @@
 #define IS_CHANNEL_500khz(c) (c>=64 && c<72)
 #define ENABLED_CHANNEL(chnl) ((LMIC.channelMap[(chnl >> 4)] & (1<<(chnl & 0x0F))) != 0)
 
+// library functions: called from bandplan
+void LMICuslike_initJoinLoop(void);
+
 // provide the isValidBeacon1 function -- int for bool.
 static inline int
 LMICuslike_isValidBeacon1(const uint8_t *d) {
@@ -82,9 +85,6 @@ u1_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap);
 
 ostime_t LMICuslike_nextTx(ostime_t now);
 #define LMICbandplan_nextTx(now)        LMICuslike_nextTx(now)
-
-void LMICuslike_initJoinLoop(void);
-#define LMICbandplan_initJoinLoop()     LMICuslike_initJoinLoop()
 
 ostime_t LMICuslike_nextJoinState(void);
 #define LMICbandplan_nextJoinState()    LMICuslike_nextJoinState();

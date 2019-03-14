@@ -183,18 +183,13 @@ void LMICuslike_initJoinLoop(void) {
         // starting point.
         setNextChannel(0, 64, LMIC.activeChannels125khz);
 
-        // initialize the adrTxPower.
-        // TODO(tmm@mcci.com): is this right for all US-like regions
-        LMIC.adrTxPow = 20; // dBm
-        ASSERT((LMIC.opmode & OP_NEXTCHNL) == 0);
-
         // make sure LMIC.txend is valid.
         LMIC.txend = os_getTime();
+        ASSERT((LMIC.opmode & OP_NEXTCHNL) == 0);
 
-        // make sure the datarate is set to DR0 per LoRaWAN regional reqts V1.0.2,
-        // section 2.2.2
-        // TODO(tmm@mcci.com): parameterize this for US-like
-        LMICcore_setDrJoin(DRCHG_SET, LORAWAN_DR0);
+        // make sure the datarate is set to DR2 per LoRaWAN regional reqts V1.0.2,
+        // section 2.*.2
+        LMICcore_setDrJoin(DRCHG_SET, LMICbandplan_getInitialDrJoin());
 
         // TODO(tmm@mcci.com) need to implement the transmit randomization and
         // duty cycle restrictions from LoRaWAN V1.0.2 section 7.
@@ -233,7 +228,7 @@ ostime_t LMICuslike_nextJoinState(void) {
                 setNextChannel(0, 64, LMIC.activeChannels125khz);
 
                 // TODO(tmm@mcci.com) parameterize
-                s1_t dr = LORAWAN_DR0;
+                s1_t dr = LMICuslike_getJoin125kHzDR();
                 if ((++LMIC.txCnt & 0x7) == 0) {
                         failed = 1; // All DR exhausted - signal failed
                 }
