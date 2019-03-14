@@ -31,7 +31,7 @@
 
 // preconditions for lmic_us_like.h
 #define LMICuslike_getFirst500kHzDR()   (LORAWAN_DR6)
-
+#define	LMICuslike_getJoin125kHzDR()	(LORAWAN_DR2)
 
 #ifndef _lmic_us_like_h_
 # include "lmic_us_like.h"
