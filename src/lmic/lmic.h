@@ -398,12 +398,12 @@ struct lmic_t {
 
     /* (u)int16_t things */
 
-    rps_t       rps;
-    u2_t        opmode;
-    u2_t        devNonce;     // last generated nonce
+    rps_t       rps;            // radio parameter selections: SF, BW, CodingRate, NoCrc, implicit hdr
+    u2_t        opmode;         // engineUpdate() operating mode flags
+    u2_t        devNonce;       // last generated nonce
 
 #if !defined(DISABLE_BEACONS)
-    s2_t        drift;        // last measured drift
+    s2_t        drift;          // last measured drift
     s2_t        lastDriftDiff;
     s2_t        maxDriftDiff;
 #endif
@@ -555,10 +555,10 @@ int LMIC_registerEventCb(lmic_event_cb_t *pEventCb, void *pUserData);
 typedef u1_t lmic_compliance_rx_action_t;
 
 enum lmic_compliance_rx_action_e {
-    LMIC_COMPLIANCE_RX_ACTION_PROCESS     = 0,        // process this message normally
-    LMIC_COMPLIANCE_RX_ACTION_START,                  // enter compliance mode, discard this message
-    LMIC_COMPLIANCE_RX_ACTION_IGNORE,                 // continue in compliance mode, discard this message
-    LMIC_COMPLIANCE_RX_ACTION_END                     // exit compliance mode, discard this message
+    LMIC_COMPLIANCE_RX_ACTION_PROCESS = 0,  // process this message normally
+    LMIC_COMPLIANCE_RX_ACTION_START,        // enter compliance mode, discard this message
+    LMIC_COMPLIANCE_RX_ACTION_IGNORE,       // continue in compliance mode, discard this message
+    LMIC_COMPLIANCE_RX_ACTION_END           // exit compliance mode, discard this message
 };
 
 lmic_compliance_rx_action_t LMIC_complianceRxMessage(u1_t port, const u1_t *pMessage, size_t nMessage);
