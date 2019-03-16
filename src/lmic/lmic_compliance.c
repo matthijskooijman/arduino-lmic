@@ -115,9 +115,10 @@ LMIC_complianceRxMessage(
 
     // filter normal messages.
     if (port != LORAWAN_PORT_COMPLIANCE) {
-        return lmic_compliance_state_IsActive(complianceState) ? LMIC_COMPLIANCE_RX_ACTION_PROCESS
-                                                   : LMIC_COMPLIANCE_RX_ACTION_IGNORE
-                                                   ;
+        return lmic_compliance_state_IsActive(complianceState)
+                    ? LMIC_COMPLIANCE_RX_ACTION_PROCESS
+                    : LMIC_COMPLIANCE_RX_ACTION_IGNORE
+                    ;
     }
 
     // it's a message to port 224.
