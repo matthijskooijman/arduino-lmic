@@ -1,6 +1,6 @@
 /*
 
-Module: rwccert-otaa-halconfig.ino
+Module: compliance-otaa-halconfig.ino
 
 Function:
     Test program for developing and checking LMIC compliance test support.
@@ -10,6 +10,10 @@ Copyright and License:
 
 Author:
     Terry Moore, MCCI Corporation   March 2019
+
+Description:
+    This sketch demonstrates use of the LMIC compliance-test mode. Tested
+    with an RWC5020A LoRaWAN Tester.
 
 */
 
