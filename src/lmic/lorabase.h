@@ -44,7 +44,14 @@ typedef u1_t cr_t;
 typedef u1_t sf_t;
 typedef u1_t bw_t;
 typedef u1_t dr_t;
+
 // Radio parameter set (encodes SF/BW/CR/IH/NOCRC)
+// 2..0:    Spreading factor
+// 4..3:    bandwidth: 0 == 125kHz, 1 == 250 kHz, 2 == 500 kHz. 3 == reserved.
+// 6..5:    coding rate: 0 == 4/5, 1 == 4/6, 2 == 4/7, 3 == 4/8
+// 7:       nocrc: 0 == with crc, 1 == without crc
+// 15..8:   Implicit header control: 0 ==> none, 1..0xFF ==> length in bytes.
+
 typedef u2_t rps_t;
 TYPEDEF_xref2rps_t;
 
