@@ -54,6 +54,8 @@ requires C99 mode to be enabled by default.
 		- [Disabling JOIN](#disabling-join)
 		- [Disabling Class A MAC commands](#disabling-class-a-mac-commands)
 		- [Disabling Class B MAC commands](#disabling-class-b-mac-commands)
+		- [Disabling user events](#disabling-user-events)
+		- [Disabling external reference to `onEvent()`](#disabling-external-reference-to-onevent)
 		- [Special purpose](#special-purpose)
 - [Supported hardware](#supported-hardware)
 - [Pre-Integrated Boards](#pre-integrated-boards)
@@ -285,7 +287,7 @@ which indicates that each tick corresponds to 16 microseconds (because 16 == 2^4
 
 This variable sets the default frequency for the SPI bus connection to the transceiver. The default is `1E6`, meaning 1 MHz. However, this can be overridden by the contents of the `lmic_pinmap` structure, and we recommend that you use that approach rather than editing the `project_settings/lmic_project_config.h` file.
 
-####  Changing handling of runtime assertion failures
+#### Changing handling of runtime assertion failures
 
 The variables `LMIC_FAILURE_TO` and `DISABLE_LMIC_FAILURE_TO`
 control the handling of runtime assertion failures. By default, assertion messages are displayed using
@@ -308,6 +310,14 @@ commands.
 `DISABLE_MCMD_PING_SET` disables the PING_SET MAC commands. It's implied by `DISABLE_PING`.
 
 `DISABLE_MCMD_BCNI_ANS` disables the next-beacon start command. It's implied by `DISABLE_BEACON`
+
+#### Disabling user events
+
+Code to handle registered callbacks for tx, rx, and events can be suppressed by setting `LMIC_ENABLE_user_events` to zero.  This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, user events are supported, if zero, user events are not-supported.  The default is to support user events.
+
+#### Disabling external reference to `onEvent()`
+
+In some embedded systems, `onEvent()` may be defined for some other purpose; so the weak reference to the function `onEvent` will be satified, causing the LMIC to try to call that function. All reference to `onEvent()` can be suppressed by setting `LMIC_ENABLE_onEvent` to 0.   This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, a weak reference to `onEvent()` will be used; if zero, the user `onEvent()` function is not supported, and the client must register an event handler explicitly.
 
 #### Special purpose
 
