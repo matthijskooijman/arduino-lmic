@@ -1,23 +1,30 @@
-/*******************************************************************************
- * Copyright (c) 2019 Terry Moore, MCCI
- *
- * Permission is hereby granted, free of charge, to anyone
- * obtaining a copy of this document and accompanying files,
- * to do whatever they want with them without any restriction,
- * including, but not limited to, copying, modification and redistribution.
- * NO WARRANTY OF ANY KIND IS PROVIDED.
- *
- *******************************************************************************/
+/*
+
+Module: rwccert-otaa-halconfig.ino
+
+Function:
+    Test program for developing and checking LMIC compliance test support.
+
+Copyright and License:
+    Please see accompanying LICENSE file.
+
+Author:
+    Terry Moore, MCCI Corporation   March 2019
+
+*/
+
+#include <Arduino.h>
 
 #include <arduino_lmic.h>
-#include <hal/hal.h>
-#include <SPI.h>
 #include <arduino_lmic_hal_boards.h>
 #include <arduino_lmic_lorawan_compliance.h>
 
+#include <SPI.h>
+
 //
 // For compliance tests with the RWC5020A, we use the default addresses
-// from the tester.
+// from the tester; except that we use APPKEY 0,..., 0, 2, to avoid
+// collisions with a registered app on TTN.
 //
 
 // This EUI must be in little-endian format, so least-significant-byte
@@ -271,7 +278,7 @@ void myRxMessageCb(
     Serial.print(F("Received message on port "));
     Serial.print(port);
     Serial.print(F(": "));
-    Serial.print(nMessage);
+    Serial.print(unsigned(nMessage));
     Serial.println(F(" bytes"));
     }
 
@@ -332,7 +339,7 @@ void setup() {
     Serial.println(F("Starting"));
 
     // LMIC init using the computed target
-    const lmic_pinmap *pPinMap = Arduino_LMIC::GetPinmap_ThisBoard();
+    const auto pPinMap = Arduino_LMIC::GetPinmap_ThisBoard();
 
     // don't die mysteriously; die noisily.
     if (pPinMap == nullptr) {
