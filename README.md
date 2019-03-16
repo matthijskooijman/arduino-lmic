@@ -56,6 +56,7 @@ requires C99 mode to be enabled by default.
 		- [Disabling Class B MAC commands](#disabling-class-b-mac-commands)
 		- [Disabling user events](#disabling-user-events)
 		- [Disabling external reference to `onEvent()`](#disabling-external-reference-to-onevent)
+		- [Enabling long messages](#enabling-long-messages)
 		- [Special purpose](#special-purpose)
 - [Supported hardware](#supported-hardware)
 - [Pre-Integrated Boards](#pre-integrated-boards)
@@ -318,6 +319,10 @@ Code to handle registered callbacks for tx, rx, and events can be suppressed by 
 #### Disabling external reference to `onEvent()`
 
 In some embedded systems, `onEvent()` may be defined for some other purpose; so the weak reference to the function `onEvent` will be satified, causing the LMIC to try to call that function. All reference to `onEvent()` can be suppressed by setting `LMIC_ENABLE_onEvent` to 0.   This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, a weak reference to `onEvent()` will be used; if zero, the user `onEvent()` function is not supported, and the client must register an event handler explicitly.
+
+#### Enabling long messages
+
+To save RAM for simple devices, the LMIC allows message length to be limited to 64 bytes instead of the LoRaWAN standard of 255 bytes max. This saves about 2*192 bytes of RAM. Unfortunately, compliance tests require the full message size. Long messages are enabled by setting `LMIC_ENABLE_long_messages` to 1, or disabled by setting it to zero. This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, the maximum frame size is 255 bytes, and if zero, the maximum frame size is 64 bytes.
 
 #### Special purpose
 

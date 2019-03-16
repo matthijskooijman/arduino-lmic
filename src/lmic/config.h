@@ -192,4 +192,10 @@
 # define LMIC_ENABLE_onEvent 1
 #endif
 
+// LMIC_ENABLE_long_messages
+// LMIC certification requires that this be enabled.
+#if !defined(LMIC_ENABLE_long_messages)
+# define LMIC_ENABLE_long_messages 1        /* PARAM */
+#endif
+
 #endif // _lmic_config_h_
