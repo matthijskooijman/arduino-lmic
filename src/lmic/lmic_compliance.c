@@ -435,8 +435,6 @@ static void fsmJobCb(osjob_t *j) {
 static void fsmEval(void) {
     bool fNewState;
 
-    LMIC_COMPLIANCE_PRINTF("+%s\n", __func__);
-
     // check for reentry.
     do {
         lmic_compliance_fsmflags_t const fsmFlags = LMIC_Compliance.fsmFlags;
