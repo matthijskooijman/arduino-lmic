@@ -420,15 +420,11 @@ static const char * lmic_compliance_fsmstate_Getname(lmic_compliance_fsmstate_t 
 }
 
 static void fsmEvalDeferred(void) {
-    if (! (LMIC_Compliance.fsmFlags & LMIC_COMPLIANCE_FSM_JOB_BUSY)) {
-        os_setCallback(&LMIC_Compliance.fsmJob, fsmJobCb);
-        LMIC_Compliance.fsmFlags |= LMIC_COMPLIANCE_FSM_JOB_BUSY;
-    }
+    os_setCallback(&LMIC_Compliance.fsmJob, fsmJobCb);
 }
 
 static void fsmJobCb(osjob_t *j) {
     LMIC_API_PARAMETER(j);
-    LMIC_Compliance.fsmFlags &= ~LMIC_COMPLIANCE_FSM_JOB_BUSY;
     fsmEval();
 }
 

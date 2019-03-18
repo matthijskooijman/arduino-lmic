@@ -67,7 +67,6 @@ enum lmic_compliance_fsmflags_e {
     LMIC_COMPLIANCE_FSM_ACTIVE          = 1u << 0,
     LMIC_COMPLIANCE_FSM_REENTERED       = 1u << 1,
     LMIC_COMPLIANCE_FSM_CONFIRM         = 1u << 2,
-    LMIC_COMPLIANCE_FSM_JOB_BUSY        = 1u << 4,
 };
 
 typedef uint8_t lmic_compliance_fsmstate_t;
