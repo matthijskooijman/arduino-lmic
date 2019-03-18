@@ -576,6 +576,12 @@ static void runReset (xref2osjob_t osjob) {
 #endif // !DISABLE_JOIN
 }
 
+static void resetJoinParams(void) {
+    LMIC.rx1DrOffset = 0;
+    LMIC.dn2Dr       = DR_DNW2;
+    LMIC.dn2Freq     = FREQ_DNW2;
+}
+
 static void stateJustJoined (void) {
     LMIC.seqnoDn     = LMIC.seqnoUp = 0;
     LMIC.rejoinCnt   = 0;
@@ -595,8 +601,7 @@ static void stateJustJoined (void) {
 #endif
     LMIC.upRepeat    = 0;
     LMIC.adrAckReq   = LINK_CHECK_INIT;
-    LMIC.dn2Dr       = DR_DNW2;
-    LMIC.dn2Freq     = FREQ_DNW2;
+    resetJoinParams();
 #if !defined(DISABLE_BEACONS)
     LMIC.bcnChnl     = CHNL_BCN;
 #endif
@@ -1726,6 +1731,7 @@ bit_t LMIC_startJoining (void) {
         LMIC.opmode &= ~(OP_SCAN|OP_REJOIN|OP_LINKDEAD|OP_NEXTCHNL);
         // Setup state
         LMIC.rejoinCnt = LMIC.txCnt = 0;
+        resetJoinParams();
         LMICbandplan_initJoinLoop();
         LMIC.opmode |= OP_JOINING;
         // reportEventAndUpdate will call engineUpdate which then starts sending JOIN REQUESTS
