@@ -11,10 +11,6 @@ Copyright and License:
 Author:
     Terry Moore, MCCI Corporation   March 2019
 
-Description:
-    This sketch demonstrates use of the LMIC compliance-test mode. Tested
-    with an RWC5020A LoRaWAN Tester.
-
 */
 
 #include <Arduino.h>
@@ -60,6 +56,15 @@ bool g_fTestMode = false;
 lmic_event_cb_t myEventCb;
 lmic_rxmessage_cb_t myRxMessageCb;
 
+const char * const evNames[] = {
+    "<<zero>>",
+    "EV_SCAN_TIMEOUT", "EV_BEACON_FOUND",
+    "EV_BEACON_MISSED", "EV_BEACON_TRACKED", "EV_JOINING",
+    "EV_JOINED", "EV_RFU1", "EV_JOIN_FAILED", "EV_REJOIN_FAILED",
+    "EV_TXCOMPLETE", "EV_LOST_TSYNC", "EV_RESET",
+    "EV_RXCOMPLETE", "EV_LINK_DEAD", "EV_LINK_ALIVE", "EV_SCAN_FOUND",
+    "EV_TXSTART", "EV_TXCANCELED", "EV_RXSTART", "EV_JOIN_TXCOMPLETE"
+};
 
 /*
 
@@ -80,45 +85,166 @@ Returns:
 
 */
 
+static osjobcbfn_t eventjob_cb;
+
+class cEventQueue {
+public:
+    cEventQueue() {};
+    ~cEventQueue() {};
+
+    struct eventnode_t {
+        osjob_t     job;
+        ev_t        event;
+        ostime_t    time;
+        ostime_t    txend;
+        u4_t        freq;
+        rps_t       rps;
+        u2_t        opmode;
+        u1_t        txChnl;
+        u1_t        datarate;
+        u1_t        txrxFlags;
+        u1_t        saveIrqFlags;
+    };
+
+    bool getEvent(eventnode_t &node) {
+        if (m_head == m_tail) {
+            return false;
+        }
+        node = m_queue[m_head];
+        if (++m_head == sizeof(m_queue) / sizeof(m_queue[0])) {
+            m_head = 0;
+        }
+        return true;
+    }
+
+    bool putEvent(ev_t event) {
+        auto i = m_tail + 1;
+        if (i == sizeof(m_queue) / sizeof(m_queue[0])) {
+            i = 0;
+        }
+        if (i != m_head) {
+            auto const pn = &m_queue[m_tail];
+            pn->time = os_getTime();
+            pn->txend = LMIC.txend;
+            pn->event = event;
+            pn->freq = LMIC.freq;
+            pn->txChnl = LMIC.txChnl;
+            pn->rps = LMIC.rps;
+            pn->datarate = LMIC.datarate;
+            pn->opmode = LMIC.opmode;
+            pn->txrxFlags = LMIC.txrxFlags;
+            pn->saveIrqFlags = LMIC.saveIrqFlags;
+            m_tail = i;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+private:
+    unsigned m_head, m_tail;
+    eventnode_t m_queue[16];
+    osjob_t m_job;
+};
+
+cEventQueue eventQueue;
+
 uint8_t lastTxChannel;
 bool lastTxStart;
 
 void myEventCb(void *pUserData, ev_t ev) {
-    if (ev == EV_TXSTART) {
-        lastTxStart == true;
-        Serial.print(F("."));
-    } else {
-        if (lastTxStart) {
-            Serial.println();
-            lastTxStart = false;
-        }
-        Serial.print(os_getTime());
-        Serial.print(F(": "));
+    eventQueue.putEvent(ev);
+
+    if (ev == EV_JOINING) {
+        setupForNetwork(true);
+    } else if (ev == EV_JOINED) {
+        setupForNetwork(false);
     }
+}
+
+void eventPrint(cEventQueue::eventnode_t &e);
+
+void eventPrintAll(void) {
+    while (eventPrintOne())
+        ;
+}
+
+bool eventPrintOne(void) {
+    cEventQueue::eventnode_t e;
+    if (eventQueue.getEvent(e)) {
+        eventPrint(e);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static void eventjob_cb(osjob_t *j) {
+    eventPrintAll();
+}
+
+const char *getSfName(rps_t rps) {
+    const char * const t[] = { "FSK", "SF7", "SF8", "SF9", "SF10", "SF11", "SF12", "SFrfu" };
+    return t[getSf(rps)];
+}
+
+const char *getBwName(rps_t rps) {
+    const char * const t[] = { "BW125", "BW250", "BW500", "BWrfu" };
+    return t[getBw(rps)];
+}
+
+const char *getCrName(rps_t rps) {
+    const char * const t[] = { "CR 4/5", "CR 4/6", "CR 4/7", "CR 4/8" };
+    return t[getCr(rps)];
+}
+
+const char *getCrcName(rps_t rps) {
+    return getNocrc(rps) ? "NoCrc" : "Crc";
+}
+
+void printFreq(u4_t freq) {
+    Serial.print(freq / 1000000);
+    Serial.print(F("."));
+    Serial.print((freq % 1000000) / 100000);
+}
+
+void printRps(rps_t rps) {
+    Serial.print(F(" rps=0x")); Serial.print(unsigned(rps), HEX);
+    Serial.print(F(" (")); Serial.print(getSfName(rps));
+    Serial.print(F(" ")); Serial.print(getBwName(rps));
+    Serial.print(F(" ")); Serial.print(getCrName(rps));
+    Serial.print(F(" ")); Serial.print(getCrcName(rps));
+    Serial.print(F(" IH=")); Serial.print(unsigned(getIh(rps)));
+    Serial.print(F(")"));
+}
+
+void eventPrint(cEventQueue::eventnode_t &e) {
+    ev_t ev = e.event;
+
+    Serial.print(e.time);
+    Serial.print(F(": "));
+    if (ev < sizeof(evNames) / sizeof(evNames[0])) {
+        Serial.print(evNames[ev]);
+    } else {
+        Serial.print(F("Unknown event: "));
+        Serial.print((unsigned) ev);
+    }
+
     switch(ev) {
         case EV_SCAN_TIMEOUT:
-            Serial.println(F("EV_SCAN_TIMEOUT"));
             break;
         case EV_BEACON_FOUND:
-            Serial.println(F("EV_BEACON_FOUND"));
             break;
         case EV_BEACON_MISSED:
-            Serial.println(F("EV_BEACON_MISSED"));
             break;
         case EV_BEACON_TRACKED:
-            Serial.println(F("EV_BEACON_TRACKED"));
             break;
-
         case EV_JOINING:
-            Serial.println(F("EV_JOINING"));
-
-            // this is our moment to set up pre-join network parameters.
-            setupForNetwork();
             break;
 
         case EV_JOINED:
-            Serial.print(F("EV_JOINED: ch "));
-            Serial.println(lastTxChannel);
+            Serial.print(F(": ch "));
+            Serial.println(unsigned(e.txChnl));
             {
               u4_t netid = 0;
               devaddr_t devaddr = 0;
@@ -142,7 +268,6 @@ void myEventCb(void *pUserData, ev_t ev) {
                               Serial.print("-");
                       Serial.print(nwkKey[i], HEX);
               }
-              Serial.println("");
             }
             break;
         /*
@@ -154,44 +279,57 @@ void myEventCb(void *pUserData, ev_t ev) {
         ||     break;
         */
         case EV_JOIN_FAILED:
-            // this event is just advisory (though it looks fearsome) --
-            // we've just wrapped through all our join cycles, and
-            // we will start over. You could use this to disable the radio
-            // for a while.
-            Serial.println(F("EV_JOIN_FAILED"));
+            // print out rx info
+            Serial.print(F(":  freq=")); printFreq(e.freq);
+            printRps(e.rps);
+            Serial.print(F(" opmode=")); Serial.print(e.opmode, HEX);
+            printf(" irqLevel %u", hal_getIrqLevel());
+
+            do {
+                uint8_t regbuf[0x80];
+                regbuf[0] = 0;
+                hal_spi_read(1, regbuf + 1, sizeof(regbuf) - 1);
+
+                for (unsigned i = 0; i < sizeof(regbuf); ++i) {
+                    if (i % 16 == 0) {
+                        printf("\r\n%02x:", i);
+                    }
+                    printf("%s%02x", ((i % 16) == 8) ? " - " : " ", regbuf[i]);
+                }
+
+            hal_pin_rst(0);
+            delay(2);
+            hal_pin_rst(2);
+            delay(6);
+
+            const uint8_t opmode = 0x88;    // LoRa and sleep.
+            hal_spi_write(0x81, &opmode, 1);
+
+            } while (0);
             break;
 
         case EV_REJOIN_FAILED:
             // this event means that someone tried a rejoin, and it failed.
             // it doesn't really mean anything bad, it's just advisory.
-            Serial.println(F("EV_REJOIN_FAILED"));
             break;
 
         case EV_TXCOMPLETE:
-            Serial.print(F("EV_TXCOMPLETE: ch "));
-            Serial.print(lastTxChannel);
-            if (LMIC.txrxFlags & TXRX_ACK)
+            Serial.print(F(": ch "));
+            Serial.print(e.txChnl);
+            printRps(e.rps);
+            Serial.print(F(" txrxflags 0x")); Serial.print(e.txrxFlags, HEX);
+            if (e.txrxFlags & TXRX_ACK)
                 Serial.print(F("; Received ack"));
-            Serial.println(F("."));
             break;
         case EV_LOST_TSYNC:
-            Serial.println(F("EV_LOST_TSYNC"));
             break;
         case EV_RESET:
-            // this event means that we saturated the uplink or downlink counter.
-            // this forces the entire LMIC to be reset. A join is necessary. If
-            // join is not configured, then time is up for this device.
-            Serial.println(F("EV_RESET"));
             break;
         case EV_RXCOMPLETE:
-            // data received in ping slot
-            Serial.println(F("EV_RXCOMPLETE"));
             break;
         case EV_LINK_DEAD:
-            Serial.println(F("EV_LINK_DEAD"));
             break;
         case EV_LINK_ALIVE:
-            Serial.println(F("EV_LINK_ALIVE"));
             break;
         /*
         || This event is defined but not used in the code. No
@@ -204,13 +342,32 @@ void myEventCb(void *pUserData, ev_t ev) {
         case EV_TXSTART:
             // this event tells us that a transmit is about to start.
             // but printing here is bad for timing.
-            lastTxChannel = LMIC.txChnl;
+            Serial.print(F(": ch "));
+            Serial.print(unsigned(e.txChnl));
+            printRps(e.rps);
+            Serial.print(F(", datarate ")); Serial.print(unsigned(e.datarate));
+            Serial.print(F(", opmode ")); Serial.print(unsigned(e.opmode), HEX);
             break;
+
+        case EV_RXSTART:
+            Serial.print(F(": freq="));
+            printFreq(e.freq);
+            printRps(e.rps);
+            Serial.print(F(", datarate ")); Serial.print(unsigned(e.datarate));
+            Serial.print(F(", opmode ")); Serial.print(unsigned(e.opmode), HEX);
+            Serial.print(F(", txend ")); Serial.print(e.txend); 
+            Serial.print(F(", delta ms ")); Serial.print(osticks2ms(e.time - e.txend));
+            break;
+
+        case EV_JOIN_TXCOMPLETE:
+            Serial.print(F(": saveIrqFlags 0x"));
+            Serial.print(unsigned(e.saveIrqFlags), HEX);
+            break;
+
         default:
-            Serial.print(F("Unknown event: "));
-            Serial.println((unsigned) ev);
             break;
     }
+    Serial.println("");
 }
 
 /*
@@ -261,7 +418,7 @@ void myRxMessageCb(
             Serial.println(F("Exit test mode"));
             g_fTestMode = false;
             // we're in the LMIC, we don't want to send from here. Schedule a job.
-            os_setTimedCallback(&sendjob, os_getTime() + ms2osticks(10), do_send);
+            os_setTimedCallback(&sendjob, os_getTime() + sec2osticks(TX_INTERVAL), do_send);
             return;
         }
         case LMIC_COMPLIANCE_RX_ACTION_IGNORE: {
@@ -362,21 +519,30 @@ void setup() {
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
 
-    // do the network-specific setup.
-    setupForNetwork();
+    LMIC_setClockError(5 * MAX_CLOCK_ERROR / 100);
+
+    // do the network-specific setup prior to join.
+    setupForNetwork(false);
 
     // Start job (sending automatically starts OTAA too)
     do_send(&sendjob);
 }
 
-void setupForNetwork(void) {
+void setupForNetwork(bool preJoin) {
 #if defined(CFG_us915)
-    LMIC_setLinkCheckMode(0);
-    LMIC_setDrTxpow(DR_SF7, 14);
     LMIC_selectSubBand(1);
+
+    if (! preJoin) {
+//        LMIC_setLinkCheckMode(0);
+//        LMIC_setDrTxpow(DR_SF7, 14);
+    }
 #endif
 }
 
 void loop() {
     os_runloop_once();
+    while ((LMIC.opmode & OP_TXRXPEND) == 0 && 
+           ! os_queryTimeCriticalJobs(ms2osticks(1000)) &&
+           eventPrintOne())
+        ;
 }
