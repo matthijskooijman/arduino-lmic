@@ -493,6 +493,7 @@ struct lmic_t {
 #endif
 
     u1_t        noRXIQinversion;
+    u1_t        saveIrqFlags;   // last LoRa IRQ flags
 };
 
 //! \var struct lmic_t LMIC
