@@ -188,6 +188,12 @@
 
 #define SX1276_MC1_IMPLICIT_HEADER_MODE_ON    0x01
 
+#ifdef CFG_sx1276_radio
+# define SX127X_MC1_IMPLICIT_HEADER_MODE_ON	SX1276_MC1_IMPLICIT_HEADER_MODE_ON
+#else
+# define SX127X_MC1_IMPLICIT_HEADER_MODE_ON	SX1272_MC1_IMPLICIT_HEADER_MODE_ON
+#endif
+
 // sx1276 RegModemConfig2
 #define SX1276_MC2_RX_PAYLOAD_CRCON        0x04
 
@@ -969,7 +975,7 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
             }
             LMIC.rxtime = now;
             // read the PDU and inform the MAC that we received something
-            LMIC.dataLen = (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON) ?
+            LMIC.dataLen = (readReg(LORARegModemConfig1) & SX127X_MC1_IMPLICIT_HEADER_MODE_ON) ?
                 readReg(LORARegPayloadLength) : readReg(LORARegRxNbBytes);
             // set FIFO read address pointer
             writeReg(LORARegFifoAddrPtr, readReg(LORARegFifoRxCurrentAddr));
