@@ -40,6 +40,8 @@ DEFINE_LMIC;
 
 
 // Fwd decls.
+static void reportEventNoUpdate(ev_t);
+static void reportEventAndUpdate(ev_t);
 static void engineUpdate(void);
 static bit_t processJoinAccept_badframe(void);
 static bit_t processJoinAccept_nojoinframe(void);
@@ -453,8 +455,13 @@ static void runEngineUpdate (xref2osjob_t osjob) {
     engineUpdate();
 }
 
+static void reportEventAndUpdate(ev_t ev) {
+    reportEventNoUpdate(ev);
+    engineUpdate();
+}
 
-static void reportEvent (ev_t ev) {
+static void reportEventNoUpdate (ev_t ev) {
+    uint32_t const evSet = 1u << ev;
     EV(devCond, INFO, (e_.reason = EV::devCond_t::LMIC_EV,
                        e_.eui    = MAIN::CDEV->getEui(),
                        e_.info   = ev));
@@ -468,7 +475,6 @@ static void reportEvent (ev_t ev) {
     // to use onEvent and overide the dynamic mechanism.
 #if LMIC_ENABLE_user_events
     // create a mask to test against sets of events.
-    uint32_t const evSet = 1u << ev;
 
     // if a message was received, notify the user.
     if ((evSet & ((1u<<EV_TXCOMPLETE) | (1u<<EV_RXCOMPLETE))) != 0 &&
@@ -526,8 +532,6 @@ static void reportEvent (ev_t ev) {
     if (LMIC.client.eventCb != NULL)
         LMIC.client.eventCb(LMIC.client.eventUserData, ev);
 #endif // LMIC_ENABLE_user_events
-
-    engineUpdate();
 }
 
 int LMIC_registerRxMessageCb(lmic_rxmessage_cb_t *pRxMessageCb, void *pUserData) {
@@ -560,10 +564,12 @@ static void runReset (xref2osjob_t osjob) {
     LMIC_reset();
 
     // report event before the join event.
-    reportEvent(EV_RESET);
+    reportEventNoUpdate(EV_RESET);
 
 #if !defined(DISABLE_JOIN)
     LMIC_startJoining();
+#else
+    os_setCallback(&LMIC.osjob, FUNC_ADDR(runEngineUpdate));
 #endif // !DISABLE_JOIN
 }
 
@@ -1139,7 +1145,7 @@ static void onJoinFailed (xref2osjob_t osjob) {
 
     // Notify app - must call LMIC_reset() to stop joining
     // otherwise join procedure continues.
-    reportEvent(EV_JOIN_FAILED);
+    reportEventAndUpdate(EV_JOIN_FAILED);
 }
 
 // process join-accept message or deal with no join-accept in slot 2.
@@ -1242,7 +1248,7 @@ static bit_t processJoinAccept (void) {
     LMIC.rx1DrOffset = (LMIC.frame[OFF_JA_DLSET] >> 4) & 0x7;
     LMIC.rxDelay = LMIC.frame[OFF_JA_RXDLY];
     if (LMIC.rxDelay == 0) LMIC.rxDelay = 1;
-    reportEvent(EV_JOINED);
+    reportEventAndUpdate(EV_JOINED);
     return 1;
 }
 
@@ -1266,7 +1272,7 @@ static bit_t processJoinAccept_nojoinframe(void) {
             LMIC.opmode &= ~(OP_REJOIN|OP_TXRXPEND);
             if( LMIC.rejoinCnt < 10 )
                 LMIC.rejoinCnt++;
-            reportEvent(EV_REJOIN_FAILED);
+            reportEventAndUpdate(EV_REJOIN_FAILED);
             // stop the join process.
             return 1;
         }
@@ -1559,7 +1565,7 @@ static void onBcnRx (xref2osjob_t osjob) {
     if( LMIC.dataLen == 0 ) {
         // Nothing received - timeout
         LMIC.opmode &= ~(OP_SCAN | OP_TRACK);
-        reportEvent(EV_SCAN_TIMEOUT);
+        reportEventAndUpdate(EV_SCAN_TIMEOUT);
         return;
     }
     if( decodeBeacon() <= 0 ) {
@@ -1575,7 +1581,7 @@ static void onBcnRx (xref2osjob_t osjob) {
     calcBcnRxWindowFromMillis(13,1);
     LMIC.opmode &= ~OP_SCAN;          // turn SCAN off
     LMIC.opmode |=  OP_TRACK;         // auto enable tracking
-    reportEvent(EV_BEACON_FOUND);    // can be disabled in callback
+    reportEventAndUpdate(EV_BEACON_FOUND);    // can be disabled in callback
 }
 
 
@@ -1684,7 +1690,7 @@ static void startJoining (xref2osjob_t osjob) {
 
     // let the client know that now's the time to update
     // network settings.
-    reportEvent(EV_JOINING);
+    reportEventAndUpdate(EV_JOINING);
 }
 
 // reset the joined-to-network state (and clean up)
@@ -1712,7 +1718,7 @@ bit_t LMIC_startJoining (void) {
         LMIC.rejoinCnt = LMIC.txCnt = 0;
         LMICbandplan_initJoinLoop();
         LMIC.opmode |= OP_JOINING;
-        // reportEvent will call engineUpdate which then starts sending JOIN REQUESTS
+        // reportEventAndUpdate will call engineUpdate which then starts sending JOIN REQUESTS
         os_setCallback(&LMIC.osjob, FUNC_ADDR(startJoining));
         return 1;
     }
@@ -1734,8 +1740,7 @@ static void processPingRx (xref2osjob_t osjob) {
     if( LMIC.dataLen != 0 ) {
         initTxrxFlags(__func__, TXRX_PING);
         if( decodeFrame() ) {
-            reportEvent(EV_RXCOMPLETE);
-            return;
+            reportEventNoUpdate(EV_RXCOMPLETE);
         }
     }
     // Pick next ping slot
@@ -1789,9 +1794,9 @@ static bit_t processDnData (void) {
 
         if( (LMIC.txrxFlags & (TXRX_DNW1|TXRX_DNW2|TXRX_PING)) != 0  &&  (LMIC.opmode & OP_LINKDEAD) != 0 ) {
             LMIC.opmode &= ~OP_LINKDEAD;
-            reportEvent(EV_LINK_ALIVE);
+            reportEventNoUpdate(EV_LINK_ALIVE);
         }
-        reportEvent(EV_TXCOMPLETE);
+        reportEventAndUpdate(EV_TXCOMPLETE);
         // If we haven't heard from NWK in a while although we asked for a sign
         // assume link is dead - notify application and keep going
         if( LMIC.adrAckReq > LINK_CHECK_DEAD ) {
@@ -1810,13 +1815,13 @@ static bit_t processDnData (void) {
             setDrTxpow(DRCHG_NOADRACK, newDr, pow2dBm(0));
             LMIC.adrAckReq = LINK_CHECK_CONT;
             LMIC.opmode |= OP_LINKDEAD;
-            reportEvent(EV_LINK_DEAD);
+            reportEventNoUpdate(EV_LINK_DEAD); // update?
         }
 #if !defined(DISABLE_BEACONS)
         // If this falls to zero the NWK did not answer our MCMD_BCNI_REQ commands - try full scan
         if( LMIC.bcninfoTries > 0 ) {
             if( (LMIC.opmode & OP_TRACK) != 0 ) {
-                reportEvent(EV_BEACON_FOUND);
+                reportEventNoUpdate(EV_BEACON_FOUND); // update?
                 LMIC.bcninfoTries = 0;
             }
             else if( --LMIC.bcninfoTries == 0 ) {
@@ -1883,7 +1888,7 @@ static void processBeacon (xref2osjob_t osjob) {
             LMIC.opmode |= OP_REJOIN;  // try if we can roam to another network
         if( LMIC.bcnRxsyms > MAX_RXSYMS ) {
             LMIC.opmode &= ~(OP_TRACK|OP_PINGABLE|OP_PINGINI|OP_REJOIN);
-            reportEvent(EV_LOST_TSYNC);
+            reportEventAndUpdate(EV_LOST_TSYNC);
             return;
         }
     }
@@ -1895,10 +1900,10 @@ static void processBeacon (xref2osjob_t osjob) {
     if( (LMIC.opmode & OP_PINGINI) != 0 )
         rxschedInit(&LMIC.ping);  // note: reuses LMIC.frame buffer!
 #endif // !DISABLE_PING
-    reportEvent(ev);
+    reportEventAndUpdate(ev);
 }
 
-
+// job entry: time to start receiving a beacon.
 static void startRxBcn (xref2osjob_t osjob) {
     LMIC_API_PARAMETER(osjob);
 
@@ -1909,6 +1914,7 @@ static void startRxBcn (xref2osjob_t osjob) {
 
 
 #if !defined(DISABLE_PING)
+// job entry: time to start receiving in our scheduled downlink slot.
 static void startRxPing (xref2osjob_t osjob) {
     LMIC_API_PARAMETER(osjob);
 
@@ -2023,7 +2029,7 @@ static void engineUpdate (void) {
             LMICbandplan_updateTx(txbeg);
             // limit power to value asked in adr
             LMIC.radio_txpow = LMIC.txpow > LMIC.adrTxPow ? LMIC.adrTxPow : LMIC.txpow;
-            reportEvent(EV_TXSTART);
+            reportEventNoUpdate(EV_TXSTART);
             os_radio(RADIO_TX);
             return;
         }
@@ -2166,7 +2172,7 @@ void LMIC_clrTxData (void) {
     LMIC.pendTxLen = 0;
 
     if (txActive)
-        reportEvent(EV_TXCANCELED);
+        reportEventNoUpdate(EV_TXCANCELED);
 
     if( (LMIC.opmode & (OP_JOINING|OP_SCAN)) != 0 ) // do not interfere with JOINING
         return;
