@@ -200,6 +200,9 @@ void os_radio (u1_t mode);
 #ifndef os_getBattLevel
 u1_t os_getBattLevel (void);
 #endif
+#ifndef os_queryTimeCriticalJobs
+bit_t os_queryTimeCriticalJobs(ostime_t time);
+#endif
 
 #ifndef os_rlsbf4
 //! Read 32-bit quantity from given pointer in little endian byte order.

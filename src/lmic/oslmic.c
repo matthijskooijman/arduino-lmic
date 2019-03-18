@@ -157,3 +157,11 @@ void os_runloop_once() {
         j->func(j);
     }
 }
+
+bit_t os_queryTimeCriticalJobs(ostime_t time) {
+    if (OS.scheduledjobs &&
+        OS.scheduledjobs->deadline - os_getTime() < time)
+        return 1;
+    else
+        return 0;
+}
