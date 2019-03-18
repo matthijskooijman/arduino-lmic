@@ -68,13 +68,17 @@ static int unlinkjob (osjob_t** pnext, osjob_t* job) {
     return 0;
 }
 
+static osjob_t** getJobQueue(osjob_t* job) {
+    return os_jobIsTimed(job) ? &OS.scheduledjobs : &OS.runnablejobs;
+}
+
 // clear scheduled job
 void os_clearCallback (osjob_t* job) {
     hal_disableIRQs();
 
+
     // if it's not in the scheduled jobs, look in the runnable...
-    if (! unlinkjob(&OS.scheduledjobs, job))
-        unlinkjob(&OS.runnablejobs, job);
+    unlinkjob(getJobQueue(job), job);
 
     hal_enableIRQs();
 }
@@ -83,11 +87,15 @@ void os_clearCallback (osjob_t* job) {
 void os_setCallback (osjob_t* job, osjobcb_t cb) {
     osjob_t** pnext;
     hal_disableIRQs();
+
     // remove if job was already queued
-    unlinkjob(&OS.runnablejobs, job);
-    // fill-in job
-    job->func = cb;
+    unlinkjob(getJobQueue(job), job);
+
+    // fill-in job. Ascending memory order is write-queue friendly
     job->next = NULL;
+    job->deadline = 0;
+    job->func = cb;
+
     // add to end of run queue
     for(pnext=&OS.runnablejobs; *pnext; pnext=&((*pnext)->next));
     *pnext = job;
@@ -97,13 +105,21 @@ void os_setCallback (osjob_t* job, osjobcb_t cb) {
 // schedule timed job
 void os_setTimedCallback (osjob_t* job, ostime_t time, osjobcb_t cb) {
     osjob_t** pnext;
+
+    // special case time 0 -- it will be one tick late.
+    if (time == 0)
+        time = 1;
+
     hal_disableIRQs();
+
     // remove if job was already queued
-    unlinkjob(&OS.scheduledjobs, job);
+    unlinkjob(getJobQueue(job), job);
+
     // fill-in job
+    job->next = NULL;
     job->deadline = time;
     job->func = cb;
-    job->next = NULL;
+
     // insert into schedule
     for(pnext=&OS.scheduledjobs; *pnext; pnext=&((*pnext)->next)) {
         if((*pnext)->deadline - time > 0) { // (cmp diff, not abs!)
