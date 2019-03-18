@@ -95,6 +95,11 @@ void hal_disableIRQs (void);
 void hal_enableIRQs (void);
 
 /*
+ * return CPU interrupt nesting count
+ */
+uint8_t hal_getIrqLevel (void);
+
+/*
  * put system and CPU in low-power mode, sleep until interrupt.
  */
 void hal_sleep (void);

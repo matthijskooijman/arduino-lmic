@@ -288,6 +288,10 @@ void hal_enableIRQs () {
     }
 }
 
+uint8_t hal_getIrqLevel(void) {
+    return irqlevel;
+}
+
 void hal_sleep () {
     // Not implemented
 }
