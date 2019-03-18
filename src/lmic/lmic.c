@@ -467,7 +467,10 @@ static void reportEventNoUpdate (ev_t ev) {
                        e_.info   = ev));
 #if LMIC_ENABLE_onEvent
     void (*pOnEvent)(ev_t) = onEvent;
-    if (pOnEvent != NULL)
+
+    // rxstart is critical timing; legacy onEvent handlers
+    // don't comprehend this; so don't report.
+    if (pOnEvent != NULL && (evSet & (1u<<EV_RXSTART)) == 0)
         pOnEvent(ev);
 #endif // LMIC_ENABLE_onEvent
 
@@ -1058,13 +1061,19 @@ static bit_t decodeFrame (void) {
 // ================================================================================
 // TX/RX transaction support
 
+// start reception and log.
+static void radioRx (void) {
+    reportEventNoUpdate(EV_RXSTART);
+    os_radio(RADIO_RX);
+}
 
+// start RX in window 2.
 static void setupRx2 (void) {
     initTxrxFlags(__func__, TXRX_DNW2);
     LMIC.rps = dndr2rps(LMIC.dn2Dr);
     LMIC.freq = LMIC.dn2Freq;
     LMIC.dataLen = 0;
-    os_radio(RADIO_RX);
+    radioRx();
 }
 
 
@@ -1108,7 +1117,7 @@ static void setupRx1 (osjobcb_t func) {
     LMIC.rps = setNocrc(LMIC.rps,1);
     LMIC.dataLen = 0;
     LMIC.osjob.func = func;
-    os_radio(RADIO_RX);
+    radioRx();
 }
 
 
@@ -1279,6 +1288,7 @@ static bit_t processJoinAccept_nojoinframe(void) {
         // otherwise it's a normal join. At end of rx2, so we
         // need to schedule something.
         LMIC.opmode &= ~OP_TXRXPEND;
+        reportEventNoUpdate(EV_JOIN_TXCOMPLETE);
         int failed = LMICbandplan_nextJoinState();
         EV(devCond, DEBUG, (e_.reason = EV::devCond_t::NO_JACC,
                             e_.eui    = MAIN::CDEV->getEui(),
@@ -1908,7 +1918,7 @@ static void startRxBcn (xref2osjob_t osjob) {
     LMIC_API_PARAMETER(osjob);
 
     LMIC.osjob.func = FUNC_ADDR(processBeacon);
-    os_radio(RADIO_RX);
+    radioRx();
 }
 #endif // !DISABLE_BEACONS
 
@@ -1919,7 +1929,7 @@ static void startRxPing (xref2osjob_t osjob) {
     LMIC_API_PARAMETER(osjob);
 
     LMIC.osjob.func = FUNC_ADDR(processPingRx);
-    os_radio(RADIO_RX);
+    radioRx();
 }
 #endif // !DISABLE_PING
 
@@ -2075,7 +2085,8 @@ static void engineUpdate (void) {
     LMIC.rxtime = LMIC.bcnRxtime;
     if( now - rxtime >= 0 ) {
         LMIC.osjob.func = FUNC_ADDR(processBeacon);
-        os_radio(RADIO_RX);
+
+        radioRx();
         return;
     }
     os_setTimedCallback(&LMIC.osjob, rxtime, FUNC_ADDR(startRxBcn));
