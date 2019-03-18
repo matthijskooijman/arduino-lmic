@@ -39,8 +39,8 @@ static void acDoJoin(void);
 static void acEnterActiveMode(void);
 static void acEnterTestMode(void);
 static void acExitActiveMode(void);
-static void acScheduleNextUplink(void);
 static void acSendUplink(void);
+static void acSetTimer(ostime_t);
 static void acSendUplinkBuffer(void);
 static void evActivate(void);
 static void evDeactivate(void);
@@ -54,7 +54,7 @@ static bool isActivateMessage(const uint8_t *pMessage, size_t nMessage);
 static void evEchoCommand(const uint8_t *pMessage, size_t nMessage);
 static lmic_event_cb_t lmicEventCb;
 static lmic_txmessage_cb_t sendUplinkCompleteCb;
-static osjobcbfn_t timeToSendTestMessageCb;
+static osjobcbfn_t timerExpiredCb;
 static const char *txSuccessToString(int fSuccess);
 
 /****************************************************************************\
@@ -548,23 +548,21 @@ fsmDispatch(
         case LMIC_COMPLIANCE_FSMSTATE_ACTIVE: {
             if (fEntry) {
                 acEnterActiveMode();
+                acSetTimer(sec2osticks(1));
             }
-            newState = LMIC_COMPLIANCE_FSMSTATE_TESTMODE;
+            if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED))
+                newState = LMIC_COMPLIANCE_FSMSTATE_TESTMODE;
             break;
         }
 
         case LMIC_COMPLIANCE_FSMSTATE_TESTMODE: {
-            if (fEntry) {
-                acEnterTestMode();
-            }
-
             if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_DEACTIVATE)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_INACTIVE;
             } else if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_JOIN_CMD)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_JOINING;
             } else if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_ECHO_REQUEST)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_ECHOING;
-            } else if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_SEND_UPLINK)) {
+            } else {
                 newState = LMIC_COMPLIANCE_FSMSTATE_REPORTING;
             }
             break;
@@ -575,7 +573,7 @@ fsmDispatch(
                 acDoJoin();
 
             if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_JOINED)) {
-                newState = LMIC_COMPLIANCE_FSMSTATE_REPORTING;
+                newState = LMIC_COMPLIANCE_FSMSTATE_RECOVERY;
             }
             break;
         }
@@ -585,7 +583,7 @@ fsmDispatch(
                 acSendUplinkBuffer();
 
             if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE)) {
-                newState = LMIC_COMPLIANCE_FSMSTATE_TESTMODE;
+                newState = LMIC_COMPLIANCE_FSMSTATE_RECOVERY;
             }
             break;
         }
@@ -595,10 +593,25 @@ fsmDispatch(
                 acSendUplink();
 
             if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE)) {
-                acScheduleNextUplink();
-                newState = LMIC_COMPLIANCE_FSMSTATE_TESTMODE;
+                newState = LMIC_COMPLIANCE_FSMSTATE_RECOVERY;
             }
             break;
+        }
+
+        case LMIC_COMPLIANCE_FSMSTATE_RECOVERY: {
+            if (fEntry) {
+                if (LMIC_Compliance.eventflags & (LMIC_COMPLIANCE_EVENT_DEACTIVATE |
+                                                  LMIC_COMPLIANCE_EVENT_ECHO_REQUEST |
+                                                  LMIC_COMPLIANCE_EVENT_JOIN_CMD)) {
+                    acSetTimer(sec2osticks(1));
+                } else {
+                    acSetTimer(sec2osticks(5));
+                }
+            }
+
+            if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED)) {
+                newState = LMIC_COMPLIANCE_FSMSTATE_TESTMODE;
+            }
         }
 
         default: {
@@ -615,15 +628,14 @@ static void acEnterActiveMode(void) {
 }
 
 static void acEnterTestMode(void) {
-    // schedule an uplink.
-    os_setCallback(
-        &LMIC_Compliance.uplinkJob,
-        timeToSendTestMessageCb
-        );
 }
 
-static void timeToSendTestMessageCb(osjob_t *j) {
-    LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_SEND_UPLINK;
+void acSetTimer(ostime_t delay) {
+    os_setTimedCallback(&LMIC_Compliance.timerJob, os_getTime() + delay, timerExpiredCb);
+}
+
+static void timerExpiredCb(osjob_t *j) {
+    LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED;
     fsmEval();
 }
 
@@ -650,7 +662,7 @@ static void lmicEventCb(
 
 static void acExitActiveMode(void) {
     LMIC_Compliance.state = LMIC_COMPLIANCE_STATE_IDLE;
-    os_clearCallback(&LMIC_Compliance.uplinkJob);
+    os_clearCallback(&LMIC_Compliance.timerJob);
     LMIC_clrTxData();
 }
 
@@ -659,16 +671,12 @@ static void acSendUplink(void) {
     uint8_t payload[2];
     uint32_t const downlink = LMIC.seqnoDn;
 
-    // ignore event if uplink is busy.
-    if (LMIC_Compliance.fsmFlags & LMIC_COMPLIANCE_FSM_UPLINK_BUSY)
-        return;
-
     // build the uplink message
     payload[0] = (uint8_t) (downlink >> 8);
     payload[1] = (uint8_t) downlink;
 
     // reset the flags
-    LMIC_Compliance.eventflags &= ~(LMIC_COMPLIANCE_EVENT_SEND_UPLINK | LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE);
+    LMIC_Compliance.eventflags &= ~LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE;
 
     // don't try to send if busy; might be sending echo message.
     if ((LMIC.opmode & OP_TXRXPEND) == 0 &&
@@ -715,21 +723,10 @@ static const char *txSuccessToString(int fSuccess) {
     return fSuccess ? "ok" : "failed";
 }
 
-static void acScheduleNextUplink(void) {
-    LMIC_Compliance.eventflags &= ~(LMIC_COMPLIANCE_EVENT_SEND_UPLINK | LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE);
-
-    // schedule an uplink.
-    os_setTimedCallback(
-        &LMIC_Compliance.uplinkJob,
-        os_getTime() + sec2osticks(5),
-        timeToSendTestMessageCb
-        );
-}
-
 static void acDoJoin(void) {
     LMIC_COMPLIANCE_PRINTF("acDoJoin\n");
 
-    LMIC_Compliance.eventflags &= ~(LMIC_COMPLIANCE_EVENT_JOIN_CMD | LMIC_COMPLIANCE_EVENT_JOINED);
+    LMIC_Compliance.eventflags &= ~LMIC_COMPLIANCE_EVENT_JOINED;
 
     LMIC_unjoin();
     LMIC_startJoining();

@@ -53,22 +53,21 @@ lmic_compliance_state_IsActive(lmic_compliance_state_t s) {
 typedef uint8_t lmic_compliance_eventflags_t;
 
 enum lmic_compliance_eventflags_e {
-    LMIC_COMPLIANCE_EVENT_ACTIVATE    = 1u << 0,
-    LMIC_COMPLIANCE_EVENT_DEACTIVATE  = 1u << 1,
-    LMIC_COMPLIANCE_EVENT_SEND_UPLINK = 1u << 2,
+    LMIC_COMPLIANCE_EVENT_ACTIVATE      = 1u << 0,
+    LMIC_COMPLIANCE_EVENT_DEACTIVATE    = 1u << 1,
+    LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED = 1u << 2,
     LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE = 1u << 3,
-    LMIC_COMPLIANCE_EVENT_JOIN_CMD	= 1u << 4,
-    LMIC_COMPLIANCE_EVENT_JOINED	    = 1u << 5,
-    LMIC_COMPLIANCE_EVENT_ECHO_REQUEST = 1u << 6,
+    LMIC_COMPLIANCE_EVENT_JOIN_CMD      = 1u << 4,
+    LMIC_COMPLIANCE_EVENT_JOINED        = 1u << 5,
+    LMIC_COMPLIANCE_EVENT_ECHO_REQUEST  = 1u << 6,
 };
 
 typedef uint8_t lmic_compliance_fsmflags_t;
 enum lmic_compliance_fsmflags_e {
-    LMIC_COMPLIANCE_FSM_ACTIVE        = 1u << 0,
-    LMIC_COMPLIANCE_FSM_REENTERED     = 1u << 1,
-    LMIC_COMPLIANCE_FSM_CONFIRM       = 1u << 2,
-    LMIC_COMPLIANCE_FSM_UPLINK_BUSY	= 1u << 3,
-    LMIC_COMPLIANCE_FSM_JOB_BUSY      = 1u << 4,
+    LMIC_COMPLIANCE_FSM_ACTIVE          = 1u << 0,
+    LMIC_COMPLIANCE_FSM_REENTERED       = 1u << 1,
+    LMIC_COMPLIANCE_FSM_CONFIRM         = 1u << 2,
+    LMIC_COMPLIANCE_FSM_JOB_BUSY        = 1u << 4,
 };
 
 typedef uint8_t lmic_compliance_fsmstate_t;
@@ -81,11 +80,12 @@ enum lmic_compliance_fsmstate_e {
     LMIC_COMPLIANCE_FSMSTATE_JOINING = 5,    // joining (under command)
     LMIC_COMPLIANCE_FSMSTATE_ECHOING = 6,
     LMIC_COMPLIANCE_FSMSTATE_REPORTING = 7,
+    LMIC_COMPLIANCE_FSMSTATE_RECOVERY = 8,
 };
 
 #define LMIC_COMPLIANCE_FSMSTATE__NAMES   \
     "INITIAL", "NOCHANGE", "ACTIVE", "INACTIVE", "TESTMODE", "JOINING",  \
-    "ECHOING", "REPORTING"
+    "ECHOING", "REPORTING", "RECOVERY"
 
 typedef struct lmic_compliance_eventcb_s lmic_compliance_eventcb_t;
 struct lmic_compliance_eventcb_s {
@@ -99,19 +99,19 @@ struct lmic_compliance_eventcb_s {
 struct lmic_compliance_s {
         // uint64
         // uintptr
-        osjob_t                 uplinkJob;  // the job for driving uplinks
-        osjob_t                 fsmJob;     // job for reevaluating the FSM.
-        lmic_compliance_eventcb_t	    saveEvent;  // the user's event handler.
+        osjob_t                     timerJob;       // the job for driving uplinks
+        osjob_t                     fsmJob;         // job for reevaluating the FSM.
+        lmic_compliance_eventcb_t   saveEvent;      // the user's event handler.
 
         // uint32
         // uint16
 
         // uint8
 
-        lmic_compliance_state_t       state;      // current state of compliance engine.
-        lmic_compliance_eventflags_t  eventflags; // incoming events.
-        lmic_compliance_fsmflags_t    fsmFlags;   // FSM operational flags
-        lmic_compliance_fsmstate_t    fsmState;   // FSM current state
+        lmic_compliance_state_t         state;      // current state of compliance engine.
+        lmic_compliance_eventflags_t    eventflags; // incoming events.
+        lmic_compliance_fsmflags_t      fsmFlags;   // FSM operational flags
+        lmic_compliance_fsmstate_t      fsmState;   // FSM current state
 
         uint8_t                 uplinkSize;
         uint8_t                 uplinkMessage[MAX_LEN_PAYLOAD];
