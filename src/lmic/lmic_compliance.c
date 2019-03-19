@@ -113,6 +113,9 @@ LMIC_complianceRxMessage(
 ) {
     lmic_compliance_state_t const complianceState = LMIC_Compliance.state;
 
+    // update the counter used by the status message.
+    ++LMIC_Compliance.downlinkCount;
+
     // filter normal messages.
     if (port != LORAWAN_PORT_COMPLIANCE) {
         return lmic_compliance_state_IsActive(complianceState)
@@ -202,6 +205,7 @@ Returns:
 
 static void evActivate(void) {
     if (! lmic_compliance_state_IsActive(LMIC_Compliance.state)) {
+        LMIC_Compliance.downlinkCount = 0;
         LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_ACTIVATE;
         LMIC_Compliance.state = LMIC_COMPLIANCE_STATE_ACTIVATING;
 
@@ -665,7 +669,7 @@ static void acExitActiveMode(void) {
 
 static void acSendUplink(void) {
     uint8_t payload[2];
-    uint32_t const downlink = LMIC.seqnoDn;
+    uint32_t const downlink = LMIC_Compliance.downlinkCount;
 
     // build the uplink message
     payload[0] = (uint8_t) (downlink >> 8);
@@ -725,5 +729,6 @@ static void acDoJoin(void) {
     LMIC_Compliance.eventflags &= ~LMIC_COMPLIANCE_EVENT_JOINED;
 
     LMIC_unjoin();
+    LMIC_Compliance.downlinkCount = 0;
     LMIC_startJoining();
 }
