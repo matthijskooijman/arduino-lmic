@@ -1794,16 +1794,16 @@ static bit_t processDnData (void) {
 #if LMIC_ENABLE_DeviceTimeReq
         lmic_request_time_state_t const requestTimeState = LMIC.txDeviceTimeReqState;
         if ( requestTimeState != lmic_RequestTimeState_idle ) {
-            lmic_request_network_time_cb_t * const pNetworkTimeCb = LMIC.pNetworkTimeCb;
+            lmic_request_network_time_cb_t * const pNetworkTimeCb = LMIC.client.pNetworkTimeCb;
             int flagSuccess = (LMIC.txDeviceTimeReqState == lmic_RequestTimeState_success);
             LMIC.txDeviceTimeReqState = lmic_RequestTimeState_idle;
             if (pNetworkTimeCb != NULL) {
                 // reset the callback, so that the user's routine
                 // can post another request if desired.
-                LMIC.pNetworkTimeCb = NULL;
+                LMIC.client.pNetworkTimeCb = NULL;
 
                 // call the user's notification routine.
-                (*pNetworkTimeCb)(LMIC.pNetworkTimeUserData, flagSuccess);
+                (*pNetworkTimeCb)(LMIC.client.pNetworkTimeUserData, flagSuccess);
             }
         }
 #endif // LMIC_ENABLE_DeviceTimeReq
@@ -2337,8 +2337,8 @@ void LMIC_requestNetworkTime(lmic_request_network_time_cb_t *pCallbackfn, void *
 #if LMIC_ENABLE_DeviceTimeReq
     if (LMIC.txDeviceTimeReqState == lmic_RequestTimeState_idle) {
         LMIC.txDeviceTimeReqState = lmic_RequestTimeState_tx;
-        LMIC.pNetworkTimeCb = pCallbackfn;
-        LMIC.pNetworkTimeUserData = pUserData;
+        LMIC.client.pNetworkTimeCb = pCallbackfn;
+        LMIC.client.pNetworkTimeUserData = pUserData;
         return;
     }
 #endif // LMIC_ENABLE_DeviceTimeReq
