@@ -105,6 +105,11 @@ struct lmic_compliance_s {
         // uint32
         // uint16
 
+        // we are required to maintain a downlink count
+        // that is reset on join/test entry and incremented for
+        // each valid test message.
+        uint16_t                    downlinkCount;
+
         // uint8
 
         lmic_compliance_state_t         state;      // current state of compliance engine.
