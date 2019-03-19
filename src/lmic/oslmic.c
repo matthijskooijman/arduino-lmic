@@ -76,8 +76,6 @@ static osjob_t** getJobQueue(osjob_t* job) {
 void os_clearCallback (osjob_t* job) {
     hal_disableIRQs();
 
-
-    // if it's not in the scheduled jobs, look in the runnable...
     unlinkjob(getJobQueue(job), job);
 
     hal_enableIRQs();
