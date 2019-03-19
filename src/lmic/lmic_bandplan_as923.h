@@ -26,8 +26,8 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _lmic_as923_h_
-# define _lmic_as923_h_
+#ifndef _lmic_bandplan_as923_h_
+# define _lmic_bandplan_as923_h_
 
 #ifndef _lmic_eu_like_h_
 # include "lmic_eu_like.h"
@@ -112,4 +112,4 @@ void LMICas923_updateTx(ostime_t txbeg);
 ostime_t LMICas923_nextJoinTime(ostime_t now);
 #define LMICbandplan_nextJoinTime(now)     LMICas923_nextJoinTime(now)
 
-#endif // _lmic_as923_h_
+#endif // _lmic_bandplan_as923_h_

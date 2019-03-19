@@ -123,15 +123,7 @@
 //#define DISABLE_MCMD_PING_SET // set ping freq, automatically disabled by DISABLE_PING
 //#define DISABLE_MCMD_BCNI_ANS // next beacon start, automatically disabled by DISABLE_BEACON
 
-// In LoRaWAN, a gateway applies I/Q inversion on TX, and nodes do the
-// same on RX. This ensures that gateways can talk to nodes and vice
-// versa, but gateways will not hear other gateways and nodes will not
-// hear other nodes. By defining this macro in lmic_project_config.h,
-// this inversion is disabled and this node can hear other nodes. If
-// two nodes both have this macro set, they can talk to each other
-// (but they can no longer hear gateways). This should probably only
-// be used when debugging and/or when talking to the radio directly
-// (e.g. like in the "raw" example).
+// DEPRECATED(tmm@mcci.com); replaced by LMIC.noRXIQinversion (dynamic). Don't define this.
 //#define DISABLE_INVERT_IQ_ON_RX
 
 // This allows choosing between multiple included AES implementations.
@@ -176,6 +168,26 @@
 // this is always defined, and non-zero to enable it.
 #if !defined(LMIC_ENABLE_DeviceTimeReq)
 # define LMIC_ENABLE_DeviceTimeReq 0
+#endif
+
+// LMIC_ENABLE_user_events
+// Enable/disable support for programmable callbacks for events, rx, and tx.
+// This is always defined, and non-zero to enable.  Default is enabled.
+#if !defined(LMIC_ENABLE_user_events)
+# define LMIC_ENABLE_user_events 1
+#endif
+
+// LMIC_ENABLE_onEvent
+// Enable/disable support for out-call to user-supplied `onEvent()` function.
+// This is always defined, and non-zero to enable. Default is enabled.
+#if !defined(LMIC_ENABLE_onEvent)
+# define LMIC_ENABLE_onEvent 1
+#endif
+
+// LMIC_ENABLE_long_messages
+// LMIC certification requires that this be enabled.
+#if !defined(LMIC_ENABLE_long_messages)
+# define LMIC_ENABLE_long_messages 1        /* PARAM */
 #endif
 
 #endif // _lmic_config_h_

@@ -89,4 +89,7 @@ void LMICeu868_initDefaultChannels(bit_t join);
 ostime_t LMICeu868_nextJoinTime(ostime_t now);
 #define LMICbandplan_nextJoinTime(now)     LMICeu868_nextJoinTime(now)
 
+void LMICeu868_setRx1Params(void);
+#define LMICbandplan_setRx1Params()     LMICeu868_setRx1Params()
+
 #endif // _lmic_eu868_h_

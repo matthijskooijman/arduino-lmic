@@ -54,6 +54,9 @@ requires C99 mode to be enabled by default.
 		- [Disabling JOIN](#disabling-join)
 		- [Disabling Class A MAC commands](#disabling-class-a-mac-commands)
 		- [Disabling Class B MAC commands](#disabling-class-b-mac-commands)
+		- [Disabling user events](#disabling-user-events)
+		- [Disabling external reference to `onEvent()`](#disabling-external-reference-to-onevent)
+		- [Enabling long messages](#enabling-long-messages)
 		- [Special purpose](#special-purpose)
 - [Supported hardware](#supported-hardware)
 - [Pre-Integrated Boards](#pre-integrated-boards)
@@ -285,7 +288,7 @@ which indicates that each tick corresponds to 16 microseconds (because 16 == 2^4
 
 This variable sets the default frequency for the SPI bus connection to the transceiver. The default is `1E6`, meaning 1 MHz. However, this can be overridden by the contents of the `lmic_pinmap` structure, and we recommend that you use that approach rather than editing the `project_settings/lmic_project_config.h` file.
 
-####  Changing handling of runtime assertion failures
+#### Changing handling of runtime assertion failures
 
 The variables `LMIC_FAILURE_TO` and `DISABLE_LMIC_FAILURE_TO`
 control the handling of runtime assertion failures. By default, assertion messages are displayed using
@@ -309,10 +312,21 @@ commands.
 
 `DISABLE_MCMD_BCNI_ANS` disables the next-beacon start command. It's implied by `DISABLE_BEACON`
 
+#### Disabling user events
+
+Code to handle registered callbacks for tx, rx, and events can be suppressed by setting `LMIC_ENABLE_user_events` to zero.  This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, user events are supported, if zero, user events are not-supported.  The default is to support user events.
+
+#### Disabling external reference to `onEvent()`
+
+In some embedded systems, `onEvent()` may be defined for some other purpose; so the weak reference to the function `onEvent` will be satified, causing the LMIC to try to call that function. All reference to `onEvent()` can be suppressed by setting `LMIC_ENABLE_onEvent` to 0.   This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, a weak reference to `onEvent()` will be used; if zero, the user `onEvent()` function is not supported, and the client must register an event handler explicitly.
+
+#### Enabling long messages
+
+To save RAM for simple devices, the LMIC allows message length to be limited to 64 bytes instead of the LoRaWAN standard of 255 bytes max. This saves about 2*192 bytes of RAM. Unfortunately, compliance tests require the full message size. Long messages are enabled by setting `LMIC_ENABLE_long_messages` to 1, or disabled by setting it to zero. This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, the maximum frame size is 255 bytes, and if zero, the maximum frame size is 64 bytes.
+
 #### Special purpose
 
-`#define DISABLE_INVERT_IQ_ON_RX` disables the inverted Q-I polarity on RX. If this is defined, end-devices will be able
-to receive messages from each other, but will not be able to hear the gateway.
+`#define DISABLE_INVERT_IQ_ON_RX` disables the inverted Q-I polarity on RX. **Use of this variable is deprecated, see issue [#250](https://github.com/mcci-catena/arduino-lmic/issues/250).** Rather than defining this, set the value of `LMIC.noRXIQinversion`. If set non-zero, receive will be non-inverted. End-devices will be able to receive messages from each other, but will not be able to hear the gateway (other than Class B beacons)aa. If set zero, (the default), end devices will only be able to hear gateways, not each other.
 
 ## Supported hardware
 

@@ -122,7 +122,10 @@ extern "C"{
 //! Only For Antenna Tuning Tests !
 //#define CFG_TxContinuousMode 1
 
-enum { MAX_FRAME_LEN      =  64 };   //!< Library cap on max frame length
+// since this was annouunced as the API variable, we keep it. But it's not used,
+// MAX_LEN_FRAME is what the code uses.
+enum { MAX_FRAME_LEN      =  MAX_LEN_FRAME };   //!< Library cap on max frame length
+
 enum { TXCONF_ATTEMPTS    =   8 };   //!< Transmit attempts for confirmed frames
 enum { MAX_MISSED_BCNS    =  20 };   // threshold for triggering rejoin requests
 enum { MAX_RXSYMS         = 100 };   // stop tracking beacon beyond this
@@ -189,14 +192,14 @@ enum { BCN_NONE    = 0x00,   //!< No beacon received
 //! Information about the last and previous beacons.
 struct bcninfo_t {
     ostime_t txtime;  //!< Time when the beacon was sent
+    u4_t     time;    //!< GPS time in seconds of last beacon (received or surrogate)
+    s4_t     lat;     //!< Lat field of last beacon (valid only if BCN_FULL set)
+    s4_t     lon;     //!< Lon field of last beacon (valid only if BCN_FULL set)
     s1_t     rssi;    //!< Adjusted RSSI value of last received beacon
     s1_t     snr;     //!< Scaled SNR value of last received beacon
     u1_t     flags;   //!< Last beacon reception and tracking states. See BCN_* values.
-    u4_t     time;    //!< GPS time in seconds of last beacon (received or surrogate)
     //
     u1_t     info;    //!< Info field of last beacon (valid only if BCN_FULL set)
-    s4_t     lat;     //!< Lat field of last beacon (valid only if BCN_FULL set)
-    s4_t     lon;     //!< Lon field of last beacon (valid only if BCN_FULL set)
 };
 #endif // !DISABLE_BEACONS
 
@@ -235,13 +238,19 @@ enum _ev_t { EV_SCAN_TIMEOUT=1, EV_BEACON_FOUND,
              EV_JOINED, EV_RFU1, EV_JOIN_FAILED, EV_REJOIN_FAILED,
              EV_TXCOMPLETE, EV_LOST_TSYNC, EV_RESET,
              EV_RXCOMPLETE, EV_LINK_DEAD, EV_LINK_ALIVE, EV_SCAN_FOUND,
-             EV_TXSTART };
+             EV_TXSTART, EV_TXCANCELED, EV_RXSTART, EV_JOIN_TXCOMPLETE };
 typedef enum _ev_t ev_t;
 
 enum {
         // This value represents 100% error in LMIC.clockError
         MAX_CLOCK_ERROR = 65536,
 };
+
+// callbacks for client alerts.
+// types and functions are always defined, to reduce #ifs in example code and libraries.
+typedef void LMIC_ABI_STD lmic_rxmessage_cb_t(void *pUserData, uint8_t port, const uint8_t *pMessage, size_t nMessage);
+typedef void LMIC_ABI_STD lmic_txmessage_cb_t(void *pUserData, int fSuccess);
+typedef void LMIC_ABI_STD lmic_event_cb_t(void *pUserData, ev_t e);
 
 // network time request callback function
 // defined unconditionally, because APIs and types can't change based on config.
@@ -272,27 +281,108 @@ enum lmic_request_time_state_e {
 
 typedef u1_t lmic_request_time_state_t;
 
+/*
+
+Structure:  lmic_client_data_t
+
+Function:
+        Holds LMIC client data that must live through LMIC_reset().
+
+Description:
+        There are a variety of client registration linkage items that
+        must live through LMIC_reset(), because LMIC_reset() is called
+        at frame rollover time.  We group them together into a structure
+        to make copies easy.
+
+*/
+
+//! abstract type for collection of client data that survives LMIC_reset().
+typedef struct lmic_client_data_s lmic_client_data_t;
+
+//! contents of lmic_client_data_t
+struct lmic_client_data_s {
+
+    /* pointer-width things come first */
+#if LMIC_ENABLE_DeviceTimeReq
+    lmic_request_network_time_cb_t *pNetworkTimeCb; //! call-back routine for network time
+    void        *pNetworkTimeUserData;              //! call-back data for network time.
+#endif
+
+#if LMIC_ENABLE_user_events
+    lmic_event_cb_t     *eventCb;           //! user-supplied callback function for events.
+    void                *eventUserData;     //! data for eventCb
+    lmic_rxmessage_cb_t *rxMessageCb;       //! user-supplied message-received callback
+    void                *rxMessageUserData; //! data for rxMessageCb
+    lmic_txmessage_cb_t *txMessageCb;       //! transmit-complete message handler; reset on each tx complete.
+    void                *txMessageUserData; //! data for txMessageCb.
+#endif // LMIC_ENABLE_user_events
+
+    /* next we have things that are (u)int32_t */
+    /* none at the moment */
+
+    /* next we have things that are (u)int16_t */
+
+    u2_t        clockError;                 //! Inaccuracy in the clock. CLOCK_ERROR_MAX represents +/-100% error
+
+    /* finally, things that are (u)int8_t */
+    /* none at the moment */
+};
+
+/*
+
+Structure:  lmic_t
+
+Function:
+        Provides the instance data for the LMIC.
+
+*/
+
 struct lmic_t {
+    // client setup data, survives LMIC_reset().
+    lmic_client_data_t  client;
+
+    // the OS job object. pointer alignment.
+    osjob_t     osjob;
+
+#if !defined(DISABLE_BEACONS)
+    bcninfo_t   bcninfo;      // Last received beacon info
+#endif
+
+#if !defined(DISABLE_PING)
+    rxsched_t   ping;         // pingable setup
+#endif
+
+    /* (u)int32_t things */
+
     // Radio settings TX/RX (also accessed by HAL)
     ostime_t    txend;
     ostime_t    rxtime;
 
     // LBT info
     ostime_t    lbt_ticks;      // ticks to listen
-    s1_t        lbt_dbmax;      // max permissible dB on our channel (eg -80)
 
     u4_t        freq;
-    s1_t        rssi;
-    s1_t        snr;            // LMIC.snr is SNR times 4
-    rps_t       rps;
-    u1_t        rxsyms;
-    u1_t        dndr;
-    s1_t        txpow;          // transmit dBm (administrative)
-    s1_t	radio_txpow;    // the radio driver's copy of txpow, limited by adrTxPow.
 
-    osjob_t     osjob;
+    ostime_t    globalDutyAvail; // time device can send again
 
-    // Channel scheduling
+    u4_t        netid;        // current network id (~0 - none)
+    devaddr_t   devaddr;
+    u4_t        seqnoDn;      // device level down stream seqno
+    u4_t        seqnoUp;
+    u4_t        dn2Freq;
+
+#if !defined(DISABLE_BEACONS)
+    ostime_t    bcnRxtime;
+#endif
+
+#if LMIC_ENABLE_DeviceTimeReq
+    // put here for alignment, to reduce RAM use.
+    ostime_t    localDeviceTime;    // the LMIC.txend value for last DeviceTimeAns
+    lmic_gpstime_t netDeviceTime;   // the netDeviceTime for lastDeviceTimeAns
+                                    // zero ==> not valid.
+#endif // LMIC_ENABLE_DeviceTimeReq
+
+    // Channel scheduling -- very much private
 #if CFG_LMIC_EU_like
     band_t      bands[MAX_BANDS];
     u4_t        channelFreq[MAX_CHANNELS];
@@ -305,45 +395,46 @@ struct lmic_t {
     u2_t        activeChannels125khz;
     u2_t        activeChannels500khz;
 #endif
+
+    /* (u)int16_t things */
+
+    rps_t       rps;            // radio parameter selections: SF, BW, CodingRate, NoCrc, implicit hdr
+    u2_t        opmode;         // engineUpdate() operating mode flags
+    u2_t        devNonce;       // last generated nonce
+
+#if !defined(DISABLE_BEACONS)
+    s2_t        drift;          // last measured drift
+    s2_t        lastDriftDiff;
+    s2_t        maxDriftDiff;
+#endif
+
+    /* (u)int8_t things */
+    s1_t        rssi;
+    s1_t        snr;            // LMIC.snr is SNR times 4
+    u1_t        rxsyms;
+    u1_t        dndr;
+    s1_t        txpow;          // transmit dBm (administrative)
+    s1_t        radio_txpow;    // the radio driver's copy of txpow, limited by adrTxPow.
+    s1_t        lbt_dbmax;      // max permissible dB on our channel (eg -80)
+
     u1_t        txChnl;          // channel for next TX
     u1_t        globalDutyRate;  // max rate: 1/2^k
-    ostime_t    globalDutyAvail; // time device can send again
 
-    u4_t        netid;        // current network id (~0 - none)
-    u2_t        opmode;
     u1_t        upRepeat;     // configured up repeat
     s1_t        adrTxPow;     // ADR adjusted TX power
     u1_t        datarate;     // current data rate
     u1_t        errcr;        // error coding rate (used for TX only)
     u1_t        rejoinCnt;    // adjustment for rejoin datarate
-#if !defined(DISABLE_BEACONS)
-    s2_t        drift;        // last measured drift
-    s2_t        lastDriftDiff;
-    s2_t        maxDriftDiff;
-#endif
 
-    u2_t        clockError; // Inaccuracy in the clock. CLOCK_ERROR_MAX
-                            // represents +/-100% error
+    bit_t       initBandplanAfterReset; // cleared by LMIC_reset(), set by first join. See issue #244
 
     u1_t        pendTxPort;
     u1_t        pendTxConf;   // confirmed data
     u1_t        pendTxLen;    // +0x80 = confirmed
     u1_t        pendTxData[MAX_LEN_PAYLOAD];
 
-    u2_t        devNonce;     // last generated nonce
     u1_t        nwkKey[16];   // network session key
     u1_t        artKey[16];   // application router session key
-    devaddr_t   devaddr;
-    u4_t        seqnoDn;      // device level down stream seqno
-    u4_t        seqnoUp;
-#if LMIC_ENABLE_DeviceTimeReq
-    // put here for alignment, to reduce RAM use.
-    ostime_t    localDeviceTime;    // the LMIC.txend value for last DeviceTimeAns
-    lmic_gpstime_t netDeviceTime;   // the netDeviceTime for lastDeviceTimeAns
-                                    // zero ==> not valid.
-    lmic_request_network_time_cb_t *pNetworkTimeCb;	// call-back routine
-    void        *pNetworkTimeUserData; // call-back data
-#endif // LMIC_ENABLE_DeviceTimeReq
 
     u1_t        dnConf;       // dn frame confirm pending: LORA::FCT_ACK or 0
     s1_t        adrAckReq;    // counter until we reset data rate (0=off)
@@ -377,7 +468,6 @@ struct lmic_t {
 
     // 2nd RX window (after up stream)
     u1_t        dn2Dr;
-    u4_t        dn2Freq;
 #if !defined(DISABLE_MCMD_DN2P_SET)
     u1_t        dn2Ans;       // 0=no answer pend, 0x80+ACKs
 #endif
@@ -390,10 +480,6 @@ struct lmic_t {
 #if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
     u1_t        pingSetAns;   // answer set cmd and ACK bits
 #endif
-#if !defined(DISABLE_PING)
-    rxsched_t   ping;         // pingable setup
-#endif
-
     // Public part of MAC state
     u1_t        txCnt;
     u1_t        txrxFlags;  // transaction flags (TX-RX combo)
@@ -404,11 +490,10 @@ struct lmic_t {
 #if !defined(DISABLE_BEACONS)
     u1_t        bcnChnl;
     u1_t        bcnRxsyms;    //
-    ostime_t    bcnRxtime;
-    bcninfo_t   bcninfo;      // Last received beacon info
 #endif
 
     u1_t        noRXIQinversion;
+    u1_t        saveIrqFlags;   // last LoRa IRQ flags
 };
 
 //! \var struct lmic_t LMIC
@@ -427,8 +512,11 @@ void  LMIC_selectSubBand(u1_t band);
 
 void  LMIC_setDrTxpow   (dr_t dr, s1_t txpow);  // set default/start DR/txpow
 void  LMIC_setAdrMode   (bit_t enabled);        // set ADR mode (if mobile turn off)
+
 #if !defined(DISABLE_JOIN)
 bit_t LMIC_startJoining (void);
+void  LMIC_tryRejoin    (void);
+void  LMIC_unjoin       (void);
 #endif
 
 void  LMIC_shutdown     (void);
@@ -437,6 +525,7 @@ void  LMIC_reset        (void);
 void  LMIC_clrTxData    (void);
 void  LMIC_setTxData    (void);
 int   LMIC_setTxData2   (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
+int   LMIC_sendWithCallback(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed, lmic_txmessage_cb_t *pCb, void *pUserData);
 void  LMIC_sendAlive    (void);
 
 #if !defined(DISABLE_BEACONS)
@@ -447,9 +536,6 @@ void  LMIC_disableTracking (void);
 #if !defined(DISABLE_PING)
 void  LMIC_stopPingable  (void);
 void  LMIC_setPingable   (u1_t intvExp);
-#endif
-#if !defined(DISABLE_JOIN)
-void  LMIC_tryRejoin     (void);
 #endif
 
 void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t artKey);
@@ -463,11 +549,26 @@ void LMIC_getSessionKeys (u4_t *netid, devaddr_t *devaddr, xref2u1_t nwkKey, xre
 void LMIC_requestNetworkTime(lmic_request_network_time_cb_t *pCallbackfn, void *pUserData);
 int LMIC_getNetworkTimeReference(lmic_time_reference_t *pReference);
 
+int LMIC_registerRxMessageCb(lmic_rxmessage_cb_t *pRxMessageCb, void *pUserData);
+int LMIC_registerEventCb(lmic_event_cb_t *pEventCb, void *pUserData);
+
+// APIs for client half of compliance.
+typedef u1_t lmic_compliance_rx_action_t;
+
+enum lmic_compliance_rx_action_e {
+    LMIC_COMPLIANCE_RX_ACTION_PROCESS = 0,  // process this message normally
+    LMIC_COMPLIANCE_RX_ACTION_START,        // enter compliance mode, discard this message
+    LMIC_COMPLIANCE_RX_ACTION_IGNORE,       // continue in compliance mode, discard this message
+    LMIC_COMPLIANCE_RX_ACTION_END           // exit compliance mode, discard this message
+};
+
+lmic_compliance_rx_action_t LMIC_complianceRxMessage(u1_t port, const u1_t *pMessage, size_t nMessage);
+
 // Declare onEvent() function, to make sure any definition will have the
 // C conventions, even when in a C++ file.
+#if LMIC_ENABLE_onEvent
 DECL_ON_LMIC_EVENT;
-
-
+#endif /* LMIC_ENABLE_onEvent */
 
 // Special APIs - for development or testing
 // !!!See implementation for caveats!!!

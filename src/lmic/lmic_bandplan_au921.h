@@ -26,12 +26,12 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _lmic_au921_h_
-# define _lmic_au921_h_
+#ifndef _lmic_bandplan_au921_h_
+# define _lmic_bandplan_au921_h_
 
 // preconditions for lmic_us_like.h
-#define LMICuslike_getFirst500kHzDR()   (AU921_DR_SF8C)
-
+#define LMICuslike_getFirst500kHzDR()   (LORAWAN_DR6)
+#define	LMICuslike_getJoin125kHzDR()	(LORAWAN_DR2)
 
 #ifndef _lmic_us_like_h_
 # include "lmic_us_like.h"
@@ -46,7 +46,10 @@ ostime_t LMICau921_dr2hsym(uint8_t dr);
 #define dr2hsym(dr) LMICau921_dr2hsym(dr)
 
 
-#define LMICbandplan_getInitialDrJoin() (EU868_DR_SF7)
+#define LMICbandplan_getInitialDrJoin() (LORAWAN_DR2)
+
+void LMICau921_initJoinLoop(void);
+#define LMICbandplan_initJoinLoop()     LMICau921_initJoinLoop()
 
 void LMICau921_setBcnRxParams(void);
 #define LMICbandplan_setBcnRxParams() LMICau921_setBcnRxParams()
@@ -60,4 +63,4 @@ void LMICau921_setRx1Params(void);
 void LMICau921_updateTx(ostime_t txbeg);
 #define LMICbandplan_updateTx(txbeg)    LMICau921_updateTx(txbeg)
 
-#endif // _lmic_au921_h_
+#endif // _lmic_bandplan_au921_h_

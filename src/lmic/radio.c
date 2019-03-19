@@ -188,6 +188,12 @@
 
 #define SX1276_MC1_IMPLICIT_HEADER_MODE_ON    0x01
 
+#ifdef CFG_sx1276_radio
+# define SX127X_MC1_IMPLICIT_HEADER_MODE_ON	SX1276_MC1_IMPLICIT_HEADER_MODE_ON
+#else
+# define SX127X_MC1_IMPLICIT_HEADER_MODE_ON	SX1272_MC1_IMPLICIT_HEADER_MODE_ON
+#endif
+
 // sx1276 RegModemConfig2
 #define SX1276_MC2_RX_PAYLOAD_CRCON        0x04
 
@@ -634,8 +640,8 @@ static void rxlora (u1_t rxmode) {
     // set LNA gain
     writeReg(RegLna, LNA_RX_GAIN);
     // set max payload size
-    writeReg(LORARegPayloadMaxLength, 64);
-#if !defined(DISABLE_INVERT_IQ_ON_RX)
+    writeReg(LORARegPayloadMaxLength, MAX_LEN_FRAME);
+#if !defined(DISABLE_INVERT_IQ_ON_RX) /* DEPRECATED(tmm@mcci.com); #250. remove test, always include code in V3 */
     // use inverted I/Q signal (prevent mote-to-mote communication)
 
     // XXX: use flag to switch on/off inversion
@@ -659,6 +665,9 @@ static void rxlora (u1_t rxmode) {
 
     // enable antenna switch for RX
     hal_pin_rxtx(0);
+
+    writeReg(LORARegFifoAddrPtr, 0);
+    writeReg(LORARegFifoRxBaseAddr, 0);
 
     // now instruct the radio to receive
     if (rxmode == RXMODE_SINGLE) { // single rx
@@ -958,6 +967,7 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
 #endif
     if( (readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
         u1_t flags = readReg(LORARegIrqFlags);
+	LMIC.saveIrqFlags = flags;
         LMIC_X_DEBUG_PRINTF("IRQ=%02x\n", flags);
         if( flags & IRQ_LORA_TXDONE_MASK ) {
             // save exact tx time
@@ -969,7 +979,7 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
             }
             LMIC.rxtime = now;
             // read the PDU and inform the MAC that we received something
-            LMIC.dataLen = (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON) ?
+            LMIC.dataLen = (readReg(LORARegModemConfig1) & SX127X_MC1_IMPLICIT_HEADER_MODE_ON) ?
                 readReg(LORARegPayloadLength) : readReg(LORARegRxNbBytes);
             // set FIFO read address pointer
             writeReg(LORARegFifoAddrPtr, readReg(LORARegFifoRxCurrentAddr));

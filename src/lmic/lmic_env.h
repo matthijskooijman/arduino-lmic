@@ -214,4 +214,38 @@ Returns:
 # endif
 #endif
 
+/*
+
+Macro:	LMIC_DECLARE_FUNCTION_WEAK()
+
+Function:
+	Declare an external function as a weak reference.
+
+Definition:
+	#define LMIC_DECLARE_FUNCTION_WEAK(ReturnType, FunctionName, Params) ...
+
+Description:
+	This macro generates a weak reference to the specified function.
+
+Example:
+	LMIC_DECLARE_FUNCTION_WEAK(void, onEvent, (ev_t e));
+
+	This saya that onEvent is a weak external reference. When calling
+	onEvent, you must always first check whether it's supplied:
+
+	if (onEvent != NULL)
+		onEvent(e);
+
+Returns:
+	This macro expands to a declaration, without a trailing semicolon.
+
+Notes:
+	This form allows for compilers that use _Pragma(weak, name) instead
+	of inline attributes.
+
+*/
+
+#define LMIC_DECLARE_FUNCTION_WEAK(a_ReturnType, a_FunctionName, a_Params)	\
+	a_ReturnType __attribute__((__weak__)) a_FunctionName a_Params
+
 #endif /* _lmic_env_h_ */

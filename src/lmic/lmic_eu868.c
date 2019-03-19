@@ -221,6 +221,28 @@ LMICeu868_txDoneFSK(ostime_t delay, osjobcb_t func) {
         os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
 }
 
+// set the Rx1 dndr, rps.
+void LMICeu868_setRx1Params(void) {
+    u1_t const txdr = LMIC.dndr;
+    s1_t drOffset;
+    s1_t candidateDr;
+
+    if ( LMIC.rx1DrOffset <= 5)
+        drOffset = (s1_t) LMIC.rx1DrOffset;
+    else
+        // make a reasonable assumption for unspecified value.
+        drOffset = 5;
+
+    candidateDr = (s1_t) txdr - drOffset;
+    if (candidateDr < LORAWAN_DR0)
+            candidateDr = 0;
+    else if (candidateDr > LORAWAN_DR7)
+            candidateDr = LORAWAN_DR7;
+
+    LMIC.dndr = (u1_t) candidateDr;
+    LMIC.rps = dndr2rps(LMIC.dndr);
+}
+
 void
 LMICeu868_initJoinLoop(void) {
         LMICeulike_initJoinLoop(NUM_DEFAULT_CHANNELS, /* adr dBm */ EU868_TX_EIRP_MAX_DBM);

@@ -84,8 +84,7 @@ typedef              u1_t* xref2u1_t;
 
 #define SIZEOFEXPR(x) sizeof(x)
 
-#define ON_LMIC_EVENT(ev)  onEvent(ev)
-#define DECL_ON_LMIC_EVENT void onEvent(ev_t e)
+#define DECL_ON_LMIC_EVENT LMIC_DECLARE_FUNCTION_WEAK(void, onEvent, (ev_t e))
 
 extern u4_t AESAUX[];
 extern u4_t AESKEY[];
@@ -149,7 +148,13 @@ void radio_monitor_rssi(ostime_t n, oslmic_radio_rssi_t *pRssi);
 
 
 struct osjob_t;  // fwd decl.
-typedef void (*osjobcb_t) (struct osjob_t*);
+
+// the function type for osjob_t callbacks
+typedef void (osjobcbfn_t)(struct osjob_t*);
+
+// the pointer-to-function for osjob_t callbacks
+typedef osjobcbfn_t *osjobcb_t;
+
 struct osjob_t {
     struct osjob_t* next;
     ostime_t deadline;
@@ -157,6 +162,11 @@ struct osjob_t {
 };
 TYPEDEF_xref2osjob_t;
 
+// determine whether a job is timed or immediate. os_setTimedCallback()
+// must treat incoming == 0 as being 1 instead.
+static inline int os_jobIsTimed(xref2osjob_t job) {
+    return (job->deadline != 0);
+}
 
 #ifndef HAS_os_calls
 
@@ -189,6 +199,9 @@ void os_radio (u1_t mode);
 #endif
 #ifndef os_getBattLevel
 u1_t os_getBattLevel (void);
+#endif
+#ifndef os_queryTimeCriticalJobs
+bit_t os_queryTimeCriticalJobs(ostime_t time);
 #endif
 
 #ifndef os_rlsbf4

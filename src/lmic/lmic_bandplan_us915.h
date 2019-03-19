@@ -26,11 +26,12 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _lmic_us915_h_
-# define _lmic_us915_h_
+#ifndef _lmic_bandplan_us915_h_
+# define _lmic_bandplan_us915_h_
 
 // preconditions for lmic_us_like.h
-#define LMICuslike_getFirst500kHzDR()   (US915_DR_SF8C)
+#define LMICuslike_getFirst500kHzDR()   (LORAWAN_DR4)
+#define LMICuslike_getJoin125kHzDR()    (LORAWAN_DR0)
 
 #ifndef _lmic_us_like_h_
 # include "lmic_us_like.h"
@@ -45,7 +46,7 @@ ostime_t LMICus915_dr2hsym(uint8_t dr);
 #define dr2hsym(dr) LMICus915_dr2hsym(dr)
 
 
-#define LMICbandplan_getInitialDrJoin() (US915_DR_SF7)
+#define LMICbandplan_getInitialDrJoin() (LORAWAN_DR0)
 
 void LMICus915_setBcnRxParams(void);
 #define LMICbandplan_setBcnRxParams() LMICus915_setBcnRxParams()
@@ -53,10 +54,13 @@ void LMICus915_setBcnRxParams(void);
 u4_t LMICus915_convFreq(xref2cu1_t ptr);
 #define LMICbandplan_convFreq(ptr)      LMICus915_convFreq(ptr)
 
+void LMICus915_initJoinLoop(void);
+#define LMICbandplan_initJoinLoop()     LMICus915_initJoinLoop()
+
 void LMICus915_setRx1Params(void);
 #define LMICbandplan_setRx1Params()     LMICus915_setRx1Params()
 
 void LMICus915_updateTx(ostime_t txbeg);
 #define LMICbandplan_updateTx(txbeg)    LMICus915_updateTx(txbeg)
 
-#endif // _lmic_us915_h_
+#endif // _lmic_bandplan_us915_h_
