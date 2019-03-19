@@ -666,6 +666,9 @@ static void rxlora (u1_t rxmode) {
     // enable antenna switch for RX
     hal_pin_rxtx(0);
 
+    writeReg(LORARegFifoAddrPtr, 0);
+    writeReg(LORARegFifoRxBaseAddr, 0);
+
     // now instruct the radio to receive
     if (rxmode == RXMODE_SINGLE) { // single rx
         hal_waitUntil(LMIC.rxtime); // busy wait until exact rx time
