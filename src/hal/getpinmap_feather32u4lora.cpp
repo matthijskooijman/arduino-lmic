@@ -66,7 +66,7 @@ static const HalPinmap_t myPinmap =
                 HalConfiguration_Feather32U4LoRa_t::PIN_SX1276_DIO2,    // DIO2 is D27
                },
         .rxtx_rx_active = 0,
-        .rssi_cal = 10,
+        .rssi_cal = 8,
         .spi_freq = 1000000,     /* 1MHz */
         .pConfig = &myConfig,
         };
