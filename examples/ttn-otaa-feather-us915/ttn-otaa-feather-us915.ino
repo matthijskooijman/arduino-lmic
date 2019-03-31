@@ -97,7 +97,7 @@ const lmic_pinmap lmic_pins = {
     .rst = 4,
     .dio = {7, 6, LMIC_UNUSED_PIN},
     .rxtx_rx_active = 0,
-    .rssi_cal = 8,              // LBT cal for the Adafruit Feather M0 LoRa, in dB
+    .rssi_cal = 8,              // LBT cal for the Adafruit Feather 32U4 LoRa, in dB
     .spi_freq = 1000000,
 };
 #elif defined(ARDUINO_CATENA_4551)
