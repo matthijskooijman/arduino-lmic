@@ -74,7 +74,10 @@ enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2, BAND_AUX = 3 };
 #define LMICbandplan_setSessionInitDefaultChannels()    \
         do { LMICbandplan_initDefaultChannels(/* normal, not join */ 0); } while (0)
 
-u1_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap);
+bit_t LMICeulike_canMapChannels(u1_t chpage, u2_t chmap);
+#define LMICbandplan_canMapChannels(c, m)  LMICeulike_canMapChannels(c, m)
+
+bit_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap);
 #define LMICbandplan_mapChannels(c, m)  LMICeulike_mapChannels(c, m)
 
 void LMICeulike_initJoinLoop(u1_t nDefaultChannels, s1_t adrTxPow);

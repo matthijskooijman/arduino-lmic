@@ -504,11 +504,11 @@ DECLARE_LMIC; //!< \internal
 #define DR_RANGE_MAP(drlo,drhi) (((u2_t)0xFFFF<<(drlo)) & ((u2_t)0xFFFF>>(15-(drhi))))
 bit_t LMIC_setupBand (u1_t bandidx, s1_t txpow, u2_t txcap);
 bit_t LMIC_setupChannel (u1_t channel, u4_t freq, u2_t drmap, s1_t band);
-void  LMIC_disableChannel (u1_t channel);
-void  LMIC_enableSubBand(u1_t band);
-void  LMIC_enableChannel(u1_t channel);
-void  LMIC_disableSubBand(u1_t band);
-void  LMIC_selectSubBand(u1_t band);
+bit_t LMIC_disableChannel (u1_t channel);
+bit_t LMIC_enableSubBand(u1_t band);
+bit_t LMIC_enableChannel(u1_t channel);
+bit_t LMIC_disableSubBand(u1_t band);
+bit_t LMIC_selectSubBand(u1_t band);
 
 void  LMIC_setDrTxpow   (dr_t dr, s1_t txpow);  // set default/start DR/txpow
 void  LMIC_setAdrMode   (bit_t enabled);        // set ADR mode (if mobile turn off)
