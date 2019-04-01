@@ -94,6 +94,11 @@ install:
 
 script:
 
+ # Run PlatformIO tests
+ - ci/platformio.sh
+
+ # Run Arduino IDE tests
+
  # simple header file test
  - _notsamd ||     arduino --verify --board $(_samdopts) $PWD/examples/header_test/header_test.ino
  - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts) $MCCI_STM32_OPTS $PWD/examples/header_test/header_test.ino
@@ -263,6 +268,4 @@ script:
  - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts 'mcci_catena_4801' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
 
 
-# Run PlatformIO tests
- - ci/platformio.sh
  ### end of file ###
