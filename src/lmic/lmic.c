@@ -461,7 +461,7 @@ static void reportEventAndUpdate(ev_t ev) {
 }
 
 static void reportEventNoUpdate (ev_t ev) {
-    uint32_t const evSet = 1u << ev;
+    uint32_t const evSet = UINT32_C(1) << ev;
     EV(devCond, INFO, (e_.reason = EV::devCond_t::LMIC_EV,
                        e_.eui    = MAIN::CDEV->getEui(),
                        e_.info   = ev));
@@ -470,7 +470,7 @@ static void reportEventNoUpdate (ev_t ev) {
 
     // rxstart is critical timing; legacy onEvent handlers
     // don't comprehend this; so don't report.
-    if (pOnEvent != NULL && (evSet & (1u<<EV_RXSTART)) == 0)
+    if (pOnEvent != NULL && (evSet & (1ul<<EV_RXSTART)) == 0)
         pOnEvent(ev);
 #endif // LMIC_ENABLE_onEvent
 
@@ -480,7 +480,7 @@ static void reportEventNoUpdate (ev_t ev) {
     // create a mask to test against sets of events.
 
     // if a message was received, notify the user.
-    if ((evSet & ((1u<<EV_TXCOMPLETE) | (1u<<EV_RXCOMPLETE))) != 0 &&
+    if ((evSet & ((UINT32_C(1)<<EV_TXCOMPLETE) | (UINT32_C(1)<<EV_RXCOMPLETE))) != 0 &&
         LMIC.client.rxMessageCb != NULL &&
         (LMIC.dataLen  != 0 || LMIC.dataBeg != 0)) {
         uint8_t port;
@@ -504,7 +504,7 @@ static void reportEventNoUpdate (ev_t ev) {
     // tell the client about completed transmits -- the buffer
     // is now available again.  We use set notation again in case
     // we later discover another event completes messages
-    if ((evSet & ((1u<<EV_TXCOMPLETE) | (1u<<EV_TXCANCELED))) != 0) {
+    if ((evSet & ((UINT32_C(1)<<EV_TXCOMPLETE) | (UINT32_C(1) <<EV_TXCANCELED))) != 0) {
         lmic_txmessage_cb_t * const pTxMessageCb = LMIC.client.txMessageCb;
 
         if (pTxMessageCb != NULL) {
