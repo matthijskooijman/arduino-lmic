@@ -476,7 +476,7 @@ static void reportEventNoUpdate (ev_t ev) {
 
     // rxstart is critical timing; legacy onEvent handlers
     // don't comprehend this; so don't report.
-    if (pOnEvent != NULL && (evSet & (1ul<<EV_RXSTART)) == 0)
+    if (pOnEvent != NULL && (evSet & (UINT32_C(1)<<EV_RXSTART)) == 0)
         pOnEvent(ev);
 #endif // LMIC_ENABLE_onEvent
 
