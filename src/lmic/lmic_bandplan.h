@@ -104,6 +104,10 @@
 # error "LMICbandplan_setBcnRxParams() not defined by bandplan"
 #endif
 
+#if !defined(LMICbandplan_canMapChannels)
+# error "LMICbandplan_canMapChannels() not defined by bandplan"
+#endif
+
 #if !defined(LMICbandplan_mapChannels)
 # error "LMICbandplan_mapChannels() not defined by bandplan"
 #endif

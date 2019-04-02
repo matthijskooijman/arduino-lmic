@@ -32,35 +32,45 @@
 
 #if CFG_LMIC_EU_like
 
-void  LMIC_enableSubBand(u1_t band) {
+bit_t LMIC_enableSubBand(u1_t band) {
         LMIC_API_PARAMETER(band);
+        return 0;
 }
 
-void  LMIC_disableSubBand(u1_t band) {
+bit_t LMIC_disableSubBand(u1_t band) {
         LMIC_API_PARAMETER(band);
+        return 0;
 }
 
-void LMIC_disableChannel(u1_t channel) {
+bit_t LMIC_disableChannel(u1_t channel) {
+        u2_t old_chmap = LMIC.channelMap;
         LMIC.channelFreq[channel] = 0;
         LMIC.channelDrMap[channel] = 0;
-        LMIC.channelMap &= ~(1 << channel);
+        LMIC.channelMap = old_chmap & ~(1 << channel);
+        return LMIC.channelMap != old_chmap;
 }
 
 // this is a no-op provided for compatibilty
-void LMIC_enableChannel(u1_t channel) {
+bit_t LMIC_enableChannel(u1_t channel) {
         LMIC_API_PARAMETER(channel);
+        return 0;
 }
 
-u1_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap) {
-        // Bad page, disable all channel, enable non-existent
+bit_t LMICeulike_canMapChannels(u1_t chpage, u2_t chmap) {
         if (chpage != 0 || chmap == 0 || (chmap & ~LMIC.channelMap) != 0)
                 return 0;  // illegal input
         for (u1_t chnl = 0; chnl<MAX_CHANNELS; chnl++) {
                 if ((chmap & (1 << chnl)) != 0 && LMIC.channelFreq[chnl] == 0)
-                        chmap &= ~(1 << chnl); // ignore - channel is not defined
+                        return 0; // fail - channel is not defined
         }
-        LMIC.channelMap = chmap;
         return 1;
+}
+
+// assumes that LMICeulike_canMapChannels passed. Return true if something changed.
+bit_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap) {
+        u2_t const old_chmap = LMIC.channelMap;
+        LMIC.channelMap = chmap;
+        return old_chmap != chmap;
 }
 
 #if !defined(DISABLE_JOIN)

@@ -109,9 +109,11 @@ bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
         return 0; // all channels are hardwired.
 }
 
-void LMIC_disableChannel(u1_t channel) {
+bit_t LMIC_disableChannel(u1_t channel) {
+        bit_t result = 0;
         if (channel < 72) {
                 if (ENABLED_CHANNEL(channel)) {
+                        result = 1;
                         if (IS_CHANNEL_125khz(channel))
                                 LMIC.activeChannels125khz--;
                         else if (IS_CHANNEL_500khz(channel))
@@ -119,11 +121,14 @@ void LMIC_disableChannel(u1_t channel) {
                 }
                 LMIC.channelMap[channel >> 4] &= ~(1 << (channel & 0xF));
         }
+        return result;
 }
 
-void LMIC_enableChannel(u1_t channel) {
+bit_t LMIC_enableChannel(u1_t channel) {
+        bit_t result = 0;
         if (channel < 72) {
                 if (!ENABLED_CHANNEL(channel)) {
+                        result = 1;
                         if (IS_CHANNEL_125khz(channel))
                                 LMIC.activeChannels125khz++;
                         else if (IS_CHANNEL_500khz(channel))
@@ -131,42 +136,52 @@ void LMIC_enableChannel(u1_t channel) {
                 }
                 LMIC.channelMap[channel >> 4] |= (1 << (channel & 0xF));
         }
+        return result;
 }
 
-void  LMIC_enableSubBand(u1_t band) {
+bit_t LMIC_enableSubBand(u1_t band) {
         ASSERT(band < 8);
         u1_t start = band * 8;
         u1_t end = start + 8;
+        bit_t result = 0;
 
         // enable all eight 125 kHz channels in this subband
         for (int channel = start; channel < end; ++channel)
-                LMIC_enableChannel(channel);
+                result |= LMIC_enableChannel(channel);
 
         // there's a single 500 kHz channel associated with
         // each group of 8 125 kHz channels. Enable it, too.
-        LMIC_enableChannel(64 + band);
+        result |= LMIC_enableChannel(64 + band);
+        return result;
 }
-void  LMIC_disableSubBand(u1_t band) {
+
+bit_t LMIC_disableSubBand(u1_t band) {
         ASSERT(band < 8);
         u1_t start = band * 8;
         u1_t end = start + 8;
+        bit_t result = 0;
 
         // disable all eight 125 kHz channels in this subband
         for (int channel = start; channel < end; ++channel)
-                LMIC_disableChannel(channel);
+                result |= LMIC_disableChannel(channel);
 
         // there's a single 500 kHz channel associated with
         // each group of 8 125 kHz channels. Disable it, too.
-        LMIC_disableChannel(64 + band);
+        result |= LMIC_disableChannel(64 + band);
+        return result;
 }
-void  LMIC_selectSubBand(u1_t band) {
+
+bit_t LMIC_selectSubBand(u1_t band) {
+        bit_t result = 0;
+
         ASSERT(band < 8);
         for (int b = 0; b<8; ++b) {
                 if (band == b)
-                        LMIC_enableSubBand(b);
+                        result |= LMIC_enableSubBand(b);
                 else
-                        LMIC_disableSubBand(b);
+                        result |= LMIC_disableSubBand(b);
         }
+        return result;
 }
 
 void LMICau921_updateTx(ostime_t txbeg) {

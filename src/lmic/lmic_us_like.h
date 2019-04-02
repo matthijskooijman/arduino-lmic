@@ -80,7 +80,10 @@ void LMICuslike_initDefaultChannels(bit_t fJoin);
 #define LMICbandplan_setSessionInitDefaultChannels()    \
         do { /* nothing */} while (0)
 
-u1_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap);
+bit_t LMICuslike_canMapChannels(u1_t chpage, u2_t chmap);
+#define LMICbandplan_canMapChannels(chpage, chmap) LMICuslike_canMapChannels(chpage, chmap)
+
+bit_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap);
 #define LMICbandplan_mapChannels(chpage, chmap) LMICuslike_mapChannels(chpage, chmap)
 
 ostime_t LMICuslike_nextTx(ostime_t now);

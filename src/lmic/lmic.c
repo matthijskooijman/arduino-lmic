@@ -411,7 +411,9 @@ void LMICcore_setDrJoin (u1_t reason, u1_t dr) {
 }
 
 
-static void setDrTxpow (u1_t reason, u1_t dr, s1_t pow) {
+static bit_t setDrTxpow (u1_t reason, u1_t dr, s1_t pow) {
+    bit_t result = 0;
+
     LMIC_EV_PARAMETER(reason);
 
     EV(drChange, INFO, (e_.reason    = reason,
@@ -421,13 +423,17 @@ static void setDrTxpow (u1_t reason, u1_t dr, s1_t pow) {
                         e_.prevdr    = LMIC.datarate|DR_PAGE,
                         e_.prevtxpow = LMIC.adrTxPow));
 
-    if( pow != KEEP_TXPOW )
+    if( pow != KEEP_TXPOW ) {
         LMIC.adrTxPow = pow;
+        result = 1;
+    }
     if( LMIC.datarate != dr ) {
         LMIC.datarate = dr;
         DO_DEVDB(LMIC.datarate,datarate);
         LMIC.opmode |= OP_NEXTCHNL;
+        result = 1;
     }
+    return result;
 }
 
 
@@ -676,7 +682,7 @@ scan_mac_cmds(
             // we need to count the number we see.
             LMIC.ladrAns = 0x80 |     // Include an answer into next frame up
                 MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
-            if( !LMICbandplan_mapChannels(chpage, chmap) )
+            if( !LMICbandplan_canMapChannels(chpage, chmap) )
                 LMIC.ladrAns &= ~MCMD_LADR_ANS_CHACK;
             dr_t dr = (dr_t)(p1>>MCMD_LADR_DR_SHIFT);
             if( !validDR(dr) ) {
@@ -697,11 +703,17 @@ scan_mac_cmds(
 #endif /* LMIC_DEBUG_LEVEL */
 
             if( (LMIC.ladrAns & 0x7F) == (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK) ) {
+                bit_t changes = 0;
+
                 // Nothing went wrong - use settings
-                LMIC.upRepeat = uprpt;
-                setDrTxpow(DRCHG_NWKCMD, dr, pow2dBm(p1));
+                changes |= LMICbandplan_mapChannels(chpage, chmap);
+                if (LMIC.upRepeat != uprpt) {
+                    LMIC.upRepeat = uprpt;
+                    changes = 1;
+                }
+                changes |= setDrTxpow(DRCHG_NWKCMD, dr, pow2dBm(p1));
+                LMIC.adrChanged = 1;  // move the ADR FSM up to "time to request"
             }
-            LMIC.adrChanged = 1;  // Trigger an ACK to NWK
             continue;
         }
         case MCMD_DEVS_REQ: {
@@ -1468,7 +1480,10 @@ static void buildDataFrame (void) {
     }
 #endif // !DISABLE_BEACONS
     if( LMIC.adrChanged ) {
-        if( LMIC.adrAckReq < 0 )
+        // if ADR is enabled, and we were just counting down the
+        // transmits before starting an ADR, advance the timer so
+        // we'll do an ADR now.
+        if( LMIC.adrAckReq != LINK_CHECK_OFF && LMIC.adrAckReq < 0 )
             LMIC.adrAckReq = 0;
         LMIC.adrChanged = 0;
     }
@@ -1824,14 +1839,29 @@ static bit_t processDnData (void) {
             dr_t newDr = decDR((dr_t)LMIC.datarate);
             if( newDr == (dr_t)LMIC.datarate) {
                 // We are already at the minimum datarate
-                // try to REJOIN
+                // if the link is already marked dead, we need to join.
+                // REJOIN sends a single join packet then brings back
+                // up the normal tx loop. If we miss the downlink for the
+                // join-accept, all the TXs until the next window will
+                // fail... so we leave in the OP_REJOIN, but set things
+                // to trigger a REJOIN after each uplink from here on.
+                LMIC.adrAckReq = LINK_CHECK_DEAD;
+#if !defined(DISABLE_JOIN)
                 LMIC.opmode |= OP_REJOIN;
+#endif // !defined(DISABLE_JOIN)
+            } else {
+                // not in the dead state... let's wait another 32
+                // uplinks before panicking.
+                LMIC.adrAckReq = LINK_CHECK_CONT;
             }
             // Decrease DataRate and restore fullpower.
             setDrTxpow(DRCHG_NOADRACK, newDr, pow2dBm(0));
-            LMIC.adrAckReq = LINK_CHECK_CONT;
-            LMIC.opmode |= OP_LINKDEAD;
-            reportEventNoUpdate(EV_LINK_DEAD); // update?
+
+            // be careful only to report EV_LINK_DEAD once.
+            u2_t old_opmode = LMIC.opmode;
+            LMIC.opmode = old_opmode | OP_LINKDEAD;
+            if (LMIC.opmode != old_opmode)
+                reportEventNoUpdate(EV_LINK_DEAD); // update?
         }
 #if !defined(DISABLE_BEACONS)
         // If this falls to zero the NWK did not answer our MCMD_BCNI_REQ commands - try full scan
