@@ -606,7 +606,6 @@ static void stateJustJoined (void) {
     LMIC.pingSetAns  = 0;
 #endif
     LMIC.upRepeat    = 0;
-    LMIC.adrAckReq   = LINK_CHECK_INIT;
     resetJoinParams();
 #if !defined(DISABLE_BEACONS)
     LMIC.bcnChnl     = CHNL_BCN;
@@ -879,6 +878,13 @@ scan_mac_cmds(
     return oidx;
 }
 
+// change the ADR ack request count, unless adr ack is diabled.
+static void setAdrAckCount (s1_t count) {
+    if (LMIC.adrAckReq != LINK_CHECK_OFF) {
+        LMIC.adrAckReq = count;
+    }
+}
+
 static bit_t decodeFrame (void) {
     xref2u1_t d = LMIC.frame;
     u1_t hdr    = d[0];
@@ -980,8 +986,7 @@ static bit_t decodeFrame (void) {
 
     // We heard from network
     LMIC.adrChanged = LMIC.rejoinCnt = 0;
-    if( LMIC.adrAckReq != LINK_CHECK_OFF )
-        LMIC.adrAckReq = LINK_CHECK_INIT;
+    setAdrAckCount(LINK_CHECK_INIT);
 
     int m = LMIC.rssi - RSSI_OFF - getSensitivity(LMIC.rps);
     // for legacy reasons, LMIC.margin is set to the unsigned sensitivity. It can never be negative.
@@ -1161,7 +1166,6 @@ static void txDone (ostime_t delay, osjobcb_t func) {
     }
 }
 
-
 // ======================================== Join frames
 
 
@@ -1270,6 +1274,9 @@ static bit_t processJoinAccept (void) {
     LMIC.opmode |= OP_NEXTCHNL;
     LMIC.txCnt = 0;
     stateJustJoined();
+    // transition to the ADR_ACK initial state.
+    setAdrAckCount(LINK_CHECK_INIT);
+
     LMIC.dn2Dr = LMIC.frame[OFF_JA_DLSET] & 0x0F;
     LMIC.rx1DrOffset = (LMIC.frame[OFF_JA_DLSET] >> 4) & 0x7;
     LMIC.rxDelay = LMIC.frame[OFF_JA_RXDLY];
@@ -1483,8 +1490,8 @@ static void buildDataFrame (void) {
         // if ADR is enabled, and we were just counting down the
         // transmits before starting an ADR, advance the timer so
         // we'll do an ADR now.
-        if( LMIC.adrAckReq != LINK_CHECK_OFF && LMIC.adrAckReq < 0 )
-            LMIC.adrAckReq = 0;
+        if (LMIC.adrAckReq < LINK_CHECK_CONT)
+            setAdrAckCount(LINK_CHECK_CONT);
         LMIC.adrChanged = 0;
     }
 #if !defined(DISABLE_MCMD_DN2P_SET)
@@ -1535,7 +1542,7 @@ static void buildDataFrame (void) {
     }
     LMIC.frame[OFF_DAT_HDR] = HDR_FTYPE_DAUP | HDR_MAJOR_V1;
     LMIC.frame[OFF_DAT_FCT] = (LMIC.dnConf | LMIC.adrEnabled
-                              | (LMIC.adrAckReq >= 0 ? FCT_ADRARQ : 0)
+                              | (LMIC.adrAckReq >= LINK_CHECK_CONT ? FCT_ADRARQ : 0)
                               | (end-OFF_DAT_OPTS));
     os_wlsbf4(LMIC.frame+OFF_DAT_ADDR,  LMIC.devaddr);
 
@@ -1800,8 +1807,7 @@ static bit_t processDnData (void) {
             // Nothing received - implies no port
             initTxrxFlags(__func__, TXRX_NOPORT);
         }
-        if( LMIC.adrAckReq != LINK_CHECK_OFF )
-            LMIC.adrAckReq += 1;
+        setAdrAckCount(LMIC.adrAckReq + 1);
         LMIC.dataBeg = LMIC.dataLen = 0;
       txcomplete:
         LMIC.opmode &= ~(OP_TXDATA|OP_TXRXPEND);
@@ -1852,7 +1858,7 @@ static bit_t processDnData (void) {
             } else {
                 // not in the dead state... let's wait another 32
                 // uplinks before panicking.
-                LMIC.adrAckReq = LINK_CHECK_CONT;
+                setAdrAckCount(LINK_CHECK_CONT);
             }
             // Decrease DataRate and restore fullpower.
             setDrTxpow(DRCHG_NOADRACK, newDr, pow2dBm(0));
@@ -2307,6 +2313,9 @@ void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t
     LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_REJOIN|OP_TXRXPEND|OP_PINGINI);
     LMIC.opmode |= OP_NEXTCHNL;
     stateJustJoined();
+    // transition to the ADR_ACK_DELAY state.
+    setAdrAckCount(LINK_CHECK_CONT);
+
     DO_DEVDB(LMIC.netid,   netid);
     DO_DEVDB(LMIC.devaddr, devaddr);
     DO_DEVDB(LMIC.nwkKey,  nwkkey);
