@@ -712,7 +712,7 @@ scan_mac_cmds(
                     changes = 1;
                 }
                 changes |= setDrTxpow(DRCHG_NWKCMD, dr, pow2dBm(p1));
-                LMIC.adrChanged = 1;  // move the ADR FSM up to "time to request"
+                LMIC.adrChanged = changes;  // move the ADR FSM up to "time to request"
             }
             continue;
         }
