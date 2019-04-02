@@ -525,10 +525,10 @@ static void reportEventNoUpdate (ev_t ev) {
             if (ev == EV_TXCANCELED) {
                 // canceled: unsuccessful.
                 fSuccess = 0;
-            } else if (/* ev == EV_TCCOMPLETE  && */ LMIC.pendTxConf) {
+            } else if (/* ev == EV_TXCOMPLETE  && */ LMIC.pendTxConf) {
                 fSuccess = (LMIC.txrxFlags & TXRX_ACK) != 0;
             } else {
-                // unconfirmed uplinks are successul if they were sent.
+                // unconfirmed uplinks are successful if they were sent.
                 fSuccess = 1;
             }
 
