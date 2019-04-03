@@ -149,10 +149,10 @@ void radio_monitor_rssi(ostime_t n, oslmic_radio_rssi_t *pRssi);
 
 struct osjob_t;  // fwd decl.
 
-// the function type for osjob_t callbacks
+//! the function type for osjob_t callbacks
 typedef void (osjobcbfn_t)(struct osjob_t*);
 
-// the pointer-to-function for osjob_t callbacks
+//! the pointer-to-function for osjob_t callbacks
 typedef osjobcbfn_t *osjobcb_t;
 
 struct osjob_t {
@@ -162,7 +162,7 @@ struct osjob_t {
 };
 TYPEDEF_xref2osjob_t;
 
-// determine whether a job is timed or immediate. os_setTimedCallback()
+//! determine whether a job is timed or immediate. os_setTimedCallback()
 // must treat incoming == 0 as being 1 instead.
 static inline int os_jobIsTimed(xref2osjob_t job) {
     return (job->deadline != 0);
@@ -201,6 +201,7 @@ void os_radio (u1_t mode);
 u1_t os_getBattLevel (void);
 #endif
 #ifndef os_queryTimeCriticalJobs
+//! Return non-zero if any jobs are scheduled between now and now+time.
 bit_t os_queryTimeCriticalJobs(ostime_t time);
 #endif
 
