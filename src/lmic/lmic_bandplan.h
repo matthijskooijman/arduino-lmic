@@ -1,6 +1,6 @@
 /*
 * Copyright (c) 2014-2016 IBM Corporation.
-* Copyright (c) 2017 MCCI Corporation.
+* Copyright (c) 2017, 2019 MCCI Corporation.
 * All rights reserved.
 *
 *  Redistribution and use in source and binary forms, with or without
@@ -147,6 +147,15 @@
 #if !defined(LMICbandplan_init)
 # error "LMICbandplan_init() not defined by bandplan"
 #endif
+
+#if !defined(LMICbandplan_saveAdrState)
+# error "LMICbandplan_saveAdrState() not defined by bandplan"
+#endif
+
+#if !defined(LMICbandplan_compareAdrState)
+# error "LMICbandplan_compareAdrState() not defined by bandplan"
+#endif
+
 //
 // Things common to lmic.c code
 //

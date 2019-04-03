@@ -606,7 +606,6 @@ static void stateJustJoined (void) {
     LMIC.pingSetAns  = 0;
 #endif
     LMIC.upRepeat    = 0;
-    LMIC.adrAckReq   = LINK_CHECK_INIT;
     resetJoinParams();
 #if !defined(DISABLE_BEACONS)
     LMIC.bcnChnl     = CHNL_BCN;
@@ -654,6 +653,86 @@ static int decodeBeacon (void) {
 }
 #endif // !DISABLE_BEACONS
 
+static CONST_TABLE(u1_t, macCmdSize)[] = {
+    /* 2: LinkCheckAns */ 3,
+    /* 3: LinkADRReq */ 5,
+    /* 4: DutyCycleReq */ 2,
+    /* 5: RXParamSetupReq */ 5,
+    /* 6: DevStatusReq */ 1,
+    /* 7: NewChannel Req */ 6,
+    /* 8: RXTiminSetupReq */ 2,
+    /* 9: TxParamSetupReq */ 2,
+    /* 0x0A: DlChannelReq */ 5,
+    /* B, C: RFU */ 0, 0,
+    /* 0x0D: DeviceTimeAns */ 6,
+    /* 0x0E, 0x0F */ 0, 0,
+    /* 0x10: PingSlotInfoAns */ 1,
+    /* 0x11: PingSlotChannelReq */ 4,
+    /* 0x12: BeaconTimingAns */ 4,
+    /* 0x13: BeaconFreqReq */ 4
+};
+
+static u1_t getMacCmdSize(u1_t macCmd) {
+    if (macCmd < 2)
+        return 0;
+    if (macCmd >= LENOF_TABLE(macCmdSize) - 2)
+        return 0;
+    return TABLE_GET_U1(macCmdSize, macCmd - 2);
+}
+
+static void
+applyAdrRequests(
+    const uint8_t *opts,
+    int olen
+) {
+    if( (LMIC.ladrAns & 0x7F) == (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK) ) {
+        lmic_saved_adr_state_t initialState;
+        int oidx;
+        u1_t p1 = 0;
+        u1_t p4 = 0;
+
+        LMICbandplan_saveAdrState(&initialState);
+
+        for (oidx = 0; oidx < olen; ) {
+            u1_t const cmd = opts[oidx];
+
+            if (cmd == MCMD_LADR_REQ) {
+                u2_t chmap  = os_rlsbf2(&opts[oidx+2]);// list of enabled channels
+
+                p1     = opts[oidx+1];            // txpow + DR, in case last
+                p4     = opts[oidx+4];
+                u1_t chpage = p4 & MCMD_LADR_CHPAGE_MASK;     // channel page
+
+                LMICbandplan_mapChannels(chpage, chmap);
+            }
+
+            int cmdlen = getMacCmdSize(cmd);
+
+            // this really is an assert, we should never here
+            // unless all the commands are valid.
+            ASSERT(cmdlen != 0);
+
+            oidx += cmdlen;
+        }
+
+        // all done scanning options
+        bit_t changes = LMICbandplan_compareAdrState(&initialState);
+
+        // handle uplink repeat count
+        u1_t uprpt  = p4 & MCMD_LADR_REPEAT_MASK;     // up repeat count
+        if (LMIC.upRepeat != uprpt) {
+            LMIC.upRepeat = uprpt;
+            changes = 1;
+        }
+
+        // handle power changes
+        dr_t dr = (dr_t)(p1>>MCMD_LADR_DR_SHIFT);
+        changes |= setDrTxpow(DRCHG_NWKCMD, dr, pow2dBm(p1));
+
+        LMIC.adrChanged = changes;  // move the ADR FSM up to "time to request"
+    }
+}
+
 // scan mac commands starting at opts[] for olen, return count of bytes consumed.
 static int
 scan_mac_cmds(
@@ -661,27 +740,35 @@ scan_mac_cmds(
     int olen
     ) {
     int oidx = 0;
+    // this parser is *really* fragile, especially for LinkADR requests.
+    // it won't crash, but acks will be wrong if all ADR requests are
+    // not contiguous.
+    bit_t fSawAdrReq;
+    uint8_t cmd;
+
     while( oidx < olen ) {
-        switch( opts[oidx] ) {
+        cmd = opts[oidx];
+        switch( cmd ) {
         case MCMD_LCHK_ANS: {
             //int gwmargin = opts[oidx+1];
             //int ngws = opts[oidx+2];
-            oidx += 3;
-            continue;
+            break;
         }
         case MCMD_LADR_REQ: {
             u1_t p1     = opts[oidx+1];            // txpow + DR
             u2_t chmap  = os_rlsbf2(&opts[oidx+2]);// list of enabled channels
             u1_t chpage = opts[oidx+4] & MCMD_LADR_CHPAGE_MASK;     // channel page
             u1_t uprpt  = opts[oidx+4] & MCMD_LADR_REPEAT_MASK;     // up repeat count
-            oidx += 5;
 
             // TODO(tmm@mcci.com): LoRaWAN 1.1 requires us to process multiple
             // LADR requests, and only update if all pass. So this should check
             // ladrAns == 0, and only initialize if so. Need to repeat ACKs, so
             // we need to count the number we see.
-            LMIC.ladrAns = 0x80 |     // Include an answer into next frame up
-                MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
+            if (! fSawAdrReq) {
+                fSawAdrReq = 1;
+                LMIC.ladrAns = 0x80 |     // Include an answer into next frame up
+                    MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
+            }
             if( !LMICbandplan_canMapChannels(chpage, chmap) )
                 LMIC.ladrAns &= ~MCMD_LADR_ANS_CHACK;
             dr_t dr = (dr_t)(p1>>MCMD_LADR_DR_SHIFT);
@@ -692,29 +779,7 @@ scan_mac_cmds(
                                    e_.info   = Base::lsbf4(&d[pend]),
                                    e_.info2  = Base::msbf4(&opts[oidx-4])));
             }
-            // TODO(tmm@mcci.com): see above; this needs to move outside the
-            // txloop. And we need to have "consistent" answers for the block
-            // of contiguous commands (whatever that means), and ignore the
-            // data rate, NbTrans (uprpt) and txPow until the last one.
-#if LMIC_DEBUG_LEVEL > 0
-            LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": LinkAdrReq: p1:%02x chmap:%04x chpage:%02x uprt:%02x ans:%02x\n",
-		os_getTime(), p1, chmap, chpage, uprpt, LMIC.ladrAns
-		);
-#endif /* LMIC_DEBUG_LEVEL */
-
-            if( (LMIC.ladrAns & 0x7F) == (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK) ) {
-                bit_t changes = 0;
-
-                // Nothing went wrong - use settings
-                changes |= LMICbandplan_mapChannels(chpage, chmap);
-                if (LMIC.upRepeat != uprpt) {
-                    LMIC.upRepeat = uprpt;
-                    changes = 1;
-                }
-                changes |= setDrTxpow(DRCHG_NWKCMD, dr, pow2dBm(p1));
-                LMIC.adrChanged = 1;  // move the ADR FSM up to "time to request"
-            }
-            continue;
+            break;
         }
         case MCMD_DEVS_REQ: {
             LMIC.devsAns = 1;
@@ -722,8 +787,7 @@ scan_mac_cmds(
             const int snr = (LMIC.snr + 2) / 4;
             // per [1.02] 5.5. the margin is the SNR.
             LMIC.devAnsMargin = (u1_t)(0b00111111 & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr));
-            oidx += 1;
-            continue;
+            break;
         }
         case MCMD_DN2P_SET: {
 #if !defined(DISABLE_MCMD_DN2P_SET)
@@ -746,8 +810,7 @@ scan_mac_cmds(
                 DO_DEVDB(LMIC.dn2Freq,dn2Freq);
             }
 #endif // !DISABLE_MCMD_DN2P_SET
-            oidx += 5;
-            continue;
+            break;
         }
         case MCMD_DCAP_REQ: {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
@@ -759,9 +822,8 @@ scan_mac_cmds(
             LMIC.globalDutyAvail = os_getTime();
             DO_DEVDB(cap,dutyCap);
             LMIC.dutyCapAns = 1;
-            oidx += 2;
 #endif // !DISABLE_MCMD_DCAP_REQ
-            continue;
+            break;
         }
         case MCMD_SNCH_REQ: {
 #if !defined(DISABLE_MCMD_SNCH_REQ)
@@ -772,8 +834,7 @@ scan_mac_cmds(
             if( freq != 0 && LMIC_setupChannel(chidx, freq, DR_RANGE_MAP(drs&0xF,drs>>4), -1) )
                 LMIC.snchAns |= MCMD_SNCH_ANS_DRACK|MCMD_SNCH_ANS_FQACK;
 #endif // !DISABLE_MCMD_SNCH_REQ
-            oidx += 6;
-            continue;
+            break;
         }
         case MCMD_PING_SET: {
 #if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
@@ -788,8 +849,7 @@ scan_mac_cmds(
             }
             LMIC.pingSetAns = flags;
 #endif // !DISABLE_MCMD_PING_SET && !DISABLE_PING
-            oidx += 4;
-            continue;
+            break;
         }
         case MCMD_BCNI_ANS: {
 #if !defined(DISABLE_MCMD_BCNI_ANS) && !defined(DISABLE_BEACONS)
@@ -817,8 +877,7 @@ scan_mac_cmds(
                                      e_.time    = MAIN::CDEV->ostime2ustime(LMIC.bcninfo.txtime + BCN_INTV_osticks)));
             }
 #endif // !DISABLE_MCMD_BCNI_ANS && !DISABLE_BEACONS
-            oidx += 4;
-            continue;
+            break;
         } /* end case */
         case MCMD_TxParamSetupReq: {
 #if LMIC_ENABLE_TxParamSetupReq
@@ -832,8 +891,7 @@ scan_mac_cmds(
             LMIC.txParam = txParam;
             LMIC.txParamSetupAns = 1;
 #endif // LMIC_ENABLE_TxParamSetupReq
-            oidx += 2;
-            continue;
+            break;
         } /* end case */
         case MCMD_DeviceTimeAns: {
 #if LMIC_ENABLE_DeviceTimeReq
@@ -864,19 +922,39 @@ scan_mac_cmds(
 #endif
             }
 #endif // LMIC_ENABLE_DeviceTimeReq
-            oidx += 6;
-            continue;
+            break;
+        } /* end case */
+
+        default: {
+            // force olen to current oidx so we'll exit the while()
+            olen = oidx;
+            break;
         } /* end case */
         } /* end switch */
-        /* unrecognized mac commands fall out of switch to here */
-        EV(specCond, ERR, (e_.reason = EV::specCond_t::BAD_MAC_CMD,
-                           e_.eui    = MAIN::CDEV->getEui(),
-                           e_.info   = Base::lsbf4(&d[pend]),
-                           e_.info2  = Base::msbf4(&opts[oidx])));
-        /* stop processing options */
-        break;
+
+    /* compute length, and exit for illegal commands */
+    int const cmdlen = getMacCmdSize(cmd);
+    if (cmdlen == 0) {
+        // "the first unknown command terminates processing"
+        // force olen to current oidx so we'll exit the while().
+        olen = oidx;
+    }
+
+    oidx += cmdlen;
     } /* end while */
+
+    // go back and apply the ADR changes, if any -- use the effective length
+    if (fSawAdrReq)
+        applyAdrRequests(opts, olen);
+
     return oidx;
+}
+
+// change the ADR ack request count, unless adr ack is diabled.
+static void setAdrAckCount (s1_t count) {
+    if (LMIC.adrAckReq != LINK_CHECK_OFF) {
+        LMIC.adrAckReq = count;
+    }
 }
 
 static bit_t decodeFrame (void) {
@@ -980,8 +1058,7 @@ static bit_t decodeFrame (void) {
 
     // We heard from network
     LMIC.adrChanged = LMIC.rejoinCnt = 0;
-    if( LMIC.adrAckReq != LINK_CHECK_OFF )
-        LMIC.adrAckReq = LINK_CHECK_INIT;
+    setAdrAckCount(LINK_CHECK_INIT);
 
     int m = LMIC.rssi - RSSI_OFF - getSensitivity(LMIC.rps);
     // for legacy reasons, LMIC.margin is set to the unsigned sensitivity. It can never be negative.
@@ -999,6 +1076,7 @@ static bit_t decodeFrame (void) {
         EV(specCond, ERR, (e_.reason = EV::specCond_t::CORRUPTED_FRAME,
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = 0x1000000 + (oidx) + (olen<<8)));
+        oidx = olen;
     }
 
     if( !replayConf ) {
@@ -1161,7 +1239,6 @@ static void txDone (ostime_t delay, osjobcb_t func) {
     }
 }
 
-
 // ======================================== Join frames
 
 
@@ -1270,6 +1347,9 @@ static bit_t processJoinAccept (void) {
     LMIC.opmode |= OP_NEXTCHNL;
     LMIC.txCnt = 0;
     stateJustJoined();
+    // transition to the ADR_ACK initial state.
+    setAdrAckCount(LINK_CHECK_INIT);
+
     LMIC.dn2Dr = LMIC.frame[OFF_JA_DLSET] & 0x0F;
     LMIC.rx1DrOffset = (LMIC.frame[OFF_JA_DLSET] >> 4) & 0x7;
     LMIC.rxDelay = LMIC.frame[OFF_JA_RXDLY];
@@ -1483,8 +1563,8 @@ static void buildDataFrame (void) {
         // if ADR is enabled, and we were just counting down the
         // transmits before starting an ADR, advance the timer so
         // we'll do an ADR now.
-        if( LMIC.adrAckReq != LINK_CHECK_OFF && LMIC.adrAckReq < 0 )
-            LMIC.adrAckReq = 0;
+        if (LMIC.adrAckReq < LINK_CHECK_CONT)
+            setAdrAckCount(LINK_CHECK_CONT);
         LMIC.adrChanged = 0;
     }
 #if !defined(DISABLE_MCMD_DN2P_SET)
@@ -1535,7 +1615,7 @@ static void buildDataFrame (void) {
     }
     LMIC.frame[OFF_DAT_HDR] = HDR_FTYPE_DAUP | HDR_MAJOR_V1;
     LMIC.frame[OFF_DAT_FCT] = (LMIC.dnConf | LMIC.adrEnabled
-                              | (LMIC.adrAckReq >= 0 ? FCT_ADRARQ : 0)
+                              | (LMIC.adrAckReq >= LINK_CHECK_CONT ? FCT_ADRARQ : 0)
                               | (end-OFF_DAT_OPTS));
     os_wlsbf4(LMIC.frame+OFF_DAT_ADDR,  LMIC.devaddr);
 
@@ -1800,8 +1880,7 @@ static bit_t processDnData (void) {
             // Nothing received - implies no port
             initTxrxFlags(__func__, TXRX_NOPORT);
         }
-        if( LMIC.adrAckReq != LINK_CHECK_OFF )
-            LMIC.adrAckReq += 1;
+        setAdrAckCount(LMIC.adrAckReq + 1);
         LMIC.dataBeg = LMIC.dataLen = 0;
       txcomplete:
         LMIC.opmode &= ~(OP_TXDATA|OP_TXRXPEND);
@@ -1852,7 +1931,7 @@ static bit_t processDnData (void) {
             } else {
                 // not in the dead state... let's wait another 32
                 // uplinks before panicking.
-                LMIC.adrAckReq = LINK_CHECK_CONT;
+                setAdrAckCount(LINK_CHECK_CONT);
             }
             // Decrease DataRate and restore fullpower.
             setDrTxpow(DRCHG_NOADRACK, newDr, pow2dBm(0));
@@ -2307,6 +2386,9 @@ void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t
     LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_REJOIN|OP_TXRXPEND|OP_PINGINI);
     LMIC.opmode |= OP_NEXTCHNL;
     stateJustJoined();
+    // transition to the ADR_ACK_DELAY state.
+    setAdrAckCount(LINK_CHECK_CONT);
+
     DO_DEVDB(LMIC.netid,   netid);
     DO_DEVDB(LMIC.devaddr, devaddr);
     DO_DEVDB(LMIC.nwkKey,  nwkkey);
