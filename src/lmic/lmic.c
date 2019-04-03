@@ -760,10 +760,11 @@ scan_mac_cmds(
             u1_t chpage = opts[oidx+4] & MCMD_LADR_CHPAGE_MASK;     // channel page
             u1_t uprpt  = opts[oidx+4] & MCMD_LADR_REPEAT_MASK;     // up repeat count
 
-            // TODO(tmm@mcci.com): LoRaWAN 1.1 requires us to process multiple
-            // LADR requests, and only update if all pass. So this should check
-            // ladrAns == 0, and only initialize if so. Need to repeat ACKs, so
-            // we need to count the number we see.
+            // TODO(tmm@mcci.com): LoRaWAN 1.1 & 1.0.3 requires us to send one ack
+            // for each LinkADRReq in a given MAC message. This code only sends
+            // ack for all the LinkADRReqs. Fixing this is a lot of work, and TTN
+            // behaves correctly with the current LMIC, so we'll leave this for
+            // the fix of issue #87.
             if (! fSawAdrReq) {
                 fSawAdrReq = 1;
                 LMIC.ladrAns = 0x80 |     // Include an answer into next frame up
