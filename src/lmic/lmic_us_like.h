@@ -100,4 +100,10 @@ static inline ostime_t LMICuslike_nextJoinTime(ostime_t now) {
 #define LMICbandplan_init()     \
         do { /* nothing */ } while (0)
 
+void LMICuslike_saveAdrState(lmic_saved_adr_state_t *pStateBuffer);
+#define LMICbandplan_saveAdrState(pState) LMICuslike_saveAdrState(pState)
+
+bit_t LMICuslike_compareAdrState(const lmic_saved_adr_state_t *pStateBuffer);
+#define LMICbandplan_compareAdrState(pState) LMICuslike_compareAdrState(pState)
+
 #endif // _lmic_us_like_h_

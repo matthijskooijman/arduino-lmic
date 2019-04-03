@@ -156,11 +156,22 @@ struct band_t {
 };
 TYPEDEF_xref2band_t; //!< \internal
 
+struct lmic_saved_adr_state_s {
+    u4_t        channelFreq[MAX_CHANNELS];
+    u2_t        channelMap;
+};
+
 #elif CFG_LMIC_US_like  // US915 spectrum =================================================
 
 enum { MAX_XCHANNELS = 2 };      // extra channels in RAM, channels 0-71 are immutable
 
+struct lmic_saved_adr_state_s {
+    u2_t        channelMap[(72+MAX_XCHANNELS+15)/16];  // enabled bits
+};
+
 #endif // ==========================================================================
+
+typedef struct lmic_saved_adr_state_s   lmic_saved_adr_state_t;
 
 // Keep in sync with evdefs.hpp::drChange
 enum { DRCHG_SET, DRCHG_NOJACC, DRCHG_NOACK, DRCHG_NOADRACK, DRCHG_NWKCMD };

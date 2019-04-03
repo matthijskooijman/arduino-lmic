@@ -286,4 +286,16 @@ ostime_t LMICuslike_nextJoinState(void) {
 }
 #endif
 
+void LMICuslike_saveAdrState(lmic_saved_adr_state_t *pStateBuffer) {
+        memcpy(
+                pStateBuffer->channelMap,
+                LMIC.channelMap,
+                sizeof(LMIC.channelMap)
+        );
+}
+
+bit_t LMICuslike_compareAdrState(const lmic_saved_adr_state_t *pStateBuffer) {
+        return memcmp(pStateBuffer->channelMap, LMIC.channelMap, sizeof(LMIC.channelMap)) != 0;
+}
+
 #endif // CFG_LMIC_US_like

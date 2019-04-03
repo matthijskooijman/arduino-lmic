@@ -169,4 +169,19 @@ ostime_t LMICeulike_nextJoinState(uint8_t nDefaultChannels) {
 }
 #endif // !DISABLE_JOIN
 
+void LMICeulike_saveAdrState(lmic_saved_adr_state_t *pStateBuffer) {
+        memcpy(
+                pStateBuffer->channelFreq,
+                LMIC.channelFreq,
+                sizeof(LMIC.channelFreq)
+        );
+        pStateBuffer->channelMap = LMIC.channelMap;
+}
+
+bit_t LMICeulike_compareAdrState(const lmic_saved_adr_state_t *pStateBuffer) {
+        if (memcmp(pStateBuffer->channelFreq, LMIC.channelFreq, sizeof(LMIC.channelFreq)) != 0)
+                return 0;
+        return pStateBuffer->channelMap == LMIC.channelMap;
+}
+
 #endif // CFG_LMIC_EU_like
