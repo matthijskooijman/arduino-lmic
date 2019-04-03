@@ -423,7 +423,7 @@ static bit_t setDrTxpow (u1_t reason, u1_t dr, s1_t pow) {
                         e_.prevdr    = LMIC.datarate|DR_PAGE,
                         e_.prevtxpow = LMIC.adrTxPow));
 
-    if( pow != KEEP_TXPOW ) {
+    if( pow != KEEP_TXPOW && pow != LMIC.adrTxPow ) {
         LMIC.adrTxPow = pow;
         result = 1;
     }
