@@ -743,7 +743,7 @@ scan_mac_cmds(
     // this parser is *really* fragile, especially for LinkADR requests.
     // it won't crash, but acks will be wrong if all ADR requests are
     // not contiguous.
-    bit_t fSawAdrReq;
+    bit_t fSawAdrReq = 0;
     uint8_t cmd;
 
     while( oidx < olen ) {
