@@ -423,7 +423,7 @@ static bit_t setDrTxpow (u1_t reason, u1_t dr, s1_t pow) {
                         e_.prevdr    = LMIC.datarate|DR_PAGE,
                         e_.prevtxpow = LMIC.adrTxPow));
 
-    if( pow != KEEP_TXPOW ) {
+    if( pow != KEEP_TXPOW && pow != LMIC.adrTxPow ) {
         LMIC.adrTxPow = pow;
         result = 1;
     }
@@ -743,7 +743,7 @@ scan_mac_cmds(
     // this parser is *really* fragile, especially for LinkADR requests.
     // it won't crash, but acks will be wrong if all ADR requests are
     // not contiguous.
-    bit_t fSawAdrReq;
+    bit_t fSawAdrReq = 0;
     uint8_t cmd;
 
     while( oidx < olen ) {
@@ -760,10 +760,11 @@ scan_mac_cmds(
             u1_t chpage = opts[oidx+4] & MCMD_LADR_CHPAGE_MASK;     // channel page
             u1_t uprpt  = opts[oidx+4] & MCMD_LADR_REPEAT_MASK;     // up repeat count
 
-            // TODO(tmm@mcci.com): LoRaWAN 1.1 requires us to process multiple
-            // LADR requests, and only update if all pass. So this should check
-            // ladrAns == 0, and only initialize if so. Need to repeat ACKs, so
-            // we need to count the number we see.
+            // TODO(tmm@mcci.com): LoRaWAN 1.1 & 1.0.3 requires us to send one ack
+            // for each LinkADRReq in a given MAC message. This code only sends
+            // ack for all the LinkADRReqs. Fixing this is a lot of work, and TTN
+            // behaves correctly with the current LMIC, so we'll leave this for
+            // the fix of issue #87.
             if (! fSawAdrReq) {
                 fSawAdrReq = 1;
                 LMIC.ladrAns = 0x80 |     // Include an answer into next frame up

@@ -156,6 +156,8 @@ void os_runloop_once() {
     }
 }
 
+// return true if there are any jobs scheduled within time ticks from now.
+// return false if any jobs scheduled are at least time ticks in the future.
 bit_t os_queryTimeCriticalJobs(ostime_t time) {
     if (OS.scheduledjobs &&
         OS.scheduledjobs->deadline - os_getTime() < time)
