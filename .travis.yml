@@ -1,7 +1,6 @@
 # Travis script for test-building this library.
 language: c
 dist: trusty
-sudo: false
 
 env:
  global:
@@ -18,6 +17,17 @@ cache:
   - $HOME/arduino_ide
 
 before_install:
+  #
+  # PlatformIO setup
+  - uname --all
+  - sudo apt-get update -qq && sudo apt-get -y install python-pip
+  - python2 --version
+  - pip2 --version
+  - pip2 install --user --upgrade platformio
+  - platformio update
+  - platformio --version
+  #
+  # Arduino IDE setup
   - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
   - sleep 3
   - export DISPLAY=:1.0
@@ -83,6 +93,11 @@ install:
  - 'if [ "$TARGET" = stm32l0 -a -d $HOME/.arduino15/packages/mcci/hardware/stm32/1.1.0 ]; then echo "Work around broken BSP version 1.1.0" ; export MCCI_STM32_OPTS="$MCCI_STM32_OPTS --pref build.board=CATENA_4551" ; fi'
 
 script:
+
+ # Run PlatformIO tests
+ - ci/platformio.sh
+
+ # Run Arduino IDE tests
 
  # simple header file test
  - _notsamd ||     arduino --verify --board $(_samdopts) $PWD/examples/header_test/header_test.ino
@@ -251,5 +266,6 @@ script:
  - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts 'mcci_catena_4611' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
  - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts 'mcci_catena_4612' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
  - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts 'mcci_catena_4801' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
+
 
  ### end of file ###
