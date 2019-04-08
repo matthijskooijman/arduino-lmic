@@ -4,7 +4,7 @@ dist: trusty
 
 env:
  global:
-  - IDE_VERSION=1.8.8
+  - IDE_VERSION=1.8.9
  matrix:
   - TARGET=samd
   - TARGET=stm32l0
