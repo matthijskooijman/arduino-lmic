@@ -180,8 +180,8 @@ void LMICeulike_saveAdrState(lmic_saved_adr_state_t *pStateBuffer) {
 
 bit_t LMICeulike_compareAdrState(const lmic_saved_adr_state_t *pStateBuffer) {
         if (memcmp(pStateBuffer->channelFreq, LMIC.channelFreq, sizeof(LMIC.channelFreq)) != 0)
-                return 0;
-        return pStateBuffer->channelMap == LMIC.channelMap;
+                return 1;
+        return pStateBuffer->channelMap != LMIC.channelMap;
 }
 
 #endif // CFG_LMIC_EU_like
