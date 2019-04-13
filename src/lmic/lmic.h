@@ -105,7 +105,7 @@ extern "C"{
 #define ARDUINO_LMIC_VERSION_CALC(major, minor, patch, local)	\
 	(((major) << 24u) | ((minor) << 16u) | ((patch) << 8u) | (local))
 
-#define	ARDUINO_LMIC_VERSION	ARDUINO_LMIC_VERSION_CALC(2, 3, 2, 0)	/* v2.3.2 */
+#define	ARDUINO_LMIC_VERSION	ARDUINO_LMIC_VERSION_CALC(2, 3, 2, 50)	/* v2.3.2.50 */
 
 #define	ARDUINO_LMIC_VERSION_GET_MAJOR(v)	\
 	(((v) >> 24u) & 0xFFu)
