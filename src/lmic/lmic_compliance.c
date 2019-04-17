@@ -417,7 +417,7 @@ Returns:
 static const char * lmic_compliance_fsmstate_Getname(lmic_compliance_fsmstate_t state) {
     const char * const names[] = { LMIC_COMPLIANCE_FSMSTATE__NAMES };
 
-    if ((unsigned) state > sizeof(names)/sizeof(names[0]))
+    if ((unsigned) state >= sizeof(names)/sizeof(names[0]))
         return "<<unknown>>";
     else
         return names[state];
