@@ -34,6 +34,7 @@ TYPEDEF_xref2rps_t;
 enum { ILLEGAL_RPS = 0xFF };
 enum { DR_PAGE_EU868 = 0x00 };
 enum { DR_PAGE_US915 = 0x10 };
+enum { DR_PAGE_AS923 = 0x20 };
 
 // Global maximum frame length
 enum { STD_PREAMBLE_LEN  =  8 };
@@ -146,6 +147,55 @@ enum {
     OFF_BCN_RFU1     = 16,
     OFF_BCN_CRC2     = 17,
     LEN_BCN          = 19
+};
+
+#elif defined(CFG_as923) // ==============================================
+
+enum _dr_as923_t { DR_SF12=0, DR_SF11, DR_SF10, DR_SF9, DR_SF8, DR_SF7, DR_SF7B, DR_FSK, DR_NONE };
+enum { DR_DFLTMIN = DR_SF7 };
+enum { DR_PAGE = DR_PAGE_AS923 };
+
+// Default frequency plan for AS 923MHz ISM band
+// Bands:
+//  g1 :   1%  14dBm
+//  g2 : 0.1%  14dBm
+//  g3 :  10%  27dBm
+//                 freq             band     datarates
+//based on TTN arrangement
+enum { AS923_F1 = 923200000,      // g1   SF7-12
+       AS923_F2 = 923400000,      // g1   SF7-12 
+       AS923_F3 = 922200000,      // g1   SF7-12
+       AS923_F4 = 922400000,      // g2   SF7-12
+       AS923_F5 = 922600000,      // g2   SF7-12
+       AS923_F6 = 922800000,      // g3   SF7-12
+       AS923_J4 = 923000000,      // g2   SF7-12  
+       AS923_J5 = 922000000,      // g2   SF7-12   
+       AS923_J6 = 922100000,      // g2   SF7      
+};
+enum { AS923_FREQ_MIN = 921000000,
+       AS923_FREQ_MAX = 924000000 };
+
+enum { CHNL_PING         = 5 };
+enum { FREQ_PING         = AS923_F6 };  // default ping freq
+enum { DR_PING           = DR_SF9 };       // default ping DR
+enum { CHNL_DNW2         = 0 };
+enum { FREQ_DNW2         = AS923_F1 };
+enum { DR_DNW2           = DR_SF10 };
+enum { CHNL_BCN          = 5 };
+enum { FREQ_BCN          = AS923_F6 };
+enum { DR_BCN            = DR_SF9 };
+enum { AIRTIME_BCN       = 144384 };  // micros
+
+enum {
+    // Beacon frame format AS SF9
+    OFF_BCN_NETID    = 0,
+    OFF_BCN_TIME     = 3,
+    OFF_BCN_CRC1     = 7,
+    OFF_BCN_INFO     = 8,
+    OFF_BCN_LAT      = 9,
+    OFF_BCN_LON      = 12,
+    OFF_BCN_CRC2     = 15,
+    LEN_BCN          = 17
 };
 
 #endif // ===================================================
@@ -335,6 +385,22 @@ enum {
     MCMD_LADR_14dBm     = 8,
     MCMD_LADR_12dBm     = 9,
     MCMD_LADR_10dBm     = 10
+#elif defined(CFG_as923)
+    MCMD_LADR_SF12      = DR_SF12<<4,
+    MCMD_LADR_SF11      = DR_SF11<<4,
+    MCMD_LADR_SF10      = DR_SF10<<4,
+    MCMD_LADR_SF9       = DR_SF9 <<4,
+    MCMD_LADR_SF8       = DR_SF8 <<4,
+    MCMD_LADR_SF7       = DR_SF7 <<4,
+    MCMD_LADR_SF7B      = DR_SF7B<<4,
+    MCMD_LADR_FSK       = DR_FSK <<4,
+
+    MCMD_LADR_20dBm     = 0,
+    MCMD_LADR_14dBm     = 1,
+    MCMD_LADR_11dBm     = 2,
+    MCMD_LADR_8dBm      = 3,
+    MCMD_LADR_5dBm      = 4,
+MCMD_LADR_2dBm = 5,
 #endif
 };
 
