@@ -378,7 +378,7 @@ The following boards are pre-integrated.
 
 ## Manual configuration
 
-If your desired transceiver board is not pre-integrated, you need to provide the library with the reqruied information.
+If your desired transceiver board is not pre-integrated, you need to provide the library with the required information.
 
 You may need to wire up your transceiver. The exact
 connections are a bit dependent on the transceiver board and Arduino
