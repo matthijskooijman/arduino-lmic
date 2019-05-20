@@ -952,7 +952,7 @@ scan_mac_cmds(
 }
 
 // change the ADR ack request count, unless adr ack is diabled.
-static void setAdrAckCount (s1_t count) {
+static void setAdrAckCount (s2_t count) {
     if (LMIC.adrAckReq != LINK_CHECK_OFF) {
         LMIC.adrAckReq = count;
     }
@@ -1807,7 +1807,7 @@ static void startJoining (xref2osjob_t osjob) {
 // reset the joined-to-network state (and clean up)
 void LMIC_unjoin(void) {
     // reset any joining flags
-    LMIC.opmode &= ~(OP_SCAN|OP_REJOIN);
+    LMIC.opmode &= ~(OP_SCAN|OP_REJOIN|OP_UNJOIN);
 
     // put us in unjoined state:
     LMIC.devaddr = 0;
@@ -1820,11 +1820,12 @@ void LMIC_unjoin(void) {
 bit_t LMIC_startJoining (void) {
     if( LMIC.devaddr == 0 ) {
         // There should be no TX/RX going on
-        ASSERT((LMIC.opmode & (OP_POLL|OP_TXRXPEND)) == 0);
+        // ASSERT((LMIC.opmode & (OP_POLL|OP_TXRXPEND)) == 0);
+        LMIC.opmode &= ~OP_POLL;
         // Lift any previous duty limitation
         LMIC.globalDutyRate = 0;
         // Cancel scanning
-        LMIC.opmode &= ~(OP_SCAN|OP_REJOIN|OP_LINKDEAD|OP_NEXTCHNL);
+        LMIC.opmode &= ~(OP_SCAN|OP_UNJOIN|OP_REJOIN|OP_LINKDEAD|OP_NEXTCHNL);
         // Setup state
         LMIC.rejoinCnt = LMIC.txCnt = 0;
         resetJoinParams();
@@ -1836,6 +1837,18 @@ bit_t LMIC_startJoining (void) {
     }
     return 0; // already joined
 }
+
+static void unjoinAndRejoin(xref2osjob_t osjob) {
+    LMIC_API_PARAMETER(osjob);
+    LMIC_unjoin();
+    LMIC_startJoining();
+}
+
+// do a deferred unjoin and rejoin, so not in engineupdate.
+void LMIC_unjoinAndRejoin(void) {
+    os_setCallback(&LMIC.osjob, FUNC_ADDR(unjoinAndRejoin));
+}
+
 #endif // !DISABLE_JOIN
 
 
@@ -1920,14 +1933,10 @@ static bit_t processDnData (void) {
             if( newDr == (dr_t)LMIC.datarate) {
                 // We are already at the minimum datarate
                 // if the link is already marked dead, we need to join.
-                // REJOIN sends a single join packet then brings back
-                // up the normal tx loop. If we miss the downlink for the
-                // join-accept, all the TXs until the next window will
-                // fail... so we leave in the OP_REJOIN, but set things
-                // to trigger a REJOIN after each uplink from here on.
-                LMIC.adrAckReq = LINK_CHECK_DEAD;
 #if !defined(DISABLE_JOIN)
-                LMIC.opmode |= OP_REJOIN;
+                if ( LMIC.adrAckReq > LINK_CHECK_UNJOIN ) {
+                    LMIC.opmode |= OP_UNJOIN;
+                }
 #endif // !defined(DISABLE_JOIN)
             } else {
                 // not in the dead state... let's wait another 32
@@ -2062,6 +2071,12 @@ static void engineUpdate (void) {
 #if !defined(DISABLE_JOIN)
     if( LMIC.devaddr == 0 && (LMIC.opmode & OP_JOINING) == 0 ) {
         LMIC_startJoining();
+        return;
+    }
+    // we're joined but LinkTracking says we're out of luck...
+    if ( LMIC.devaddr != 0 && (LMIC.opmode & OP_UNJOIN) != 0 ) {
+        LMIC.opmode &= ~OP_UNJOIN;
+        LMIC_unjoinAndRejoin();
         return;
     }
 #endif // !DISABLE_JOIN
@@ -2384,7 +2399,7 @@ void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t
 
     LMICbandplan_setSessionInitDefaultChannels();
 
-    LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_REJOIN|OP_TXRXPEND|OP_PINGINI);
+    LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_UNJOIN|OP_REJOIN|OP_TXRXPEND|OP_PINGINI);
     LMIC.opmode |= OP_NEXTCHNL;
     stateJustJoined();
     // transition to the ADR_ACK_DELAY state.
