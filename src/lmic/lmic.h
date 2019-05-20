@@ -132,6 +132,7 @@ enum { MAX_RXSYMS         = 100 };   // stop tracking beacon beyond this
 
 enum { LINK_CHECK_CONT    =  0  ,    // continue with this after reported dead link
        LINK_CHECK_DEAD    =  32 ,    // after this UP frames and no response to ack from NWK assume link is dead (ADR_ACK_DELAY)
+       LINK_CHECK_UNJOIN  = 8192,    // after this many UP frames and no response, switch to join.
        LINK_CHECK_INIT    = -64 ,    // UP frame count until we ask for ack (ADR_ACK_LIMIT)
        LINK_CHECK_OFF     =-128 };   // link check disabled
 
@@ -234,6 +235,7 @@ enum { OP_NONE     = 0x0000,
        OP_NEXTCHNL = 0x0800, // find a new channel
        OP_LINKDEAD = 0x1000, // link was reported as dead
        OP_TESTMODE = 0x2000, // developer test mode
+       OP_UNJOIN   = 0x4000, // unjoin and rejoin on next engineUpdate().
 };
 // TX-RX transaction flags - report back to user
 enum { TXRX_ACK    = 0x80,   // confirmed UP frame was acked
@@ -413,6 +415,8 @@ struct lmic_t {
     u2_t        opmode;         // engineUpdate() operating mode flags
     u2_t        devNonce;       // last generated nonce
 
+    s2_t        adrAckReq;      // counter for link integrity tracking (LINK_CHECK_OFF=off)
+
 #if !defined(DISABLE_BEACONS)
     s2_t        drift;          // last measured drift
     s2_t        lastDriftDiff;
@@ -448,7 +452,6 @@ struct lmic_t {
     u1_t        artKey[16];   // application router session key
 
     u1_t        dnConf;       // dn frame confirm pending: LORA::FCT_ACK or 0
-    s1_t        adrAckReq;    // counter until we reset data rate (0=off)
     u1_t        adrChanged;
 
     u1_t        rxDelay;      // Rx delay after TX
@@ -528,6 +531,7 @@ void  LMIC_setAdrMode   (bit_t enabled);        // set ADR mode (if mobile turn 
 bit_t LMIC_startJoining (void);
 void  LMIC_tryRejoin    (void);
 void  LMIC_unjoin       (void);
+void  LMIC_unjoinAndRejoin (void);
 #endif
 
 void  LMIC_shutdown     (void);
