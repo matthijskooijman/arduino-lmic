@@ -429,7 +429,11 @@ struct lmic_t {
     u1_t        rxsyms;
     u1_t        dndr;
     s1_t        txpow;          // transmit dBm (administrative)
-    s1_t        radio_txpow;    // the radio driver's copy of txpow, limited by adrTxPow.
+    s1_t        radio_txpow;    // the radio driver's copy of txpow, in dB limited by adrTxPow, and
+				// also adjusted for EIRP/antenna gain considerations.
+				// This is just the radio's idea of power. So if you are
+				// controlling EIRP, and you have 3 dB antenna gain, this
+				// needs to reduced by 3 dB.
     s1_t        lbt_dbmax;      // max permissible dB on our channel (eg -80)
 
     u1_t        txChnl;          // channel for next TX

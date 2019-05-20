@@ -194,6 +194,28 @@
 # define SX127X_MC1_IMPLICIT_HEADER_MODE_ON	SX1272_MC1_IMPLICIT_HEADER_MODE_ON
 #endif
 
+// transmit power configuration for RegPaConfig
+#define SX1276_PAC_PA_SELECT_PA_BOOST 0x80
+#define SX1276_PAC_PA_SELECT_RFIO_PIN 0x00
+#define SX1276_PAC_MAX_POWER_MASK     0x70
+
+// the bits to change for max power.
+#define SX127X_PADAC_POWER_MASK       0x07
+#define SX127X_PADAC_POWER_NORMAL     0x04
+#define SX127X_PADAC_POWER_20dBm      0x07
+
+// convert milliamperes to equivalent value for
+// RegOcp; delivers conservative value.
+#define SX127X_OCP_MAtoBITS(mA)                 \
+    ((mA) < 45   ? 0 :                          \
+     (mA) <= 120 ? ((mA) - 45) / 5 :            \
+     (mA) < 130  ? 0xF :                        \
+     (mA) < 240  ? ((mA) - 130) / 10 + 0x10 :   \
+                   27)
+
+// bit in RegOcp that enables overcurrent protect.
+#define SX127X_OCP_ENA                     0x20
+
 // sx1276 RegModemConfig2
 #define SX1276_MC2_RX_PAYLOAD_CRCON        0x04
 
@@ -214,7 +236,7 @@
 //-----------------------------------------
 // Parameters for RSSI monitoring
 #define SX127X_FREQ_LF_MAX      525000000       // per datasheet 6.3
- 
+
 // per datasheet 5.5.3:
 #define SX127X_RSSI_ADJUST_LF   -164            // add to rssi value to get dB (LF)
 #define SX127X_RSSI_ADJUST_HF   -157            // add to rssi value to get dB (HF)
@@ -446,37 +468,157 @@ static void configChannel () {
     writeReg(RegFrfLsb, (u1_t)(frf>> 0));
 }
 
-
+// On the SX1276, we have several possible configs.
+// 1) using RFO, MaxPower==0: in that case power is -4 to 11 dBm
+// 2) using RFO, MaxPower==7: in that case, power is 0 to 14 dBm
+//      (can't select 15 dBm).
+//	note we can use -4..11 w/o Max and then 12..14 w/Max, and
+//	we really don't need to ask anybody.
+// 3) using PA_BOOST, PaDac = 4: in that case power range is 2 to 17 dBm;
+//	use this for 15..17 if authorized.
+// 4) using PA_BOOST, PaDac = 7, OutputPower=0xF: in that case, power is 20 dBm
+//		(and perhaps 0xE is 19, 0xD is 18 dBm, but datasheet isn't clear.)
+//    and duty cycle must be <= 1%.
+//
+// In addition, there are some boards for which PA_BOOST can only be used if the
+// channel frequency is greater than SX127X_FREQ_LF_MAX.
+//
+// The SX1272 is similar but has no MaxPower bit:
+// 1) using RFO: power is -1 to 13 dBm (datasheet implies max OutputPower value is 14 for 13 dBm)
+// 2) using PA_BOOST, PaDac = 0x84: power is 2 to 17 dBm;
+//	use this for 14..17 if authorized
+// 3) using PA_BOOST, PaDac = 0x87, OutptuPower = 0xF: power is 20dBm
+//    and duty cycle must be <= 1%
+//
+// The general policy is to use the lowest power variant that will get us where we
+// need to be.
+//
 
 static void configPower () {
+    // our input paramter -- might be different than LMIC.txpow!
+    s1_t const req_pw = (s1_t)LMIC.radio_txpow;
+    // the effective power
+    s1_t eff_pw;
+    // the policy; we're going to compute this.
+    u1_t policy;
+    // what we'll write to RegPaConfig
+    u1_t rPaConfig;
+    // what we'll write to RegPaDac
+    u1_t rPaDac;
+    // what we'll write to RegOcp
+    u1_t rOcp;
+
 #ifdef CFG_sx1276_radio
-    // PA_BOOST output is assumed but not 20 dBm.
-    s1_t pw = (s1_t)LMIC.radio_txpow;
-    if(pw > 17) {
-        pw = 17;
-    } else if(pw < 2) {
-        pw = 2;
+    if (req_pw >= 20) {
+        policy = LMICHAL_radio_tx_power_policy_20dBm;
+	    eff_pw = 20;
+    } else if (req_pw >= 14) {
+        policy = LMICHAL_radio_tx_power_policy_paboost;
+        if (req_pw > 17) {
+            eff_pw = 17;
+        } else {
+            eff_pw = req_pw;
+        }
+    } else {
+        policy = LMICHAL_radio_tx_power_policy_rfo;
+        if (req_pw < -4) {
+            eff_pw = -4;
+        } else {
+            eff_pw = req_pw;
+        }
     }
-    // 0x80 forces use of PA_BOOST; but we don't 
-    //    turn on 20 dBm mode. So powers are:
-    //    0000 => 2dBm, 0001 => 3dBm, ... 1111 => 17dBm
-    // But we also enforce that the high-power mode
-    //    is off by writing RegPaDac.
-    writeReg(RegPaConfig, (u1_t)(0x80|(pw - 2)));
-    writeReg(RegPaDac, readReg(RegPaDac)|0x4);
+
+    policy = hal_getTxPowerPolicy(policy, eff_pw, LMIC.freq);
+
+    switch (policy) {
+    default:
+    case LMICHAL_radio_tx_power_policy_rfo:
+        rPaDac = SX127X_PADAC_POWER_NORMAL;
+        rOcp = SX127X_OCP_MAtoBITS(50);
+
+        if (eff_pw > 14)
+            eff_pw = 14;
+        if (eff_pw > 11) {
+            // some Semtech code uses this down to eff_pw == 0.
+            rPaConfig = eff_pw | SX1276_PAC_MAX_POWER_MASK;
+        } else {
+            rPaConfig = eff_pw + 4;
+        }
+        break;
+
+    case LMICHAL_radio_tx_power_policy_paboost:
+        rPaDac = SX127X_PADAC_POWER_NORMAL;
+        rOcp = SX127X_OCP_MAtoBITS(100);
+        if (eff_pw > 17)
+            eff_pw = 17;
+        rPaConfig = (eff_pw - 2) | SX1276_PAC_PA_SELECT_PA_BOOST;
+        break;
+
+    case LMICHAL_radio_tx_power_policy_20dBm:
+        rPaDac = SX127X_PADAC_POWER_20dBm;
+        rOcp = SX127X_OCP_MAtoBITS(130);
+        rPaConfig = 0xF | SX1276_PAC_PA_SELECT_PA_BOOST;
+        break;
+    }
 
 #elif CFG_sx1272_radio
-    // set PA config (2-17 dBm using PA_BOOST)
-    s1_t pw = (s1_t)LMIC.radio_txpow;
-    if(pw > 17) {
-        pw = 17;
-    } else if(pw < 2) {
-        pw = 2;
+    if (req_pw >= 20) {
+        policy = LMICHAL_radio_tx_power_policy_20dBm;
+	    eff_pw = 20;
+    } else if (eff_pw >= 14) {
+        policy = LMICHAL_radio_tx_power_policy_paboost;
+        if (eff_pw > 17) {
+            eff_pw = 17;
+        } else {
+            eff_pw = req_pw;
+        }
+    } else {
+        policy = LMICHAL_radio_tx_power_policy_rfo;
+        if (req_pw < -1) {
+            eff_pw = -1;
+        } else {
+            eff_pw = req_pw;
+        }
     }
-    writeReg(RegPaConfig, (u1_t)(0x80|(pw-2)));
+
+    policy = hal_getTxPowerPolicy(policy, eff_pw, LMIC.freq);
+
+    switch (policy) {
+    default:
+    case LMICHAL_radio_tx_power_policy_rfo:
+        rPaDac = SX127X_PADAC_POWER_NORMAL;
+        rOcp = SX127X_OCP_MAtoBITS(50);
+
+        if (eff_pw > 13)
+            eff_pw = 13;
+
+        rPaConfig = eff_pw + 1;
+        break;
+
+    case LMICHAL_radio_tx_power_policy_paboost:
+        rPaDac = SX127X_PADAC_POWER_NORMAL;
+        rOcp = SX127X_OCP_MAtoBITS(100);
+
+        if (eff_pw > 17)
+            eff_pw = 17;
+
+        rPaConfig = (eff_pw - 2) | SX1272_PAC_PA_SELECT_PA_BOOST;
+        break;
+
+    case LMICHAL_radio_tx_power_policy_20dBm:
+        rPaDac = SX127X_PADAC_POWER_20dBm;
+        rOcp = SX127X_OCP_MAtoBITS(130);
+
+        rPaConfig = 0xF | SX1276_PAC_PA_SELECT_PA_BOOST;
+        break;
+    }
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif /* CFG_sx1272_radio */
+
+    writeReg(RegPaConfig, rPaConfig);
+    writeReg(RegPaDac, (readReg(RegPaDac) & ~SX127X_PADAC_POWER_MASK) | rPaDac);
+    writeReg(RegOcp, rOcp | SX127X_OCP_ENA);
 }
 
 static void txfsk () {

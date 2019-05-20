@@ -71,6 +71,14 @@ class HalConfiguration_t
 public:
 	HalConfiguration_t() {};
 
+	// these must match the constants in radio.c
+	enum class TxPowerPolicy_t : uint8_t
+		{
+		RFO,
+		PA_BOOST,
+		PA_BOOST_20dBm
+		};
+
 	virtual ostime_t setModuleActive(bool state) {
 		LMIC_API_PARAMETER(state);
 
@@ -83,6 +91,20 @@ public:
 	virtual void begin(void) {}
 	virtual void end(void) {}
 	virtual bool queryUsingTcxo(void) { return false; }
+
+	// compute desired transmit power policy.
+	virtual TxPowerPolicy_t getTxPowerPolicy(
+		TxPowerPolicy_t policy,
+		int8_t requestedPower,
+		uint32_t frequency
+		)
+		{
+		// default: do use PA_BOOST, don't use PA_BOOST_20dBm
+		if (policy == TxPowerPolicy_t::PA_BOOST_20dBm)
+			return TxPowerPolicy_t::PA_BOOST;
+		else
+			return policy;
+		}
 	};
 
 bool hal_init_with_pinmap(const HalPinmap_t *pPinmap);
