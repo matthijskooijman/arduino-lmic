@@ -107,7 +107,9 @@
 #define FSKRegSyncValue6                           0x2D
 #define FSKRegSyncValue7                           0x2E
 #define FSKRegSyncValue8                           0x2F
+#define LORARegIffReq1                             0x2F
 #define FSKRegPacketConfig1                        0x30
+#define LORARegIffReq2                             0x30
 #define FSKRegPacketConfig2                        0x31
 #define LORARegDetectOptimize                      0x31
 #define FSKRegPayloadLength                        0x32
@@ -820,6 +822,18 @@ static void rxlora (u1_t rxmode) {
         writeReg(LORARegInvertIQ, readReg(LORARegInvertIQ)|(1<<6));
     }
 #endif
+
+    // Errata 2.3 - receiver spurious reception of a LoRa signal
+    bw_t const bw = getBw(LMIC.rps);
+    u1_t const rDetectOptimize = readReg(LORARegDetectOptimize);
+    if (bw < BW500) {
+        writeReg(LORARegDetectOptimize, rDetectOptimize & 0x7F);
+        writeReg(LORARegIffReq1, 0x40);
+        writeReg(LORARegIffReq2, 0x40);
+    } else {
+        writeReg(LORARegDetectOptimize, rDetectOptimize | 0x80);
+    }
+
     // set symbol timeout (for single rx)
     writeReg(LORARegSymbTimeoutLsb, LMIC.rxsyms);
     // set sync word
