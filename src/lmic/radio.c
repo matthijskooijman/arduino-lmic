@@ -424,7 +424,8 @@ static void configLoraModem () {
 
         mc3 = SX1276_MC3_AGCAUTO;
 
-        if ((sf == SF11 || sf == SF12) && bw == BW125) {
+        if ( ((sf == SF11 || sf == SF12) && bw == BW125) ||
+             ((sf == SF12) && bw == BW250) ) {
             mc3 |= SX1276_MC3_LOW_DATA_RATE_OPTIMIZE;
         }
         writeReg(LORARegModemConfig3, mc3);
