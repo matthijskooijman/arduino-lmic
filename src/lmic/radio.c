@@ -116,12 +116,14 @@
 #define FSKRegBroadcastAdrs                        0x34
 #define FSKRegFifoThresh                           0x35
 #define FSKRegSeqConfig1                           0x36
+#define LORARegHighBwOptimize1                     0x36
 #define FSKRegSeqConfig2                           0x37
 #define LORARegDetectionThreshold                  0x37
 #define FSKRegTimerResol                           0x38
 #define FSKRegTimer1Coef                           0x39
 #define LORARegSyncWord                            0x39
 #define FSKRegTimer2Coef                           0x3A
+#define LORARegHighBwOptimize2                     0x3A
 #define FSKRegImageCal                             0x3B
 #define FSKRegTemp                                 0x3C
 #define FSKRegLowBat                               0x3D
@@ -387,7 +389,9 @@ static void configLoraModem () {
 #ifdef CFG_sx1276_radio
         u1_t mc1 = 0, mc2 = 0, mc3 = 0;
 
-        switch (getBw(LMIC.rps)) {
+        bw_t const bw = getBw(LMIC.rps);
+
+        switch (bw) {
         case BW125: mc1 |= SX1276_MC1_BW_125; break;
         case BW250: mc1 |= SX1276_MC1_BW_250; break;
         case BW500: mc1 |= SX1276_MC1_BW_500; break;
@@ -417,10 +421,33 @@ static void configLoraModem () {
         writeReg(LORARegModemConfig2, mc2);
 
         mc3 = SX1276_MC3_AGCAUTO;
-        if ((sf == SF11 || sf == SF12) && getBw(LMIC.rps) == BW125) {
+
+        if ((sf == SF11 || sf == SF12) && bw == BW125) {
             mc3 |= SX1276_MC3_LOW_DATA_RATE_OPTIMIZE;
         }
         writeReg(LORARegModemConfig3, mc3);
+
+        // Errata 2.1: Sensitivity optimization with 500 kHz bandwidth
+        u1_t rHighBwOptimize1;
+        u1_t rHighBwOptimize2;
+
+        rHighBwOptimize1 = 0x03;
+        rHighBwOptimize2 = 0;
+
+        if (bw == BW500) {
+            if (LMIC.freq > SX127X_FREQ_LF_MAX) {
+                rHighBwOptimize1 = 0x02;
+                rHighBwOptimize2 = 0x64;
+            } else {
+                rHighBwOptimize1 = 0x02;
+                rHighBwOptimize2 = 0x7F;
+            }
+        }
+
+        writeReg(LORARegHighBwOptimize1, rHighBwOptimize1);
+        if (rHighBwOptimize2 != 0)
+            writeReg(LORARegHighBwOptimize2, rHighBwOptimize2);
+
 #elif CFG_sx1272_radio
         u1_t mc1 = (getBw(LMIC.rps)<<6);
 
