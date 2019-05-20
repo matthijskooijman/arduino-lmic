@@ -318,7 +318,7 @@ static u1_t randbuf[16];
 
 
 #ifdef CFG_sx1276_radio
-#define LNA_RX_GAIN (0x20|0x1)
+#define LNA_RX_GAIN (0x20|0x3)
 #elif CFG_sx1272_radio
 #define LNA_RX_GAIN (0x20|0x03)
 #else
