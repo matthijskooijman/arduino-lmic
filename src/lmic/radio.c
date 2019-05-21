@@ -541,7 +541,7 @@ static void configPower () {
 #ifdef CFG_sx1276_radio
     if (req_pw >= 20) {
         policy = LMICHAL_radio_tx_power_policy_20dBm;
-	    eff_pw = 20;
+        eff_pw = 20;
     } else if (req_pw >= 14) {
         policy = LMICHAL_radio_tx_power_policy_paboost;
         if (req_pw > 17) {
@@ -564,7 +564,7 @@ static void configPower () {
     default:
     case LMICHAL_radio_tx_power_policy_rfo:
         rPaDac = SX127X_PADAC_POWER_NORMAL;
-        rOcp = SX127X_OCP_MAtoBITS(50);
+        rOcp = SX127X_OCP_MAtoBITS(80);
 
         if (eff_pw > 14)
             eff_pw = 14;
@@ -572,15 +572,23 @@ static void configPower () {
             // some Semtech code uses this down to eff_pw == 0.
             rPaConfig = eff_pw | SX1276_PAC_MAX_POWER_MASK;
         } else {
+            if (eff_pw < -4)
+                eff_pw = -4;
             rPaConfig = eff_pw + 4;
         }
         break;
 
+    // some radios (HopeRF RFM95W) don't support RFO well,
+    // so the policy might *raise* rfo to paboost. That means
+    // we have to re-check eff_pw, which might be too small.
+    // (And, of course, it might also be too large.)
     case LMICHAL_radio_tx_power_policy_paboost:
         rPaDac = SX127X_PADAC_POWER_NORMAL;
         rOcp = SX127X_OCP_MAtoBITS(100);
         if (eff_pw > 17)
             eff_pw = 17;
+        else if (eff_pw < 2)
+            eff_pw = 2;
         rPaConfig = (eff_pw - 2) | SX1276_PAC_PA_SELECT_PA_BOOST;
         break;
 
@@ -594,7 +602,7 @@ static void configPower () {
 #elif CFG_sx1272_radio
     if (req_pw >= 20) {
         policy = LMICHAL_radio_tx_power_policy_20dBm;
-	    eff_pw = 20;
+            eff_pw = 20;
     } else if (eff_pw >= 14) {
         policy = LMICHAL_radio_tx_power_policy_paboost;
         if (eff_pw > 17) {

@@ -92,18 +92,18 @@ public:
 	virtual void end(void) {}
 	virtual bool queryUsingTcxo(void) { return false; }
 
-	// compute desired transmit power policy.
+	// compute desired transmit power policy.  HopeRF needs
+	// (and previous versions of this library always chose)
+	// PA_BOOST mode. So that's our default. Override this
+	// for the Murata module.
 	virtual TxPowerPolicy_t getTxPowerPolicy(
 		TxPowerPolicy_t policy,
 		int8_t requestedPower,
 		uint32_t frequency
 		)
 		{
-		// default: do use PA_BOOST, don't use PA_BOOST_20dBm
-		if (policy == TxPowerPolicy_t::PA_BOOST_20dBm)
-			return TxPowerPolicy_t::PA_BOOST;
-		else
-			return policy;
+		// default: use PA_BOOST exclusively
+		return TxPowerPolicy_t::PA_BOOST;
 		}
 	};
 
