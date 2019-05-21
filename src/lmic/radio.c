@@ -773,7 +773,7 @@ static void starttx () {
         oslmic_radio_rssi_t rssi;
         radio_monitor_rssi(LMIC.lbt_ticks, &rssi);
 #if LMIC_X_DEBUG_LEVEL > 0
-	LMIC_X_DEBUG_PRINTF("LBT rssi max:min=%d:%d %d times in %d\n", rssi.max_rssi, rssi.min_rssi, rssi.n_rssi, LMIC.lbt_ticks);
+        LMIC_X_DEBUG_PRINTF("LBT rssi max:min=%d:%d %d times in %d\n", rssi.max_rssi, rssi.min_rssi, rssi.n_rssi, LMIC.lbt_ticks);
 #endif
 
         if (rssi.max_rssi >= LMIC.lbt_dbmax) {
@@ -866,8 +866,8 @@ static void rxlora (u1_t rxmode) {
         hal_waitUntil(LMIC.rxtime); // busy wait until exact rx time
         opmode(OPMODE_RX_SINGLE);
 #if LMIC_DEBUG_LEVEL > 0
-	ostime_t now = os_getTime();
-	LMIC_DEBUG_PRINTF("start single rx: now-rxtime: %"LMIC_PRId_ostime_t"\n", now - LMIC.rxtime);
+        ostime_t now = os_getTime();
+        LMIC_DEBUG_PRINTF("start single rx: now-rxtime: %"LMIC_PRId_ostime_t"\n", now - LMIC.rxtime);
 #endif
     } else { // continous rx (scan or rssi)
         opmode(OPMODE_RX);
@@ -1104,7 +1104,7 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
                 rssiMin = rssiNow;
         rssiSum += rssiNow;
         ++rssiN;
-	// TODO(tmm@mcci.com) move this to os_getTime().
+        // TODO(tmm@mcci.com) move this to os_getTime().
         hal_enableIRQs();
         now = os_getTime();
         hal_disableIRQs();
@@ -1159,7 +1159,7 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
 #endif
     if( (readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
         u1_t flags = readReg(LORARegIrqFlags);
-	LMIC.saveIrqFlags = flags;
+        LMIC.saveIrqFlags = flags;
         LMIC_X_DEBUG_PRINTF("IRQ=%02x\n", flags);
         if( flags & IRQ_LORA_TXDONE_MASK ) {
             // save exact tx time
@@ -1186,8 +1186,8 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
             // indicate timeout
             LMIC.dataLen = 0;
 #if LMIC_DEBUG_LEVEL > 0
-	    ostime_t now2 = os_getTime();
-	    LMIC_DEBUG_PRINTF("rxtimeout: entry: %"LMIC_PRId_ostime_t" rxtime: %"LMIC_PRId_ostime_t" entry-rxtime: %"LMIC_PRId_ostime_t" now-entry: %"LMIC_PRId_ostime_t" rxtime-txend: %"LMIC_PRId_ostime_t"\n", entry,
+            ostime_t now2 = os_getTime();
+            LMIC_DEBUG_PRINTF("rxtimeout: entry: %"LMIC_PRId_ostime_t" rxtime: %"LMIC_PRId_ostime_t" entry-rxtime: %"LMIC_PRId_ostime_t" now-entry: %"LMIC_PRId_ostime_t" rxtime-txend: %"LMIC_PRId_ostime_t"\n", entry,
                 LMIC.rxtime, entry - LMIC.rxtime, now2 - entry, LMIC.rxtime-LMIC.txend);
 #endif
         }
