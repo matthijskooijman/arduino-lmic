@@ -147,7 +147,7 @@ See the list of bugs at [mcci-catena/arduino-lmic](https://github.com/mcci-caten
 
 A number of features can be enabled or disabled at compile time.
 This is done by adding the desired settings to the file
-`project_settings/lmic_project_config.h`. The `project_settings`
+`project_config/lmic_project_config.h`. The `project_config`
 directory is the only directory that contains files that you
 should edit to match your project; we organize things this way
 so that your local changes are more clearly separated from
@@ -286,7 +286,7 @@ which indicates that each tick corresponds to 16 microseconds (because 16 == 2^4
 
 `#define LMIC_SPI_FREQ floatNumber`
 
-This variable sets the default frequency for the SPI bus connection to the transceiver. The default is `1E6`, meaning 1 MHz. However, this can be overridden by the contents of the `lmic_pinmap` structure, and we recommend that you use that approach rather than editing the `project_settings/lmic_project_config.h` file.
+This variable sets the default frequency for the SPI bus connection to the transceiver. The default is `1E6`, meaning 1 MHz. However, this can be overridden by the contents of the `lmic_pinmap` structure, and we recommend that you use that approach rather than editing the `project_config/lmic_project_config.h` file.
 
 #### Changing handling of runtime assertion failures
 
@@ -352,7 +352,7 @@ should be architecture-independent. Users have tested this on AVR, ARM, Xtensa-b
 This library an be quite heavy on small systems, especially if the fairly small ATmega
 328p (such as in the Arduino Uno) is used. In the default configuration,
 the available 32K flash space is nearly filled up (this includes some
-debug output overhead, though). By disabling some features in `project_settings/lmic_project_config.h`
+debug output overhead, though). By disabling some features in `project_config/lmic_project_config.h`
 (like beacon tracking and ping slots, which are not needed for Class A devices),
 some space can be freed up.
 
