@@ -18,9 +18,9 @@ Author:
 
 #include "../lmic/oslmic.h"
 
-#define LORA_DIO0 LORA_IRQ;
-#define LORA_DIO1 33;
-#define LORA_DIO2 32;
+#define LORA_DIO0 LORA_IRQ
+#define LORA_DIO1 33
+#define LORA_DIO2 32
 
 namespace Arduino_LMIC {
 
