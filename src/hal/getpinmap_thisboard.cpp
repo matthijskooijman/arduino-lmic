@@ -47,6 +47,10 @@ const HalPinmap_t *GetPinmap_ThisBoard(void)
       /* legacy names */ \
       defined(ARDUINO_CATENA_4612)
         return GetPinmap_Catena4612();
+#elif defined(ARDUINO_MCCI_CATENA_4617)
+        return GetPinmap_Catena4617();
+#elif defined(ARDUINO_MCCI_CATENA_4618)
+        return GetPinmap_Catena4618();
 #elif defined(ARDUINO_MCCI_CATENA_4801)
         return GetPinmap_Catena4801();
 #elif defined(PINNOCHIO_SCOUT)

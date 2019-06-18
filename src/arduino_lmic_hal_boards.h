@@ -31,6 +31,8 @@ const HalPinmap_t *GetPinmap_Catena4610();
 const HalPinmap_t *GetPinmap_Catena4610();
 const HalPinmap_t *GetPinmap_Catena4611();
 const HalPinmap_t *GetPinmap_Catena4612();
+const HalPinmap_t *GetPinmap_Catena4617();
+const HalPinmap_t *GetPinmap_Catena4618();
 const HalPinmap_t *GetPinmap_Catena4801();
 
 const HalPinmap_t *GetPinmap_ThisBoard();
