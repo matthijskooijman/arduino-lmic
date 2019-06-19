@@ -3,13 +3,20 @@
 Module:  arduino_lmic_hal_boards.h
 
 Function:
-        Arduino-LMIC C++ HAL pinmaps for various boards
+	Arduino-LMIC C++ HAL pinmaps for various boards
 
 Copyright & License:
-        See accompanying LICENSE file.
+	See accompanying LICENSE file.
 
 Author:
-        Terry Moore, MCCI       November 2018
+	Terry Moore, MCCI	November 2018
+
+Revision history:
+   0.6.0  Mon Nov 26 2018 15:06:30  tmm
+	Module created.
+
+   0.7.0  Wed Jun 19 2019 12:29:35  lakshmipriyan
+	Added support for catena 4617 & catena 4618.
 
 */
 
