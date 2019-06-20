@@ -365,14 +365,16 @@ The following boards are pre-integrated.
 - Adafruit [Feather 32u4 LoRa 900 MHz][1] (SX1276)
 - Adafruit [Feather M0 LoRa 900 MHz][2] (SX1276)
 - MCCI Catena 4410, 4420, [4450][3], [4460][4] and [4470][5] boards (based on Adafruit Feather boards plus wings) (SX1276)
-- MCCI Catena [4551][6], 4610, 4611, 4612, and 4801 boards (based on the Murata CMWX1ZZABZ-078 module) (SX1276)
+- MCCI Catena 4551, [4610][6], 4611, [4612][7], 4617, 4618, 4630, and [4801][8] boards (based on the Murata CMWX1ZZABZ-078 module) (SX1276)
 
 [1]: https://www.adafruit.com/products/3078
 [2]: https://www.adafruit.com/products/3178
 [3]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4450-lorawan-iot-device
 [4]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4460-sensor-wing-w-bme680
 [5]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/mcci-catena-4470-modbus-node-for-lorawan-technology
-[6]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4551-integrated-lorawan-node
+[6]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/mcci-catena-4610-integrated-node-for-lorawan-technology 
+[7]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4612-integrated-lorawan-node 
+[8]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4801
 
 > To help you know if you have to worry, we'll call such boards "pre-integrated" and prefix each section with suitable guidance.
 
