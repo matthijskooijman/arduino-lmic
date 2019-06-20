@@ -11,13 +11,6 @@ Copyright & License:
 Author:
 	Terry Moore, MCCI	November 2018
 
-Revision history:
-	Mon Nov 26 2018 15:06:30  tmm
-	Module created.
-
-	Wed Jun 19 2019 12:29:35  lakshmipriyan
-	Added support for catena 4617 & catena 4618.
-
 */
 
 #pragma once
@@ -40,6 +33,7 @@ const HalPinmap_t *GetPinmap_Catena4611();
 const HalPinmap_t *GetPinmap_Catena4612();
 const HalPinmap_t *GetPinmap_Catena4617();
 const HalPinmap_t *GetPinmap_Catena4618();
+const HalPinmap_t *GetPinmap_Catena4630();
 const HalPinmap_t *GetPinmap_Catena4801();
 
 const HalPinmap_t *GetPinmap_ThisBoard();
