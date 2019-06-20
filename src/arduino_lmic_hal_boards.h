@@ -12,10 +12,10 @@ Author:
 	Terry Moore, MCCI	November 2018
 
 Revision history:
-   0.6.0  Mon Nov 26 2018 15:06:30  tmm
+	Mon Nov 26 2018 15:06:30  tmm
 	Module created.
 
-   0.7.0  Wed Jun 19 2019 12:29:35  lakshmipriyan
+	Wed Jun 19 2019 12:29:35  lakshmipriyan
 	Added support for catena 4617 & catena 4618.
 
 */
