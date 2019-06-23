@@ -62,7 +62,7 @@ struct HalPinmap_t {
 				//   Must include noise guardband!
 	uint32_t spi_freq;	// bytes 8..11: SPI freq in Hz.
 
-	// optional pointer to configuration object (byest 12..15)
+	// optional pointer to configuration object (bytes 12..15)
 	HalConfiguration_t *pConfig;
 	};
 

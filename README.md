@@ -68,6 +68,8 @@ requires C99 mode to be enabled by default.
 	- [RXTX](#rxtx)
 	- [RXTX Polarity](#rxtx-polarity)
 	- [Pin mapping](#pin-mapping)
+		- [Advanced initialization](#advanced-initialization)
+		- [HalConfiguration_t methods](#halconfiguration_t-methods)
 		- [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
 - [Example Sketches](#example-sketches)
 - [Timing](#timing)
@@ -521,9 +523,9 @@ We have details for the following manually-configured boards here:
 
 - [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
 
-If you don't have the board documentation, you need to provide your own `lmic_pinmap` values. As described above, a variety of configurations are possible. To tell the LMIC library how your board is configured, you must declare a variable containing a pin mapping struct in the sketch file.
+If your board is not configured, you need at least to provide your own `lmic_pinmap`. As described above, a variety of configurations are possible. To tell the LMIC library how your board is configured, you must declare a variable containing a pin mapping struct in your sketch file.  If you call `os_init()` to initialize the LMIC, you must name this structure `lmic_pins`. If you call `os_init_ex()`, you may name the structure what you like, but you pass a pointer as the parameter to `os_init_ex()`.
 
-For example, this could look like this:
+Here's an example of a simple initialization:
 
 ```c++
   lmic_pinmap lmic_pins = {
@@ -552,7 +554,59 @@ respectively. Any pins that are not needed should be specified as
 potentially left out (depending on the environments and requirements,
 see the notes above for when a pin can or cannot be left out).
 
-The name of the variable containing this struct must always be `lmic_pins`, which is a special name recognized by the library.
+#### Advanced initialization
+
+In some boards require much more advanced management. The LMIC has a very flexible framework to support this, but it requires you to do some C++ work.
+
+1. You must define a new class derived from `Arduino_LMIC::HalConfiguration_t`. (We'll call this `cMyHalConfiguration_t`).
+
+2. This class *may* define overrides for several methods (discussed below).
+
+3. You must create an instance of your class, e.g.
+
+    ```c++
+    cMyHalConfiguration_t myHalConfigInstance;
+    ```
+
+4. You add another entry in your `lmic_pinmap`, `pConfig = &myHalConfigInstance`, to link your pinmap to your object.
+
+The full example looks like this:
+
+```c++
+class cMyHlaConfiguration_t : public Arduino_LMIC::HalConfiguration_t
+  {
+public:
+  // ...
+  // put your method function override declarations here.
+
+  // this example uses RFO at 10 dBm or less, PA_BOOST up to 17 dBm,
+  // or the high-power mode above 17 dBm. In other words, it lets the
+  // LMIC-determined policy determine what's to be done.
+
+  virutal TxPowerPolicy_t getTxPowerPolicy(
+    TxPowerPolicy_t policy,
+    int8_t requestedPower,
+    uint32_t frequency
+    ) override
+    {
+    return policy;
+    }
+  }
+```
+
+#### HalConfiguration_t methods
+
+- `ostime_t setModuleActive(bool state)` is called by the LMIC to make the module active or to deactivate it (the value of `state` is true to activate).  The implementation must turn power to the module on and otherwise prepare for it to go to work, and must return the number of OS ticks to wait before starting to use the radio.
+
+- `void begin(void)` is called during intialization, and is your code's chance to do any early setup.
+
+- `void end(void)` is (to be) called during late shutdown.  (Late shutdown is not implemented yet; but we wanted to add the API for consistency.)
+
+- `bool queryUsingTcxo(void)` shall return `true` if the module uses a TCXO; `false` otherwise.
+
+- `TxPowerPolicy_t getTxPowerPolicy(TxPowerPolicy_t policy, int8_t requestedPower, uint32_t frequency)` allows you to override the LMIC's selection of transmit power. If not provided, the default method forces the LMIC to use PA_BOOST mode. (We chose to do this becuase we found empirically that the Hope RF module doesn't support RFO, and because legacy LMIC code never used anything except PA_BOOST mode.)
+
+Caution: the LMIC has no way of knowing whether the mode you return makes sense. Use of 20 dBm mode without limiting duty cycle can over-stress your module. The LMIC currently does not have any code to duty-cycle US transmissions at 20 dBm. If properly limiting transmissions to 400 ms, 1% duty-cycle means at most one message every 40 seconds. This shoudln't be a problem in practice, but buggy upper level software still might do things more rapidly.
 
 <!-- there are links to the following section, so be careful when renaming -->
 #### LoRa Nexus by Ideetron
