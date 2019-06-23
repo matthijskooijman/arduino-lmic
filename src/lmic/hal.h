@@ -147,7 +147,26 @@ s1_t hal_getRssiCal (void);
  */
 ostime_t hal_setModuleActive (bit_t val);
 
+/* find out if we're using Tcxo */
 bit_t hal_queryUsingTcxo(void);
+
+/* represent the various radio TX power policy */
+enum	{
+	LMICHAL_radio_tx_power_policy_rfo	= 0,
+	LMICHAL_radio_tx_power_policy_paboost	= 1,
+	LMICHAL_radio_tx_power_policy_20dBm	= 2,
+};
+
+/*
+ * query the configuration as to the Tx Power Policy
+ * to be used on this board, given our desires and
+ * requested power.
+ */
+uint8_t hal_getTxPowerPolicy(
+	u1_t inputPolicy,
+	s1_t requestedPower,
+	u4_t freq
+	);
 
 #ifdef __cplusplus
 } // extern "C"

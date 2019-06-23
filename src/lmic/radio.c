@@ -107,7 +107,9 @@
 #define FSKRegSyncValue6                           0x2D
 #define FSKRegSyncValue7                           0x2E
 #define FSKRegSyncValue8                           0x2F
+#define LORARegIffReq1                             0x2F
 #define FSKRegPacketConfig1                        0x30
+#define LORARegIffReq2                             0x30
 #define FSKRegPacketConfig2                        0x31
 #define LORARegDetectOptimize                      0x31
 #define FSKRegPayloadLength                        0x32
@@ -116,12 +118,14 @@
 #define FSKRegBroadcastAdrs                        0x34
 #define FSKRegFifoThresh                           0x35
 #define FSKRegSeqConfig1                           0x36
+#define LORARegHighBwOptimize1                     0x36
 #define FSKRegSeqConfig2                           0x37
 #define LORARegDetectionThreshold                  0x37
 #define FSKRegTimerResol                           0x38
 #define FSKRegTimer1Coef                           0x39
 #define LORARegSyncWord                            0x39
 #define FSKRegTimer2Coef                           0x3A
+#define LORARegHighBwOptimize2                     0x3A
 #define FSKRegImageCal                             0x3B
 #define FSKRegTemp                                 0x3C
 #define FSKRegLowBat                               0x3D
@@ -194,6 +198,28 @@
 # define SX127X_MC1_IMPLICIT_HEADER_MODE_ON	SX1272_MC1_IMPLICIT_HEADER_MODE_ON
 #endif
 
+// transmit power configuration for RegPaConfig
+#define SX1276_PAC_PA_SELECT_PA_BOOST 0x80
+#define SX1276_PAC_PA_SELECT_RFIO_PIN 0x00
+#define SX1276_PAC_MAX_POWER_MASK     0x70
+
+// the bits to change for max power.
+#define SX127X_PADAC_POWER_MASK       0x07
+#define SX127X_PADAC_POWER_NORMAL     0x04
+#define SX127X_PADAC_POWER_20dBm      0x07
+
+// convert milliamperes to equivalent value for
+// RegOcp; delivers conservative value.
+#define SX127X_OCP_MAtoBITS(mA)                 \
+    ((mA) < 45   ? 0 :                          \
+     (mA) <= 120 ? ((mA) - 45) / 5 :            \
+     (mA) < 130  ? 0xF :                        \
+     (mA) < 240  ? ((mA) - 130) / 10 + 0x10 :   \
+                   27)
+
+// bit in RegOcp that enables overcurrent protect.
+#define SX127X_OCP_ENA                     0x20
+
 // sx1276 RegModemConfig2
 #define SX1276_MC2_RX_PAYLOAD_CRCON        0x04
 
@@ -214,7 +240,7 @@
 //-----------------------------------------
 // Parameters for RSSI monitoring
 #define SX127X_FREQ_LF_MAX      525000000       // per datasheet 6.3
- 
+
 // per datasheet 5.5.3:
 #define SX127X_RSSI_ADJUST_LF   -164            // add to rssi value to get dB (LF)
 #define SX127X_RSSI_ADJUST_HF   -157            // add to rssi value to get dB (HF)
@@ -296,7 +322,7 @@ static u1_t randbuf[16];
 
 
 #ifdef CFG_sx1276_radio
-#define LNA_RX_GAIN (0x20|0x1)
+#define LNA_RX_GAIN (0x20|0x3)
 #elif CFG_sx1272_radio
 #define LNA_RX_GAIN (0x20|0x03)
 #else
@@ -365,7 +391,9 @@ static void configLoraModem () {
 #ifdef CFG_sx1276_radio
         u1_t mc1 = 0, mc2 = 0, mc3 = 0;
 
-        switch (getBw(LMIC.rps)) {
+        bw_t const bw = getBw(LMIC.rps);
+
+        switch (bw) {
         case BW125: mc1 |= SX1276_MC1_BW_125; break;
         case BW250: mc1 |= SX1276_MC1_BW_250; break;
         case BW500: mc1 |= SX1276_MC1_BW_500; break;
@@ -395,10 +423,34 @@ static void configLoraModem () {
         writeReg(LORARegModemConfig2, mc2);
 
         mc3 = SX1276_MC3_AGCAUTO;
-        if ((sf == SF11 || sf == SF12) && getBw(LMIC.rps) == BW125) {
+
+        if ( ((sf == SF11 || sf == SF12) && bw == BW125) ||
+             ((sf == SF12) && bw == BW250) ) {
             mc3 |= SX1276_MC3_LOW_DATA_RATE_OPTIMIZE;
         }
         writeReg(LORARegModemConfig3, mc3);
+
+        // Errata 2.1: Sensitivity optimization with 500 kHz bandwidth
+        u1_t rHighBwOptimize1;
+        u1_t rHighBwOptimize2;
+
+        rHighBwOptimize1 = 0x03;
+        rHighBwOptimize2 = 0;
+
+        if (bw == BW500) {
+            if (LMIC.freq > SX127X_FREQ_LF_MAX) {
+                rHighBwOptimize1 = 0x02;
+                rHighBwOptimize2 = 0x64;
+            } else {
+                rHighBwOptimize1 = 0x02;
+                rHighBwOptimize2 = 0x7F;
+            }
+        }
+
+        writeReg(LORARegHighBwOptimize1, rHighBwOptimize1);
+        if (rHighBwOptimize2 != 0)
+            writeReg(LORARegHighBwOptimize2, rHighBwOptimize2);
+
 #elif CFG_sx1272_radio
         u1_t mc1 = (getBw(LMIC.rps)<<6);
 
@@ -446,37 +498,165 @@ static void configChannel () {
     writeReg(RegFrfLsb, (u1_t)(frf>> 0));
 }
 
-
+// On the SX1276, we have several possible configs.
+// 1) using RFO, MaxPower==0: in that case power is -4 to 11 dBm
+// 2) using RFO, MaxPower==7: in that case, power is 0 to 14 dBm
+//      (can't select 15 dBm).
+//	note we can use -4..11 w/o Max and then 12..14 w/Max, and
+//	we really don't need to ask anybody.
+// 3) using PA_BOOST, PaDac = 4: in that case power range is 2 to 17 dBm;
+//	use this for 15..17 if authorized.
+// 4) using PA_BOOST, PaDac = 7, OutputPower=0xF: in that case, power is 20 dBm
+//		(and perhaps 0xE is 19, 0xD is 18 dBm, but datasheet isn't clear.)
+//    and duty cycle must be <= 1%.
+//
+// In addition, there are some boards for which PA_BOOST can only be used if the
+// channel frequency is greater than SX127X_FREQ_LF_MAX.
+//
+// The SX1272 is similar but has no MaxPower bit:
+// 1) using RFO: power is -1 to 13 dBm (datasheet implies max OutputPower value is 14 for 13 dBm)
+// 2) using PA_BOOST, PaDac = 0x84: power is 2 to 17 dBm;
+//	use this for 14..17 if authorized
+// 3) using PA_BOOST, PaDac = 0x87, OutptuPower = 0xF: power is 20dBm
+//    and duty cycle must be <= 1%
+//
+// The general policy is to use the lowest power variant that will get us where we
+// need to be.
+//
 
 static void configPower () {
+    // our input paramter -- might be different than LMIC.txpow!
+    s1_t const req_pw = (s1_t)LMIC.radio_txpow;
+    // the effective power
+    s1_t eff_pw;
+    // the policy; we're going to compute this.
+    u1_t policy;
+    // what we'll write to RegPaConfig
+    u1_t rPaConfig;
+    // what we'll write to RegPaDac
+    u1_t rPaDac;
+    // what we'll write to RegOcp
+    u1_t rOcp;
+
 #ifdef CFG_sx1276_radio
-    // PA_BOOST output is assumed but not 20 dBm.
-    s1_t pw = (s1_t)LMIC.radio_txpow;
-    if(pw > 17) {
-        pw = 17;
-    } else if(pw < 2) {
-        pw = 2;
+    if (req_pw >= 20) {
+        policy = LMICHAL_radio_tx_power_policy_20dBm;
+        eff_pw = 20;
+    } else if (req_pw >= 14) {
+        policy = LMICHAL_radio_tx_power_policy_paboost;
+        if (req_pw > 17) {
+            eff_pw = 17;
+        } else {
+            eff_pw = req_pw;
+        }
+    } else {
+        policy = LMICHAL_radio_tx_power_policy_rfo;
+        if (req_pw < -4) {
+            eff_pw = -4;
+        } else {
+            eff_pw = req_pw;
+        }
     }
-    // 0x80 forces use of PA_BOOST; but we don't 
-    //    turn on 20 dBm mode. So powers are:
-    //    0000 => 2dBm, 0001 => 3dBm, ... 1111 => 17dBm
-    // But we also enforce that the high-power mode
-    //    is off by writing RegPaDac.
-    writeReg(RegPaConfig, (u1_t)(0x80|(pw - 2)));
-    writeReg(RegPaDac, readReg(RegPaDac)|0x4);
+
+    policy = hal_getTxPowerPolicy(policy, eff_pw, LMIC.freq);
+
+    switch (policy) {
+    default:
+    case LMICHAL_radio_tx_power_policy_rfo:
+        rPaDac = SX127X_PADAC_POWER_NORMAL;
+        rOcp = SX127X_OCP_MAtoBITS(80);
+
+        if (eff_pw > 14)
+            eff_pw = 14;
+        if (eff_pw > 11) {
+            // some Semtech code uses this down to eff_pw == 0.
+            rPaConfig = eff_pw | SX1276_PAC_MAX_POWER_MASK;
+        } else {
+            if (eff_pw < -4)
+                eff_pw = -4;
+            rPaConfig = eff_pw + 4;
+        }
+        break;
+
+    // some radios (HopeRF RFM95W) don't support RFO well,
+    // so the policy might *raise* rfo to paboost. That means
+    // we have to re-check eff_pw, which might be too small.
+    // (And, of course, it might also be too large.)
+    case LMICHAL_radio_tx_power_policy_paboost:
+        rPaDac = SX127X_PADAC_POWER_NORMAL;
+        rOcp = SX127X_OCP_MAtoBITS(100);
+        if (eff_pw > 17)
+            eff_pw = 17;
+        else if (eff_pw < 2)
+            eff_pw = 2;
+        rPaConfig = (eff_pw - 2) | SX1276_PAC_PA_SELECT_PA_BOOST;
+        break;
+
+    case LMICHAL_radio_tx_power_policy_20dBm:
+        rPaDac = SX127X_PADAC_POWER_20dBm;
+        rOcp = SX127X_OCP_MAtoBITS(130);
+        rPaConfig = 0xF | SX1276_PAC_PA_SELECT_PA_BOOST;
+        break;
+    }
 
 #elif CFG_sx1272_radio
-    // set PA config (2-17 dBm using PA_BOOST)
-    s1_t pw = (s1_t)LMIC.radio_txpow;
-    if(pw > 17) {
-        pw = 17;
-    } else if(pw < 2) {
-        pw = 2;
+    if (req_pw >= 20) {
+        policy = LMICHAL_radio_tx_power_policy_20dBm;
+            eff_pw = 20;
+    } else if (eff_pw >= 14) {
+        policy = LMICHAL_radio_tx_power_policy_paboost;
+        if (eff_pw > 17) {
+            eff_pw = 17;
+        } else {
+            eff_pw = req_pw;
+        }
+    } else {
+        policy = LMICHAL_radio_tx_power_policy_rfo;
+        if (req_pw < -1) {
+            eff_pw = -1;
+        } else {
+            eff_pw = req_pw;
+        }
     }
-    writeReg(RegPaConfig, (u1_t)(0x80|(pw-2)));
+
+    policy = hal_getTxPowerPolicy(policy, eff_pw, LMIC.freq);
+
+    switch (policy) {
+    default:
+    case LMICHAL_radio_tx_power_policy_rfo:
+        rPaDac = SX127X_PADAC_POWER_NORMAL;
+        rOcp = SX127X_OCP_MAtoBITS(50);
+
+        if (eff_pw > 13)
+            eff_pw = 13;
+
+        rPaConfig = eff_pw + 1;
+        break;
+
+    case LMICHAL_radio_tx_power_policy_paboost:
+        rPaDac = SX127X_PADAC_POWER_NORMAL;
+        rOcp = SX127X_OCP_MAtoBITS(100);
+
+        if (eff_pw > 17)
+            eff_pw = 17;
+
+        rPaConfig = (eff_pw - 2) | SX1272_PAC_PA_SELECT_PA_BOOST;
+        break;
+
+    case LMICHAL_radio_tx_power_policy_20dBm:
+        rPaDac = SX127X_PADAC_POWER_20dBm;
+        rOcp = SX127X_OCP_MAtoBITS(130);
+
+        rPaConfig = 0xF | SX1276_PAC_PA_SELECT_PA_BOOST;
+        break;
+    }
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif /* CFG_sx1272_radio */
+
+    writeReg(RegPaConfig, rPaConfig);
+    writeReg(RegPaDac, (readReg(RegPaDac) & ~SX127X_PADAC_POWER_MASK) | rPaDac);
+    writeReg(RegOcp, rOcp | SX127X_OCP_ENA);
 }
 
 static void txfsk () {
@@ -593,7 +773,7 @@ static void starttx () {
         oslmic_radio_rssi_t rssi;
         radio_monitor_rssi(LMIC.lbt_ticks, &rssi);
 #if LMIC_X_DEBUG_LEVEL > 0
-	LMIC_X_DEBUG_PRINTF("LBT rssi max:min=%d:%d %d times in %d\n", rssi.max_rssi, rssi.min_rssi, rssi.n_rssi, LMIC.lbt_ticks);
+        LMIC_X_DEBUG_PRINTF("LBT rssi max:min=%d:%d %d times in %d\n", rssi.max_rssi, rssi.min_rssi, rssi.n_rssi, LMIC.lbt_ticks);
 #endif
 
         if (rssi.max_rssi >= LMIC.lbt_dbmax) {
@@ -651,6 +831,18 @@ static void rxlora (u1_t rxmode) {
         writeReg(LORARegInvertIQ, readReg(LORARegInvertIQ)|(1<<6));
     }
 #endif
+
+    // Errata 2.3 - receiver spurious reception of a LoRa signal
+    bw_t const bw = getBw(LMIC.rps);
+    u1_t const rDetectOptimize = readReg(LORARegDetectOptimize);
+    if (bw < BW500) {
+        writeReg(LORARegDetectOptimize, rDetectOptimize & 0x7F);
+        writeReg(LORARegIffReq1, 0x40);
+        writeReg(LORARegIffReq2, 0x40);
+    } else {
+        writeReg(LORARegDetectOptimize, rDetectOptimize | 0x80);
+    }
+
     // set symbol timeout (for single rx)
     writeReg(LORARegSymbTimeoutLsb, LMIC.rxsyms);
     // set sync word
@@ -674,8 +866,8 @@ static void rxlora (u1_t rxmode) {
         hal_waitUntil(LMIC.rxtime); // busy wait until exact rx time
         opmode(OPMODE_RX_SINGLE);
 #if LMIC_DEBUG_LEVEL > 0
-	ostime_t now = os_getTime();
-	LMIC_DEBUG_PRINTF("start single rx: now-rxtime: %"LMIC_PRId_ostime_t"\n", now - LMIC.rxtime);
+        ostime_t now = os_getTime();
+        LMIC_DEBUG_PRINTF("start single rx: now-rxtime: %"LMIC_PRId_ostime_t"\n", now - LMIC.rxtime);
 #endif
     } else { // continous rx (scan or rssi)
         opmode(OPMODE_RX);
@@ -912,7 +1104,7 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
                 rssiMin = rssiNow;
         rssiSum += rssiNow;
         ++rssiN;
-	// TODO(tmm@mcci.com) move this to os_getTime().
+        // TODO(tmm@mcci.com) move this to os_getTime().
         hal_enableIRQs();
         now = os_getTime();
         hal_disableIRQs();
@@ -967,7 +1159,7 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
 #endif
     if( (readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
         u1_t flags = readReg(LORARegIrqFlags);
-	LMIC.saveIrqFlags = flags;
+        LMIC.saveIrqFlags = flags;
         LMIC_X_DEBUG_PRINTF("IRQ=%02x\n", flags);
         if( flags & IRQ_LORA_TXDONE_MASK ) {
             // save exact tx time
@@ -994,8 +1186,8 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
             // indicate timeout
             LMIC.dataLen = 0;
 #if LMIC_DEBUG_LEVEL > 0
-	    ostime_t now2 = os_getTime();
-	    LMIC_DEBUG_PRINTF("rxtimeout: entry: %"LMIC_PRId_ostime_t" rxtime: %"LMIC_PRId_ostime_t" entry-rxtime: %"LMIC_PRId_ostime_t" now-entry: %"LMIC_PRId_ostime_t" rxtime-txend: %"LMIC_PRId_ostime_t"\n", entry,
+            ostime_t now2 = os_getTime();
+            LMIC_DEBUG_PRINTF("rxtimeout: entry: %"LMIC_PRId_ostime_t" rxtime: %"LMIC_PRId_ostime_t" entry-rxtime: %"LMIC_PRId_ostime_t" now-entry: %"LMIC_PRId_ostime_t" rxtime-txend: %"LMIC_PRId_ostime_t"\n", entry,
                 LMIC.rxtime, entry - LMIC.rxtime, now2 - entry, LMIC.rxtime-LMIC.txend);
 #endif
         }
