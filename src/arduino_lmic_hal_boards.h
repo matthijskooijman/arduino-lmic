@@ -3,13 +3,13 @@
 Module:  arduino_lmic_hal_boards.h
 
 Function:
-	Arduino-LMIC C++ HAL pinmaps for various boards
+        Arduino-LMIC C++ HAL pinmaps for various boards
 
 Copyright & License:
-	See accompanying LICENSE file.
+        See accompanying LICENSE file.
 
 Author:
-	Terry Moore, MCCI	November 2018
+        Terry Moore, MCCI       November 2018
 
 */
 
