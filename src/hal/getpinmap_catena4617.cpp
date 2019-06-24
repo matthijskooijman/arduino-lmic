@@ -13,9 +13,7 @@ Author:
 
 */
 
-#if defined(ARDUINO_MCCI_CATENA_4617) || \
-    /* legacy name */ \
-    defined(ARDUINO_CATENA_4617)
+#if defined(ARDUINO_MCCI_CATENA_4617)
 
 #include <arduino_lmic_hal_boards.h>
 #include <Arduino.h>
