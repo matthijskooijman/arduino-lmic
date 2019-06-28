@@ -18,7 +18,7 @@ Author:
 
 #include "../lmic/oslmic.h"
 
-#define LORA_DIO0 LORA_IRQ
+#define LORA_DIO0 26
 #define LORA_DIO1 33
 #define LORA_DIO2 32
 
@@ -29,8 +29,8 @@ class HalConfiguration_ttgo_lora32_v1 : public HalConfiguration_t
 public:
 	enum DIGITAL_PINS : uint8_t
 		{
-		PIN_SX1276_NSS = LORA_CS,
-		PIN_SX1276_NRESET = LORA_RST,
+		PIN_SX1276_NSS = 18,
+		PIN_SX1276_NRESET = 14,
 		PIN_SX1276_DIO0 = LORA_DIO0,
 		PIN_SX1276_DIO1 = LORA_DIO1,
 		PIN_SX1276_DIO2 = LORA_DIO2,
