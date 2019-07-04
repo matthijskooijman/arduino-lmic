@@ -1,4 +1,18 @@
-# Travis script for test-building this library.
+##############################################################################
+#
+# File: .travis.yml
+#
+# Function:
+#     Travis script for test-building this library.
+#
+# Copyright Notice:
+#     See LICENSE file accompanying this project.
+#
+# Author:
+#     Terry Moore, MCCI Corporation   April 2018
+#
+##############################################################################
+
 language: c
 dist: trusty
 

@@ -1,5 +1,20 @@
 #!/bin/bash
 
+##############################################################################
+#
+# File: .travis.yml
+#
+# Function:
+#     Travis script for test-building this library.
+#
+# Copyright Notice:
+#     See LICENSE file accompanying this project.
+#
+# Author:
+#     Francesco Zardi   March 2019
+#
+##############################################################################
+
 # Treat unset variables and parameters as an error
 set -o nounset
 
