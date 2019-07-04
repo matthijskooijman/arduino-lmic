@@ -53,14 +53,16 @@
 #endif
 
 // LoRaWAN NwkSKey, network session key
+// This should be in big-endian (aka msb).
 static const PROGMEM u1_t NWKSKEY[16] = { FILLMEIN };
 
 // LoRaWAN AppSKey, application session key
+// This should also be in big-endian (aka msb).
 static const u1_t PROGMEM APPSKEY[16] = { FILLMEIN };
 
 // LoRaWAN end-device address (DevAddr)
 // See http://thethingsnetwork.org/wiki/AddressSpace
-// The library converts the address to network byte order as needed.
+// The library converts the address to network byte order as needed, so this should be in big-endian (aka msb) too.
 static const u4_t DEVADDR = FILLMEIN ; // <-- Change this address for every node!
 
 // These callbacks are only used in over-the-air activation, so they are
