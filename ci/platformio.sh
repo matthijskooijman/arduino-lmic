@@ -14,7 +14,7 @@ set -o pipefail
 if [[ ! -v TARGET ]]
 then
     echo "ERROR: variable TARGET is not defined. Please run this scripts as shown next:"
-    echo "    TARGET='foo' $BASH_SOURCE"
+    echo "    TARGET='foo' ${BASH_SOURCE[*]}"
 elif [ "$TARGET" == "esp32" ]
 then
     ################################################################################
