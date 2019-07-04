@@ -35,6 +35,7 @@ const HalPinmap_t *GetPinmap_Catena4617();
 const HalPinmap_t *GetPinmap_Catena4618();
 const HalPinmap_t *GetPinmap_Catena4630();
 const HalPinmap_t *GetPinmap_Catena4801();
+const HalPinmap_t* GetPinmap_ttgo_lora32_v1 ();
 
 const HalPinmap_t *GetPinmap_ThisBoard();
 
