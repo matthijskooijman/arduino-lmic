@@ -1,5 +1,20 @@
 #!/bin/bash
 
+##############################################################################
+#
+# File: .travis.yml
+#
+# Function:
+#     Travis script for test-building this library.
+#
+# Copyright Notice:
+#     See LICENSE file accompanying this project.
+#
+# Author:
+#     Francesco Zardi   March 2019
+#
+##############################################################################
+
 # Treat unset variables and parameters as an error
 set -o nounset
 
@@ -14,11 +29,11 @@ set -o pipefail
 if [[ ! -v TARGET ]]
 then
     echo "ERROR: variable TARGET is not defined. Please run this scripts as shown next:"
-    echo "    TARGET='foo' $BASH_SOURCE"
-elif [ "$TARGET" == "avr" ]
+    echo "    TARGET='foo' ${BASH_SOURCE[*]}"
+elif [ "$TARGET" == "esp32" ]
 then
     ################################################################################
-    # TEST FOR TARGET "avr", i.e. BOARD heltec_wifi_lora_32
+    # TEST FOR TARGET "esp32", i.e. BOARD heltec_wifi_lora_32
 
     # Compile "ttn-otaa" example in all regions
     PLATFORMIO_BUILD_FLAGS='-D CFG_us915   -D CFG_sx1276_radio -D COMPILE_REGRESSION_TEST -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS' platformio ci --lib . --board heltec_wifi_lora_32 'examples/ttn-otaa/ttn-otaa.ino'
@@ -97,11 +112,11 @@ then
     # Expect failure when compiling for more than one radio
     if [ "$(PLATFORMIO_BUILD_FLAGS='-D CFG_sx1272_radio -D CFG_sx1276_radio' platformio ci --lib . --board heltec_wifi_lora_32 'examples/ttn-otaa/ttn-otaa.ino' 1>&2; echo $?)" -eq 0 ]; then echo "ERROR: Compilation did not fail!"; exit 1; fi
 
-elif [ "$TARGET" == "esp32" ]
+elif [ "$TARGET" == "avr" ]
 then
 
     ################################################################################
-    # TESTS FOR TARGET "esp32", i.e. BOARD feather32u4
+    # TESTS FOR TARGET "avr", i.e. BOARD feather32u4
 
     PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST'                                                                              platformio ci --lib . --board feather32u4 'examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino'
     PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_au921   -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino'
