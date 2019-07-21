@@ -27,6 +27,9 @@ requires C99 mode to be enabled by default.
   applies -- you must change your line-ending to some non-auto value in Settings>
   Text Editor>Files.  `\n` works for me.
 -->
+<!-- markdownlint-disable MD033 MD004 -->
+<!-- markdownlint-capture -->
+<!-- markdownlint-disable -->
 <!-- TOC depthFrom:2 updateOnSave:true -->
 
 - [Installing](#installing)
@@ -79,17 +82,19 @@ requires C99 mode to be enabled by default.
 	- [sflt16](#sflt16)
 		- [JavaScript decoder](#javascript-decoder)
 	- [uflt16](#uflt16)
-		- [JavaScript decoder](#javascript-decoder-1)
+		- [uflt16 JavaScript decoder](#uflt16-javascript-decoder)
 	- [sflt12](#sflt12)
-		- [JavaScript decoder](#javascript-decoder-2)
+		- [sflt12f JavaScript decoder](#sflt12f-javascript-decoder)
 	- [uflt12](#uflt12)
-		- [JavaScript decoder](#javascript-decoder-3)
+		- [uflt12f JavaScript decoder](#uflt12f-javascript-decoder)
 - [Release History](#release-history)
 - [Contributions](#contributions)
 - [Trademark Acknowledgements](#trademark-acknowledgements)
 - [License](#license)
+	- [Support Open Source Hardware and Software](#support-open-source-hardware-and-software)
 
 <!-- /TOC -->
+<!-- markdownlint-restore -->
 
 ## Installing
 
@@ -102,7 +107,7 @@ To install this library:
    Library..."
 - clone this git repository into your sketchbook/libraries folder.
 
-For more info, see https://www.arduino.cc/en/Guide/Libraries
+For more info, see [https://www.arduino.cc/en/Guide/Libraries](https://www.arduino.cc/en/Guide/Libraries).
 
 ## Features
 
@@ -181,6 +186,7 @@ according to the region. Some of the differences are listed below.
 
 If the library is configured for EU868, AS923, or IN866 operation, we make
 the following changes:
+
 - Add the API `LMIC_setupBand()`.
 - Add the constants `MAX_CHANNELS`, `MAX_BANDS`, `LIMIT_CHANNELS`, `BAND_MILLI`,
 `BAND_CENTI`, `BAND_DECI`, and `BAND_AUX`.
@@ -188,6 +194,7 @@ the following changes:
 #### us915, au921
 
 If the library is configured for US915 operation, we make the following changes:
+
 - Add the APIs `LMIC_enableChannel()`,
 `LMIC_enableSubBand()`, `LMIC_disableSubBand()`, and `LMIC_selectSubBand()`.
 - Add the constants `MAX_XCHANNELS`.
@@ -234,7 +241,7 @@ By default, beacon support is included in the library.
 
 ### Enabling Network Time Support
 
-`#define LMIC_ENABLE_DeviceTimeReq	number	/* boolean: 0 or non-zero */`
+`#define LMIC_ENABLE_DeviceTimeReq  number  /* boolean: 0 or non-zero */`
 
 Disable or enable support for device network-time requests (LoRaWAN MAC request 0x0D). If zero, support is disabled. If non-zero, support is enabled.
 
@@ -374,8 +381,8 @@ The following boards are pre-integrated.
 [3]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4450-lorawan-iot-device
 [4]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4460-sensor-wing-w-bme680
 [5]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/mcci-catena-4470-modbus-node-for-lorawan-technology
-[6]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/mcci-catena-4610-integrated-node-for-lorawan-technology 
-[7]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4612-integrated-lorawan-node 
+[6]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/mcci-catena-4610-integrated-node-for-lorawan-technology
+[7]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4612-integrated-lorawan-node
 [8]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4801
 
 > To help you know if you have to worry, we'll call such boards "pre-integrated" and prefix each section with suitable guidance.
@@ -448,12 +455,14 @@ lengthy calculations; but in that case, the enabled DIO pins must all
 support rising-edge interrupts. See the [Timing](#timing) section below.
 
 In LoRa mode the DIO pins are used as follows:
- * DIO0: TxDone and RxDone
- * DIO1: RxTimeout
+
+* DIO0: TxDone and RxDone
+* DIO1: RxTimeout
 
 In FSK mode they are used as follows::
- * DIO0: PayloadReady and PacketSent
- * DIO2: TimeOut
+
+* DIO0: PayloadReady and PacketSent
+* DIO2: TimeOut
 
 Both modes need only 2 pins, but the transceiver does not allow mapping
 them in such a way that all needed interrupts map to the same 2 pins.
@@ -628,7 +637,7 @@ This board uses the following pin mapping:
 
 This library provides several examples.
 
- - [`ttn-otaa.ino`](examples/ttn-otaa/ttn-otaa.ino) shows a basic transmission of a "Hello, world!" message
+- [`ttn-otaa.ino`](examples/ttn-otaa/ttn-otaa.ino) shows a basic transmission of a "Hello, world!" message
    using the LoRaWAN protocol. It contains some frequency settings and
    encryption keys intended for use with The Things Network, but these
    also correspond to the default settings of most gateways, so it
@@ -638,28 +647,28 @@ This library provides several examples.
    but should also work (perhaps with some changes) for other networks.
    OTAA is the preferred way to work with production LoRaWAN networks.
 
- - [`ttn-otaa-feather-us915.ino`](examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino) is a version of `ttn-otaa.ino` that has
+- [`ttn-otaa-feather-us915.ino`](examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino) is a version of `ttn-otaa.ino` that has
    been configured for use with the Feather M0 LoRa, on the US915 bandplan,
    with The Things Network. Remember that you may also have to change `config.h`
    from defaults. This sketch also works with the MCCI Catena family of products
    as well as with the Feather 32u4 LoRa.
 
- - [`ttn-otaa-feather-us915-dht22.ino`](examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino)
+- [`ttn-otaa-feather-us915-dht22.ino`](examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino)
    is a further refinement of `ttn-otaa-feather-us915.ino`. It measures and
    transmits temperature and relative humidity using a DHT22 sensor. It's only
    been tested with Feather M0-family products.
 
- - [`raw.ino`](examples/raw/raw.ino) shows how to access the radio on a somewhat low level,
+- [`raw.ino`](examples/raw/raw.ino) shows how to access the radio on a somewhat low level,
    and allows to send raw (non-LoRaWAN) packets between nodes directly.
    This is useful to verify basic connectivity, and when no gateway is
    available, but this example also bypasses duty cycle checks, so be
    careful when changing the settings.
 
- - [`raw-feather.ino`](examples/raw-feather/raw-feather.ino) is a version of `raw.ino` that is completely configured
+- [`raw-feather.ino`](examples/raw-feather/raw-feather.ino) is a version of `raw.ino` that is completely configured
    for the Adafruit [Feather M0 LoRa](https://www.adafruit.com/product/3178), and for a variety
    of other MCCI products.
 
- - [`ttn-abp.ino`](examples/ttn-abp/ttn-abp.ino) shows a basic transmission of a "Hello, world!" message
+- [`ttn-abp.ino`](examples/ttn-abp/ttn-abp.ino) shows a basic transmission of a "Hello, world!" message
    using the LoRaWAN protocol. This example
    uses activation-by-personalization (ABP, preconfiguring a device
    address and encryption keys), and does not employ over-the-air
@@ -673,7 +682,7 @@ This library provides several examples.
    downlink counts across reboots and resets. See, for example,
    [Catena-Arduino-Platform](https://github.com/mcci-catena/Catena-Arduino-Platform).
 
- - [`ttn-abp-feather-us915-dht22.ino`](examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino)
+- [`ttn-abp-feather-us915-dht22.ino`](examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino)
    refines `ttn-abp.ino` by configuring for use with the Feather M0 LoRa on the US915 bandplan,
    with a single-channel gateway on The Things Network; it measures and transmits temperature and relative
    humidity using a DHT22 sensor. It's only been tested with Feather M0-family products.
@@ -686,7 +695,7 @@ This library provides several examples.
    downlink counts across reboots and resets. See, for example,
    [Catena-Arduino-Platform](https://github.com/mcci-catena/Catena-Arduino-Platform).
 
- - [`header_test.ino`](examples/header_test/header_test.ino) just tests the header files; it's used for regression testing.
+- [`header_test.ino`](examples/header_test/header_test.ino) just tests the header files; it's used for regression testing.
 
 ## Timing
 
@@ -832,46 +841,46 @@ Floating point mavens will immediately recognize:
 
 ```javascript
 function sflt162f(rawSflt16)
-	{
-	// rawSflt16 is the 2-byte number decoded from wherever;
-	// it's in range 0..0xFFFF
-	// bit 15 is the sign bit
-	// bits 14..11 are the exponent
-	// bits 10..0 are the the mantissa. Unlike IEEE format,
-	// 	the msb is explicit; this means that numbers
-	//	might not be normalized, but makes coding for
-	//	underflow easier.
-	// As with IEEE format, negative zero is possible, so
-	// we special-case that in hopes that JavaScript will
-	// also cooperate.
-	//
-	// The result is a number in the open interval (-1.0, 1.0);
-	//
+    {
+    // rawSflt16 is the 2-byte number decoded from wherever;
+    // it's in range 0..0xFFFF
+    // bit 15 is the sign bit
+    // bits 14..11 are the exponent
+    // bits 10..0 are the the mantissa. Unlike IEEE format,
+    // the msb is explicit; this means that numbers
+    // might not be normalized, but makes coding for
+    // underflow easier.
+    // As with IEEE format, negative zero is possible, so
+    // we special-case that in hopes that JavaScript will
+    // also cooperate.
+    //
+    // The result is a number in the open interval (-1.0, 1.0);
+    //
 
-	// throw away high bits for repeatability.
-	rawSflt16 &= 0xFFFF;
+    // throw away high bits for repeatability.
+    rawSflt16 &= 0xFFFF;
 
-	// special case minus zero:
-	if (rawSflt16 == 0x8000)
-		return -0.0;
+    // special case minus zero:
+    if (rawSflt16 == 0x8000)
+        return -0.0;
 
-	// extract the sign.
-	var sSign = ((rawSflt16 & 0x8000) != 0) ? -1 : 1;
+    // extract the sign.
+    var sSign = ((rawSflt16 & 0x8000) != 0) ? -1 : 1;
 
-	// extract the exponent
-	var exp1 = (rawSflt16 >> 11) & 0xF;
+    // extract the exponent
+    var exp1 = (rawSflt16 >> 11) & 0xF;
 
-	// extract the "mantissa" (the fractional part)
-	var mant1 = (rawSflt16 & 0x7FF) / 2048.0;
+    // extract the "mantissa" (the fractional part)
+    var mant1 = (rawSflt16 & 0x7FF) / 2048.0;
 
-	// convert back to a floating point number. We hope
-	// that Math.pow(2, k) is handled efficiently by
-	// the JS interpreter! If this is time critical code,
-	// you can replace by a suitable shift and divide.
-	var f_unscaled = sSign * mant1 * Math.pow(2, exp1 - 15);
+    // convert back to a floating point number. We hope
+    // that Math.pow(2, k) is handled efficiently by
+    // the JS interpreter! If this is time critical code,
+    // you can replace by a suitable shift and divide.
+    var f_unscaled = sSign * mant1 * Math.pow(2, exp1 - 15);
 
-	return f_unscaled;
-	}
+    return f_unscaled;
+    }
 ```
 
 ### uflt16
@@ -899,42 +908,42 @@ Floating point mavens will immediately recognize:
 * The format is somewhat wasteful, because it explicitly transmits the most-significant bit of the fraction. (Most binary floating-point formats assume that `f` is is normalized, which means by definition that the exponent `b` is adjusted and `f` is shifted left until the most-significant bit of `f` is one. Most formats then choose to delete the most-significant bit from the encoding. If we were to do that, we would insist that the actual value of `f` be in the range 4096..8191, and then transmit only `f - 4096`, saving a bit. However, this complicated the handling of gradual underflow; see next point.)
 * Gradual underflow at the bottom of the range is automatic and simple with this encoding; the more sophisticated schemes need extra logic (and extra testing) in order to provide the same feature.
 
-#### JavaScript decoder
+#### uflt16 JavaScript decoder
 
 ```javascript
 function uflt162f(rawUflt16)
-	{
-	// rawUflt16 is the 2-byte number decoded from wherever;
-	// it's in range 0..0xFFFF
-	// bits 15..12 are the exponent
-	// bits 11..0 are the the mantissa. Unlike IEEE format,
-	// 	the msb is explicit; this means that numbers
-	//	might not be normalized, but makes coding for
-	//	underflow easier.
-	// As with IEEE format, negative zero is possible, so
-	// we special-case that in hopes that JavaScript will
-	// also cooperate.
-	//
-	// The result is a number in the half-open interval [0, 1.0);
-	//
+    {
+    // rawUflt16 is the 2-byte number decoded from wherever;
+    // it's in range 0..0xFFFF
+    // bits 15..12 are the exponent
+    // bits 11..0 are the the mantissa. Unlike IEEE format,
+    // the msb is explicit; this means that numbers
+    // might not be normalized, but makes coding for
+    // underflow easier.
+    // As with IEEE format, negative zero is possible, so
+    // we special-case that in hopes that JavaScript will
+    // also cooperate.
+    //
+    // The result is a number in the half-open interval [0, 1.0);
+    //
 
-	// throw away high bits for repeatability.
-	rawUflt16 &= 0xFFFF;
+    // throw away high bits for repeatability.
+    rawUflt16 &= 0xFFFF;
 
-	// extract the exponent
-	var exp1 = (rawUflt16 >> 12) & 0xF;
+    // extract the exponent
+    var exp1 = (rawUflt16 >> 12) & 0xF;
 
-	// extract the "mantissa" (the fractional part)
-	var mant1 = (rawUflt16 & 0xFFF) / 4096.0;
+    // extract the "mantissa" (the fractional part)
+    var mant1 = (rawUflt16 & 0xFFF) / 4096.0;
 
-	// convert back to a floating point number. We hope
-	// that Math.pow(2, k) is handled efficiently by
-	// the JS interpreter! If this is time critical code,
-	// you can replace by a suitable shift and divide.
-	var f_unscaled = mant1 * Math.pow(2, exp1 - 15);
+    // convert back to a floating point number. We hope
+    // that Math.pow(2, k) is handled efficiently by
+    // the JS interpreter! If this is time critical code,
+    // you can replace by a suitable shift and divide.
+    var f_unscaled = mant1 * Math.pow(2, exp1 - 15);
 
-	return f_unscaled;
-	}
+    return f_unscaled;
+    }
 ```
 
 ### sflt12
@@ -966,51 +975,51 @@ Floating point mavens will immediately recognize:
 * Gradual underflow at the bottom of the range is automatic and simple with this encoding; the more sophisticated schemes need extra logic (and extra testing) in order to provide the same feature.
 * It can be strongly argued that dropping the sign bit would be worth the effort, as this would get us 14% more resolution for a minor amount of work.
 
-#### JavaScript decoder
+#### sflt12f JavaScript decoder
 
 ```javascript
-function sflt122f(rawSflt12)
-	{
-	// rawSflt12 is the 2-byte number decoded from wherever;
-	// it's in range 0..0xFFF (12 bits). For safety, we mask
-	// on entry and discard the high-order bits.
-	// bit 11 is the sign bit
-	// bits 10..7 are the exponent
-	// bits 6..0 are the the mantissa. Unlike IEEE format,
-	// 	the msb is explicit; this means that numbers
-	//	might not be normalized, but makes coding for
-	//	underflow easier.
-	// As with IEEE format, negative zero is possible, so
-	// we special-case that in hopes that JavaScript will
-	// also cooperate.
-	//
-	// The result is a number in the open interval (-1.0, 1.0);
-	//
+function sflt12f(rawSflt12)
+    {
+    // rawSflt12 is the 2-byte number decoded from wherever;
+    // it's in range 0..0xFFF (12 bits). For safety, we mask
+    // on entry and discard the high-order bits.
+    // bit 11 is the sign bit
+    // bits 10..7 are the exponent
+    // bits 6..0 are the the mantissa. Unlike IEEE format,
+    // the msb is explicit; this means that numbers
+    // might not be normalized, but makes coding for
+    // underflow easier.
+    // As with IEEE format, negative zero is possible, so
+    // we special-case that in hopes that JavaScript will
+    // also cooperate.
+    //
+    // The result is a number in the open interval (-1.0, 1.0);
+    //
 
-	// throw away high bits for repeatability.
-	rawSflt12 &= 0xFFF;
+    // throw away high bits for repeatability.
+    rawSflt12 &= 0xFFF;
 
-	// special case minus zero:
-	if (rawSflt12 == 0x800)
-		return -0.0;
+    // special case minus zero:
+    if (rawSflt12 == 0x800)
+        return -0.0;
 
-	// extract the sign.
-	var sSign = ((rawSflt12 & 0x800) != 0) ? -1 : 1;
+    // extract the sign.
+    var sSign = ((rawSflt12 & 0x800) != 0) ? -1 : 1;
 
-	// extract the exponent
-	var exp1 = (rawSflt12 >> 7) & 0xF;
+    // extract the exponent
+    var exp1 = (rawSflt12 >> 7) & 0xF;
 
-	// extract the "mantissa" (the fractional part)
-	var mant1 = (rawSflt12 & 0x7F) / 128.0;
+    // extract the "mantissa" (the fractional part)
+    var mant1 = (rawSflt12 & 0x7F) / 128.0;
 
-	// convert back to a floating point number. We hope
-	// that Math.pow(2, k) is handled efficiently by
-	// the JS interpreter! If this is time critical code,
-	// you can replace by a suitable shift and divide.
-	var f_unscaled = sSign * mant1 * Math.pow(2, exp1 - 15);
+    // convert back to a floating point number. We hope
+    // that Math.pow(2, k) is handled efficiently by
+    // the JS interpreter! If this is time critical code,
+    // you can replace by a suitable shift and divide.
+    var f_unscaled = sSign * mant1 * Math.pow(2, exp1 - 15);
 
-	return f_unscaled;
-	}
+    return f_unscaled;
+    }
 ```
 
 ### uflt12
@@ -1038,43 +1047,43 @@ Floating point mavens will immediately recognize:
 * The format is somewhat wasteful, because it explicitly transmits the most-significant bit of the fraction. (Most binary floating-point formats assume that `f` is is normalized, which means by definition that the exponent `b` is adjusted and `f` is shifted left until the most-significant bit of `f` is one. Most formats then choose to delete the most-significant bit from the encoding. If we were to do that, we would insist that the actual value of `f` be in the range 256 .. 512, and then transmit only `f - 256`, saving a bit. However, this complicates the handling of gradual underflow; see next point.)
 * Gradual underflow at the bottom of the range is automatic and simple with this encoding; the more sophisticated schemes need extra logic (and extra testing) in order to provide the same feature.
 
-#### JavaScript decoder
+#### uflt12f JavaScript decoder
 
 ```javascript
-function uflt122f(rawUflt12)
-	{
-	// rawUflt12 is the 2-byte number decoded from wherever;
-	// it's in range 0..0xFFF (12 bits). For safety, we mask
-	// on entry and discard the high-order bits.
-	// bits 11..8 are the exponent
-	// bits 7..0 are the the mantissa. Unlike IEEE format,
-	// 	the msb is explicit; this means that numbers
-	//	might not be normalized, but makes coding for
-	//	underflow easier.
-	// As with IEEE format, negative zero is possible, so
-	// we special-case that in hopes that JavaScript will
-	// also cooperate.
-	//
-	// The result is a number in the half-open interval [0, 1.0);
-	//
+function uflt12f(rawUflt12)
+    {
+    // rawUflt12 is the 2-byte number decoded from wherever;
+    // it's in range 0..0xFFF (12 bits). For safety, we mask
+    // on entry and discard the high-order bits.
+    // bits 11..8 are the exponent
+    // bits 7..0 are the the mantissa. Unlike IEEE format,
+    // the msb is explicit; this means that numbers
+    // might not be normalized, but makes coding for
+    // underflow easier.
+    // As with IEEE format, negative zero is possible, so
+    // we special-case that in hopes that JavaScript will
+    // also cooperate.
+    //
+    // The result is a number in the half-open interval [0, 1.0);
+    //
 
-	// throw away high bits for repeatability.
-	rawUflt12 &= 0xFFF;
+    // throw away high bits for repeatability.
+    rawUflt12 &= 0xFFF;
 
-	// extract the exponent
-	var exp1 = (rawUflt12 >> 8) & 0xF;
+    // extract the exponent
+    var exp1 = (rawUflt12 >> 8) & 0xF;
 
-	// extract the "mantissa" (the fractional part)
-	var mant1 = (rawUflt12 & 0xFF) / 256.0;
+    // extract the "mantissa" (the fractional part)
+    var mant1 = (rawUflt12 & 0xFF) / 256.0;
 
-	// convert back to a floating point number. We hope
-	// that Math.pow(2, k) is handled efficiently by
-	// the JS interpreter! If this is time critical code,
-	// you can replace by a suitable shift and divide.
-	var f_unscaled = sSign * mant1 * Math.pow(2, exp1 - 15);
+    // convert back to a floating point number. We hope
+    // that Math.pow(2, k) is handled efficiently by
+    // the JS interpreter! If this is time critical code,
+    // you can replace by a suitable shift and divide.
+    var f_unscaled = sSign * mant1 * Math.pow(2, exp1 - 15);
 
-	return f_unscaled;
-	}
+    return f_unscaled;
+    }
 ```
 
 ## Release History
@@ -1132,7 +1141,7 @@ This library started from the IBM V1.5 open-source code.
 
 ## Trademark Acknowledgements
 
-LoRa is a registered trademark of the LoRa Alliance. LoRaWAN is a trademark of the LoRa Alliance.
+LoRa is a registered trademark of Semtech Corporation. LoRaWAN is a registered trademark of the LoRa Alliance.
 
 MCCI and MCCI Catena are registered trademarks of MCCI Corporation.
 
@@ -1150,3 +1159,9 @@ license. Some of the AES code is available under the LGPL. Refer to each
 individual source file for more details, but bear in mind that until
 the upstream developers look into this issue, it is safest to assume
 the Eclipse license applies.
+
+### Support Open Source Hardware and Software
+
+MCCI invests time and resources providing this open source code, please support MCCI and open-source hardware by purchasing products from MCCI, Adafruit and other open-source hardware/software vendors!
+
+For information about MCCI's products, please visit [store.mcci.com](https://store.mcci.com/).
