@@ -423,10 +423,10 @@ void myRxMessageCb(
         }
         case LMIC_COMPLIANCE_RX_ACTION_IGNORE: {
             if (port == LORAWAN_PORT_COMPLIANCE) {
-                Serial.print(F("Received test packet "));
+                Serial.print(F("Received test packet 0x"));
                 if (nMessage > 0)
                     Serial.print(pMessage[0], HEX);
-                Serial.print(F(" length 0x"));
+                Serial.print(F(" length "));
                 Serial.println((unsigned) nMessage);
             }
             return;
