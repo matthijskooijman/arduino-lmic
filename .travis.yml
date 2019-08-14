@@ -176,7 +176,9 @@ script:
  - _notsamd || { _projcfg CFG_au921 CFG_sx1276_radio && arduino --verify --board $(_samdopts '' projcfg) $PWD/examples/raw-feather/raw-feather.ino ; }
  - _notsamd || arduino --verify --board $(_samdopts '' as923) $PWD/examples/raw-feather/raw-feather.ino
  - _notsamd || arduino --verify --board $(_samdopts '' as923jp) $PWD/examples/raw-feather/raw-feather.ino
- - _notsamd || arduino --verify --board $(_samdopts '' kr920) $PWD/examples/raw-feather/raw-feather.ino
+# V2.0.0 of the samd bsp doesn't include kr920 support in menus, use projcfg
+# - _notsamd || arduino --verify --board $(_samdopts '' kr920) $PWD/examples/raw-feather/raw-feather.ino
+ - _notsamd || { _projcfg CFG_kr920 CFG_sx1276_radio && arduino --verify --board $(_samdopts '' projcfg) $PWD/examples/raw-feather/raw-feather.ino ; }
  - _notsamd || arduino --verify --board $(_samdopts '' in866) $PWD/examples/raw-feather/raw-feather.ino
 
 # test raw in us915 and eu868
@@ -283,7 +285,9 @@ script:
  - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' au921  ) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
  - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' as923  ) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
  - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' as923jp) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
- - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' kr920  ) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
+# V2.4.0 of the stm bsp doesn't include kr920 support in menus, use projcfg
+# - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' kr920  ) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
+ - _notstm32l0 ||  { _projcfg CFG_kr920 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
  - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' in866  ) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
  - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
  - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
