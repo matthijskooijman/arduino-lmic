@@ -287,7 +287,7 @@ script:
  - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' as923jp) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
 # V2.4.0 of the stm bsp doesn't include kr920 support in menus, use projcfg
 # - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' kr920  ) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
- - _notstm32l0 ||  { _projcfg CFG_kr920 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
+ - _notstm32l0 ||  { _projcfg CFG_kr920 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino ; }
  - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' in866  ) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
  - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
  - _notstm32l0 ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_stm32l0opts '' projcfg) $MCCI_STM32_OPTS $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
