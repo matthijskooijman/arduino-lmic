@@ -104,6 +104,8 @@ enum _dr_code_t {
 // post conditions from this block: symbols used by general code that is not
 // ostensiblly region-specific.
 // DR_DFLTMIN must be defined as a suitable substititute value if we get a bogus DR
+//  It is misnamed, it should be the maximum DR (which is the minimum SF) for
+//  125 kHz.
 // DR_PAGE is used only for a non-supported debug system, but should be defined.
 // CHNL_DNW2 is the channel to be used for RX2
 // FREQ_DNW2 is the frequency to be used for RX2
@@ -323,6 +325,51 @@ enum _dr_configured_t {
         DR_SF7B = AS923_DR_SF7B,
         DR_FSK  = AS923_DR_FSK,
         DR_NONE = AS923_DR_NONE
+};
+# endif // LMIC_DR_LEGACY
+
+#elif defined(CFG_kr920) // ==============================================
+
+#include "lorabase_kr920.h"
+
+// per 2.8.3 (1.0.3 2.9.3): is not implemented
+#define LMIC_ENABLE_TxParamSetupReq	0
+
+enum { DR_DFLTMIN = KR920_DR_SF12 };  // DR2
+                                      // DR_PAGE is a debugging parameter
+enum { DR_PAGE = DR_PAGE_KR920 };
+
+enum { FREQ_PING = KR920_FBCN };       // default ping freq
+enum { DR_PING = KR920_DR_SF9 };       // default ping DR: DR3
+enum { FREQ_DNW2 = KR920_FDOWN };
+enum { DR_DNW2 = KR920_DR_SF12 };
+enum { CHNL_BCN = 11 };
+enum { FREQ_BCN = KR920_FBCN };
+enum { DR_BCN = KR920_DR_SF9 };
+enum { AIRTIME_BCN = 144384 };  // micros
+enum { LMIC_REGION_EIRP = KR920_LMIC_REGION_EIRP };         // region uses EIRP
+
+enum {
+        // Beacon frame format KR SF9
+        OFF_BCN_NETID = 0,
+        OFF_BCN_TIME = 2,
+        OFF_BCN_CRC1 = 6,
+        OFF_BCN_INFO = 8,
+        OFF_BCN_LAT = 9,
+        OFF_BCN_LON = 12,
+        OFF_BCN_CRC2 = 15,
+        LEN_BCN = 17
+};
+
+# if LMIC_DR_LEGACY
+enum _dr_configured_t {
+        DR_SF12 = KR920_DR_SF12,
+        DR_SF11 = KR920_DR_SF11,
+        DR_SF10 = KR920_DR_SF10,
+        DR_SF9  = KR920_DR_SF9,
+        DR_SF8  = KR920_DR_SF8,
+        DR_SF7  = KR920_DR_SF7,
+        DR_NONE = KR920_DR_NONE
 };
 # endif // LMIC_DR_LEGACY
 

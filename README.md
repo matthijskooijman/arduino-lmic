@@ -40,7 +40,7 @@ requires C99 mode to be enabled by default.
 	- [Known bugs and issues](#known-bugs-and-issues)
 - [Configuration](#configuration)
 	- [Selecting the LoRaWAN Region Configuration](#selecting-the-lorawan-region-configuration)
-		- [eu868, as923, in866](#eu868-as923-in866)
+		- [eu868, as923, in866, kr920](#eu868-as923-in866-kr920)
 		- [us915, au921](#us915-au921)
 	- [Selecting the target radio transceiver](#selecting-the-target-radio-transceiver)
 	- [Controlling use of interrupts](#controlling-use-of-interrupts)
@@ -77,7 +77,7 @@ requires C99 mode to be enabled by default.
 - [Example Sketches](#example-sketches)
 - [Timing](#timing)
 	- [`LMIC_setClockError()`](#lmic_setclockerror)
-- [Downlink datarate](#downlink-datarate)
+- [Downlink data rate](#downlink-data-rate)
 - [Encoding Utilities](#encoding-utilities)
 	- [sflt16](#sflt16)
 		- [JavaScript decoder](#javascript-decoder)
@@ -95,6 +95,7 @@ requires C99 mode to be enabled by default.
 
 <!-- /TOC -->
 <!-- markdownlint-restore -->
+<!-- Due to a bug in Markdown TOC, the table is formatted incorrectly if tab indentation is set other than 4. Due to another bug, this comment must be *after* the TOC entry. -->
 
 ## Installing
 
@@ -102,7 +103,7 @@ To install this library:
 
 - install it using the Arduino Library manager ("Sketch" -> "Include
    Library" -> "Manage Libraries..."), or
-- download a zipfile from github using the "Download ZIP" button and
+- download a zip file from GitHub using the "Download ZIP" button and
    install it using the IDE ("Sketch" -> "Include Library" -> "Add .ZIP
    Library..."
 - clone this git repository into your sketchbook/libraries folder.
@@ -122,7 +123,7 @@ What certainly works:
 - Sending packets uplink, taking into account duty cycling.
 - Encryption and message integrity checking.
 - Receiving downlink packets in the RX2 window.
-- Custom frequencies and datarate settings.
+- Custom frequencies and data rate settings.
 - Over-the-air activation (OTAA / joining).
 - Receiving downlink packets in the RX1 and RX2 windows.
 - Some MAC command processing.
@@ -134,7 +135,7 @@ What has not been tested:
 - FSK has not been extensively tested.
 
 If you try one of these untested features and it works, be sure to let
-us know (creating a github issue is probably the best way for that).
+us know (creating a GitHub issue is probably the best way for that).
 
 ## Additional Documentation
 
@@ -169,20 +170,21 @@ The following configuration variables are available.
 
 The library supports the following regions:
 
-`-D` variable | CFG region name | CFG region value | LoRa Spec Reference| Frequency
+`-D` variable | CFG region name | CFG region value | LoRaWAN Regional Spec 1.0.3 Reference| Frequency
 ------------|-----------------|:----------------:|:-------------------:|--------
-`-D CFG_eu868` | `LMIC_REGION_eu868` | 1 | 2.1 | EU 863-870 MHz ISM
-`-D CFG_us915` | `LMIC_REGION_us915` | 2 | 2.2 | US 902-928 MHz ISM
-`-D CFG_au921` | `LMIC_REGION_au921` | 5 | 2.5 | Australia 915-928 MHz ISM
-`-D CFG_as923` | `LMIC_REGION_as923` | 7 | 2.7 | Asia 923 MHz ISM
-`-D CFG_as923jp` | `LMIC_REGION_as923` and `LMIC_COUNTRY_CODE_JP` | 7 | 2.7 | Asia 923 MHz ISM  with Japan listen-before-talk (LBT) rules
-`-D CFG_in866` | `LMIC_REGION_in866` | 9 | 2.9 | India 865-867 MHz ISM
+`-D CFG_eu868` | `LMIC_REGION_eu868` | 1 | 2.2 | EU 863-870 MHz ISM
+`-D CFG_us915` | `LMIC_REGION_us915` | 2 | 2.3 | US 902-928 MHz ISM
+`-D CFG_au921` | `LMIC_REGION_au921` | 5 | 2.6 | Australia 915-928 MHz ISM
+`-D CFG_as923` | `LMIC_REGION_as923` | 7 | 2.8 | Asia 923 MHz ISM
+`-D CFG_as923jp` | `LMIC_REGION_as923` and `LMIC_COUNTRY_CODE_JP` | 7 | 2.8 | Asia 923 MHz ISM with Japan listen-before-talk (LBT) rules
+`-D CFG_kr920` | `LMIC_REGION_kr920` | 8 | 2.9 | Korea 920-923 MHz ISM
+`-D CFG_in866` | `LMIC_REGION_in866` | 9 | 2.10 | India 865-867 MHz ISM
 
 You should define exactly one of `CFG_...` variables. If you don't,
 the library assumes `CFG_eu868`. The library changes configuration pretty substantially
 according to the region. Some of the differences are listed below.
 
-#### eu868, as923, in866
+#### eu868, as923, in866, kr920
 
 If the library is configured for EU868, AS923, or IN866 operation, we make
 the following changes:
@@ -265,13 +267,13 @@ is assumed.
 This variable determines the amount of debug output to be produced by the library. The default is `0`.
 
 If `LMIC_DEBUG_LEVEL` is zero, no output is produced. If `1`, limited output is produced. If `2`, more extensive
-output is produced.  If non-zero, printf() is used, and the Arduino environment must be configured to support it,
+output is produced.  If non-zero, `printf()` is used, and the Arduino environment must be configured to support it,
 otherwise the sketch will crash at runtime.
 
 #### Selecting the AES library
 
 The library comes with two AES implementations. The original implementation is better on
-ARM processors becasue it's faster, but it's larger. For smaller AVR8 processors, a
+ARM processors because it's faster, but it's larger. For smaller AVR8 processors, a
 second library ("IDEETRON") is provided that has a smaller code footprint.
 You may define one of the following variables to choose the AES implementation. If you don't,
 the library uses the IDEETRON version.
@@ -301,7 +303,7 @@ This variable sets the default frequency for the SPI bus connection to the trans
 
 The variables `LMIC_FAILURE_TO` and `DISABLE_LMIC_FAILURE_TO`
 control the handling of runtime assertion failures. By default, assertion messages are displayed using
-the `Serial` object. You can define LMIC_FAILURE_TO to be the name of some other `Print`-like obect. You can
+the `Serial` object. You can define LMIC_FAILURE_TO to be the name of some other `Print`-like object. You can
 also define `DISABLE_LMIC_FAILURE_TO` to any value, in which case assert failures will silently halt execution.
 
 #### Disabling JOIN
@@ -323,11 +325,11 @@ commands.
 
 #### Disabling user events
 
-Code to handle registered callbacks for tx, rx, and events can be suppressed by setting `LMIC_ENABLE_user_events` to zero.  This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, user events are supported, if zero, user events are not-supported.  The default is to support user events.
+Code to handle registered callbacks for transmit, receive, and events can be suppressed by setting `LMIC_ENABLE_user_events` to zero.  This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, user events are supported, if zero, user events are not-supported.  The default is to support user events.
 
 #### Disabling external reference to `onEvent()`
 
-In some embedded systems, `onEvent()` may be defined for some other purpose; so the weak reference to the function `onEvent` will be satified, causing the LMIC to try to call that function. All reference to `onEvent()` can be suppressed by setting `LMIC_ENABLE_onEvent` to 0.   This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, a weak reference to `onEvent()` will be used; if zero, the user `onEvent()` function is not supported, and the client must register an event handler explicitly.
+In some embedded systems, `onEvent()` may be defined for some other purpose; so the weak reference to the function `onEvent` will be satisfied, causing the LMIC to try to call that function. All reference to `onEvent()` can be suppressed by setting `LMIC_ENABLE_onEvent` to 0.   This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, a weak reference to `onEvent()` will be used; if zero, the user `onEvent()` function is not supported, and the client must register an event handler explicitly.
 
 #### Enabling long messages
 
@@ -367,7 +369,7 @@ some space can be freed up.
 
 ## Pre-Integrated Boards
 
-There are two ways of using this library, either with pre-integrated boards or with manualy configured boards.
+There are two ways of using this library, either with pre-integrated boards or with manually configured boards.
 
 The following boards are pre-integrated.
 
@@ -561,7 +563,7 @@ The names refer to the pins on the transceiver side, the numbers refer
 to the Arduino pin numbers (to use the analog pins, use constants like
 `A0`). For the DIO pins, the three numbers refer to DIO0, DIO1 and DIO2
 respectively. Any pins that are not needed should be specified as
-`LMIC_UNUSED_PIN`. The nss and dio0 pin is required, the others can
+`LMIC_UNUSED_PIN`. The NSS and dio0 pins are required. The others can
 potentially left out (depending on the environments and requirements,
 see the notes above for when a pin can or cannot be left out).
 
@@ -579,7 +581,7 @@ In some boards require much more advanced management. The LMIC has a very flexib
     cMyHalConfiguration_t myHalConfigInstance;
     ```
 
-4. You add another entry in your `lmic_pinmap`, `pConfig = &myHalConfigInstance`, to link your pinmap to your object.
+4. You add another entry in your `lmic_pinmap`, `pConfig = &myHalConfigInstance`, to link your pin-map to your object.
 
 The full example looks like this:
 
@@ -609,15 +611,15 @@ public:
 
 - `ostime_t setModuleActive(bool state)` is called by the LMIC to make the module active or to deactivate it (the value of `state` is true to activate).  The implementation must turn power to the module on and otherwise prepare for it to go to work, and must return the number of OS ticks to wait before starting to use the radio.
 
-- `void begin(void)` is called during intialization, and is your code's chance to do any early setup.
+- `void begin(void)` is called during initialization, and is your code's chance to do any early setup.
 
 - `void end(void)` is (to be) called during late shutdown.  (Late shutdown is not implemented yet; but we wanted to add the API for consistency.)
 
 - `bool queryUsingTcxo(void)` shall return `true` if the module uses a TCXO; `false` otherwise.
 
-- `TxPowerPolicy_t getTxPowerPolicy(TxPowerPolicy_t policy, int8_t requestedPower, uint32_t frequency)` allows you to override the LMIC's selection of transmit power. If not provided, the default method forces the LMIC to use PA_BOOST mode. (We chose to do this becuase we found empirically that the Hope RF module doesn't support RFO, and because legacy LMIC code never used anything except PA_BOOST mode.)
+- `TxPowerPolicy_t getTxPowerPolicy(TxPowerPolicy_t policy, int8_t requestedPower, uint32_t frequency)` allows you to override the LMIC's selection of transmit power. If not provided, the default method forces the LMIC to use PA_BOOST mode. (We chose to do this because we found empirically that the Hope RF module doesn't support RFO, and because legacy LMIC code never used anything except PA_BOOST mode.)
 
-Caution: the LMIC has no way of knowing whether the mode you return makes sense. Use of 20 dBm mode without limiting duty cycle can over-stress your module. The LMIC currently does not have any code to duty-cycle US transmissions at 20 dBm. If properly limiting transmissions to 400 ms, 1% duty-cycle means at most one message every 40 seconds. This shoudln't be a problem in practice, but buggy upper level software still might do things more rapidly.
+Caution: the LMIC has no way of knowing whether the mode you return makes sense. Use of 20 dBm mode without limiting duty cycle can over-stress your module. The LMIC currently does not have any code to duty-cycle US transmissions at 20 dBm. If properly limiting transmissions to 400 milliseconds, a 1% duty-cycle means at most one message every 40 seconds. This shouldn't be a problem in practice, but buggy upper level software still might do things more rapidly.
 
 <!-- there are links to the following section, so be careful when renaming -->
 #### LoRa Nexus by Ideetron
@@ -648,7 +650,7 @@ This library provides several examples.
    OTAA is the preferred way to work with production LoRaWAN networks.
 
 - [`ttn-otaa-feather-us915.ino`](examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino) is a version of `ttn-otaa.ino` that has
-   been configured for use with the Feather M0 LoRa, on the US915 bandplan,
+   been configured for use with the Feather M0 LoRa, on the US915 band plan,
    with The Things Network. Remember that you may also have to change `config.h`
    from defaults. This sketch also works with the MCCI Catena family of products
    as well as with the Feather 32u4 LoRa.
@@ -683,7 +685,7 @@ This library provides several examples.
    [Catena-Arduino-Platform](https://github.com/mcci-catena/Catena-Arduino-Platform).
 
 - [`ttn-abp-feather-us915-dht22.ino`](examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino)
-   refines `ttn-abp.ino` by configuring for use with the Feather M0 LoRa on the US915 bandplan,
+   refines `ttn-abp.ino` by configuring for use with the Feather M0 LoRa on the US915 band plan,
    with a single-channel gateway on The Things Network; it measures and transmits temperature and relative
    humidity using a DHT22 sensor. It's only been tested with Feather M0-family products.
 
@@ -711,8 +713,8 @@ This can be configured in one of two ways (see
 [Controlling use of interrupts](#controlling-use-of-interrupts)).
 
 By default, the routine `hal_io_check()`
-polls the enabled pins to determine whether an event has occured. This approach
-allows use of any CPU pin to sense the DIOs, and makes no assummptions about
+polls the enabled pins to determine whether an event has occurred. This approach
+allows use of any CPU pin to sense the DIOs, and makes no assumptions about
 interrupts. However, it means that the end-of-transmit event is not observed
 (and time-stamped) until `os_runloop()` is called.
 
@@ -750,16 +752,16 @@ An even more accurate solution could be to use a dedicated timer with an
 input capture unit, that can store the timestamp of a change on the DIO0
 pin (the only one that is timing-critical) entirely in hardware.
 Experience shows that this is not normally required, so we leave this as
-a customization to be performed on a platform-by-platfom basis. We provide
+a customization to be performed on a platform-by-platform basis. We provide
 a special API, `radio_irq_handler_v2(u1_t dio, ostime_t tEvent)`. This
 API allows you to supply a hardware-captured time for extra accuracy.
 
 The practical consequence of inaccurate timing is reduced battery life;
-the LMIC must turn on the reciever earlier in order to be sure to capture downlink packets.
+the LMIC must turn on the receiver earlier in order to be sure to capture downlink packets.
 
 ### `LMIC_setClockError()`
 
-You may call this routine during intialization to infom the LMIC code about the timing accuracy of your system.
+You may call this routine during initialization to inform the LMIC code about the timing accuracy of your system.
 
 ```c++
 enum { MAX_CLOCK_ERROR = 65535 };
@@ -781,9 +783,9 @@ Setting a high clock error causes the RX windows to be opened earlier than it ot
 
 This clock error is not reset by `LMIC_reset()`.
 
-## Downlink datarate
+## Downlink data rate
 
-Note that the datarate used for downlink packets in the RX2 window varies by region. Consult your network's manual for any divergences from the LoRaWAN Regional Parameters. This library assumes that the network follows the regional default.
+Note that the data rate used for downlink packets in the RX2 window varies by region. Consult your network's manual for any divergences from the LoRaWAN Regional Parameters. This library assumes that the network follows the regional default.
 
 Some networks use different values than the specification. For example, in Europe, the specification default is DR0 (SF12, 125 kHz bandwidth). However, iot.semtech.com and The Things Network both used SF9 / 125 kHz or DR3). If using over-the-air activation (OTAA), the network will download RX2 parameters as part of the JoinAccept message; the LMIC will honor the downloaded parameters.
 
@@ -1088,30 +1090,34 @@ function uflt12f(rawUflt12)
 
 ## Release History
 
+- HEAD adds the following changes.
+
+  - [#360](https://github.com/mcci-catena/arduino-lmic/pull/360) adds support for the KR-920 regional plan.
+
 - v2.3.2 is a patch release. It incorporates two pull requests.
 
-  - [#204](https://github.com/mcci-catena/arduino-lmic/pull/204) eliminates a warning if using a custom pinmap.
+  - [#204](https://github.com/mcci-catena/arduino-lmic/pull/204) eliminates a warning if using a custom pin-map.
   - [#206](https://github.com/mcci-catena/arduino-lmic/pull/206) updates CI testing to Arduino IDE v1.8.8.
 
-- v2.3.1 is a patch release. It adds `<arduino_lmic_user_configuration.h>`, which loads the pre-proceesor LMIC configuration variables into scope (issue [#199](https://github.com/mcci-catena/arduino-lmic/issues/199)).
+- v2.3.1 is a patch release. It adds `<arduino_lmic_user_configuration.h>`, which loads the pre-processor LMIC configuration variables into scope (issue [#199](https://github.com/mcci-catena/arduino-lmic/issues/199)).
 
 - v2.3.0 introduces two important changes.
 
-    1. The pinmap is extended with an additional field `pConfig`, pointing to a C++ class instance. This instance, if provided, has extra methods for dealing with TCXO control and other fine details of operating the radio. It also gives a natural way for us to extend the behavior of the HAL.
+    1. The pin-map is extended with an additional field `pConfig`, pointing to a C++ class instance. This instance, if provided, has extra methods for dealing with TCXO control and other fine details of operating the radio. It also gives a natural way for us to extend the behavior of the HAL.
 
     2. Pinmaps can be pre-configured into the library, so that users don't have to do this in every sketch.
 
-  Accompanying this was a fairly large refactoring of inner header files. We now have top-level header file `<arduino_lmic_hal_configuration.h>`, which provides much the same info as the original `<hal/hal.h>`, without bringing most of the LMIC internal definitions into scope. We also changed the SPI API based on a suggestion from @manuelbl, making the HAL more friendly to structured BSPs (and also making the SPI API potentially faster).
+  Accompanying this was a fairly large refactoring of inner header files. We now have top-level header file `<arduino_lmic_hal_configuration.h>`, which provides much the same info as the original `<hal/hal.h>`, without bringing most of the LMIC internal definitions into scope. We also changed the SPI API based on a suggestion from `@manuelbl`, making the HAL more friendly to structured BSPs (and also making the SPI API potentially faster).
 
 - Interim bug fixes: added a new API (`radio_irq_handler_v2()`), which allows the caller to provide the timestamp of the interrupt. This allows for more accurate timing, because the knowledge of interrupt overhead can be moved to a platform-specific layer ([#148](https://github.com/mcci-catena/arduino-lmic/issues/148)). Fixed compile issues on ESP32 ([#140](https://github.com/mcci-catena/arduino-lmic/issues/140) and [#153](https://github.com/mcci-catena/arduino-lmic/issues/150)). We added ESP32 and 32u4 as targets in CI testing. We switched CI testing to Arduino IDE 1.8.7.
    Fixed issue [#161](https://github.com/mcci-catena/arduino-lmic/issues/161) selecting the Japan version of as923 using `CFG_as923jp` (selecting via `CFG_as923` and `LMIC_COUNTRY_CODE=LMIC_COUNTRY_CODE_JP` worked).
    Fixed [#38](https://github.com/mcci-catena/arduino-lmic/issues/38) -- now any call to hal_init() will put the NSS line in the idle (high/inactive) state. As a side effect, RXTX is initialized, and RESET code changed to set value before transitioning state. Likely no net effect, but certainly more correct.
 
-- V2.2.2 adds `ttn-abp-feather-us915-dht22.ino` example, and fixes some documentation typos. It also fixes encoding of the `Margin` field of the `DevStatusAns` MAC message ([#130](https://github.com/mcci-catena/arduino-lmic/issues/130)).  This makes Arduino LMIC work with newtorks implemented with [LoraServer](https://www.loraserver.io/).
+- V2.2.2 adds `ttn-abp-feather-us915-dht22.ino` example, and fixes some documentation typos. It also fixes encoding of the `Margin` field of the `DevStatusAns` MAC message ([#130](https://github.com/mcci-catena/arduino-lmic/issues/130)).  This makes Arduino LMIC work with networks implemented with [LoraServer](https://www.loraserver.io/).
 
 - V2.2.1 corrects the value of `ARDUINO_LMIC_VERSION` ([#123](https://github.com/mcci-catena/arduino-lmic/issues/123)), allows ttn-otaa-feather-us915 example to compile for the Feather 32u4 LoRa ([#116](https://github.com/mcci-catena/arduino-lmic/issues/116)), and addresses documentation issues ([#122](https://github.com/mcci-catena/arduino-lmic/issues/122), [#120](https://github.com/mcci-catena/arduino-lmic/issues/120)).
 
-- V2.2.0 adds encoding functions and `tn-otaa-feather-us915-dht22.ino` example. Plus a large number of issues: [#59](https://github.com/mcci-catena/arduino-lmic/issues/59), [#60](https://github.com/mcci-catena/arduino-lmic/issues/60), [#63](https://github.com/mcci-catena/arduino-lmic/issues/63), [#64](https://github.com/mcci-catena/arduino-lmic/issues/47) (listen-before-talk for Japan), [#65](https://github.com/mcci-catena/arduino-lmic/issues/65), [#68](https://github.com/mcci-catena/arduino-lmic/issues/68), [#75](https://github.com/mcci-catena/arduino-lmic/issues/75), [#78](https://github.com/mcci-catena/arduino-lmic/issues/78), [#80](https://github.com/mcci-catena/arduino-lmic/issues/80), [#91](https://github.com/mcci-catena/arduino-lmic/issues/91), [#98](https://github.com/mcci-catena/arduino-lmic/issues/98), [#101](https://github.com/mcci-catena/arduino-lmic/issues/101). Added full Travis CI testing, switched to travis-ci.com as the CI service. Prepared to publish library in the offical Arduino library list.
+- V2.2.0 adds encoding functions and `tn-otaa-feather-us915-dht22.ino` example. Plus a large number of issues: [#59](https://github.com/mcci-catena/arduino-lmic/issues/59), [#60](https://github.com/mcci-catena/arduino-lmic/issues/60), [#63](https://github.com/mcci-catena/arduino-lmic/issues/63), [#64](https://github.com/mcci-catena/arduino-lmic/issues/47) (listen-before-talk for Japan), [#65](https://github.com/mcci-catena/arduino-lmic/issues/65), [#68](https://github.com/mcci-catena/arduino-lmic/issues/68), [#75](https://github.com/mcci-catena/arduino-lmic/issues/75), [#78](https://github.com/mcci-catena/arduino-lmic/issues/78), [#80](https://github.com/mcci-catena/arduino-lmic/issues/80), [#91](https://github.com/mcci-catena/arduino-lmic/issues/91), [#98](https://github.com/mcci-catena/arduino-lmic/issues/98), [#101](https://github.com/mcci-catena/arduino-lmic/issues/101). Added full Travis CI testing, switched to travis-ci.com as the CI service. Prepared to publish library in the official Arduino library list.
 
 - V2.1.5 fixes issue [#56](https://github.com/mcci-catena/arduino-lmic/issues/56) (a documentation bug). Documentation was quickly reviewed and other issues were corrected. The OTAA examples were also updated slightly.
 
@@ -1125,7 +1131,7 @@ function uflt12f(rawUflt12)
 
 - V2.1.0 adds support for the Murata LoRaWAN module.
 
-- V2.0.2 adds support for the extended bandplans.
+- V2.0.2 adds support for the extended band plans.
 
 ## Contributions
 
@@ -1135,9 +1141,9 @@ This library started from the IBM V1.5 open-source code.
 
 - Terry Moore, LeRoy Leslie, Frank Rose, and ChaeHee Won did a lot of work on US support.
 
-- Terry Moore added the AU921, AS923 and IN866 bandplans, and created the regionalization framework.
+- Terry Moore added the AU921, AS923 and IN866 band plans, and created the regionalization framework.
 
-- [@tanupoo](https://github.com/tanupoo) of the WIDE Project debugged AS923JP and LBT support.
+- [`@tanupoo`](https://github.com/tanupoo) of the WIDE Project debugged AS923JP and LBT support.
 
 ## Trademark Acknowledgements
 

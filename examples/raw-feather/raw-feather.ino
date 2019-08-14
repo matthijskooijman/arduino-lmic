@@ -397,6 +397,30 @@ void setup() {
                 LMIC.lbt_ticks = us2osticks(AS923JP_LBT_US);
                 LMIC.lbt_dbmax = AS923JP_LBT_DB_MAX;
                 }
+#elif defined(CFG_kr920)
+// make it easier for test, by pull the parameters up to the top of the
+// block. Ideally, we'd use the serial port to drive this; or have
+// a voting protocol where one side is elected the controller and
+// guides the responder through all the channels, powers, ramps
+// the transmit power from min to max, and measures the RSSI and SNR.
+// Even more amazing would be a scheme where the controller could
+// handle multiple nodes; in that case we'd have a way to do
+// production test and qualification. However, using an RWC5020A
+// is a much better use of development time.
+        const static uint8_t kChannel = 0;
+        uint32_t uBandwidth;
+
+        LMIC.freq = KR920_F1 + kChannel * 200000;
+        uBandwidth = 125;
+
+        LMIC.datarate = KR920_DR_SF7;         // DR7
+        // default tx power for KR: 14 dBm
+        LMIC.txpow = KR920_TX_EIRP_MAX_DBM;
+        if (LMIC.freq < KR920_F14DBM)
+          LMIC.txpow = KR920_TX_EIRP_MAX_DBM_LOW;
+
+        LMIC.lbt_ticks = us2osticks(KR920_LBT_US);
+        LMIC.lbt_dbmax = KR920_LBT_DB_MAX;
 #elif defined(CFG_in866)
 // make it easier for test, by pull the parameters up to the top of the
 // block. Ideally, we'd use the serial port to drive this; or have
