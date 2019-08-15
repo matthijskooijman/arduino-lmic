@@ -596,9 +596,6 @@ static void stateJustJoined (void) {
     LMIC.dn2Ans      = 0;
 #endif
     LMIC.moreData    = 0;
-#if !defined(DISABLE_MCMD_DutyCycleReq)
-    LMIC.dutyCapAns  = 0;
-#endif
     LMIC.upRepeat    = 0;
     resetJoinParams();
 #if !defined(DISABLE_BEACONS)

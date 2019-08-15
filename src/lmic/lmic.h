@@ -469,9 +469,6 @@ struct lmic_t {
     s1_t        devAnsMargin; // SNR value between -32 and 31 (inclusive) for the last successfully received DevStatusReq command
     u1_t        adrEnabled;
     u1_t        moreData;     // NWK has more data pending
-#if !defined(DISABLE_MCMD_DutyCycleReq)
-    bit_t       dutyCapAns;   // have to ACK duty cycle settings
-#endif
 #if LMIC_ENABLE_TxParamSetupReq
     u1_t        txParam;        // the saved TX param byte.
 #endif
