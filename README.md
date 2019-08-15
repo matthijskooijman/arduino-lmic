@@ -314,14 +314,14 @@ If defined, removes code needed for OTAA activation. Removes the APIs `LMIC_star
 
 #### Disabling Class A MAC commands
 
-`DISABLE_MCMD_DCAP_REQ`, `DISABLE_MCMD_DN2P_SET`, and `DISABLE_MCMD_SNCH_REQ` respectively disable code for various Class A MAC
+`DISABLE_MCMD_DutyCycleReq`, `DISABLE_MCMD_RXParamSetupReq`, and `DISABLE_MCMD_NewChannelReq` respectively disable code for various Class A MAC
 commands.
 
 #### Disabling Class B MAC commands
 
-`DISABLE_MCMD_PING_SET` disables the PING_SET MAC commands. It's implied by `DISABLE_PING`.
+`DISABLE_MCMD_PingSlotChannelReq` disables the PING_SET MAC commands. It's implied by `DISABLE_PING`.
 
-`DISABLE_MCMD_BCNI_ANS` disables the next-beacon start command. It's implied by `DISABLE_BEACON`
+`ENABLE_MCMD_BeaconTimingAns` enables the next-beacon start command. It's disabled by default, and overridden (if enabled) by `DISABLE_BEACON`. (This command is deprecated.)
 
 #### Disabling user events
 

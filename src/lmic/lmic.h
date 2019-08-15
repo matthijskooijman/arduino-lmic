@@ -399,6 +399,7 @@ struct lmic_t {
 #if CFG_LMIC_EU_like
     band_t      bands[MAX_BANDS];
     u4_t        channelFreq[MAX_CHANNELS];
+    // bit map of enabled datarates for each channel
     u2_t        channelDrMap[MAX_CHANNELS];
     u2_t        channelMap;
 #elif CFG_LMIC_US_like
@@ -449,8 +450,12 @@ struct lmic_t {
 
     u1_t        pendTxPort;
     u1_t        pendTxConf;   // confirmed data
-    u1_t        pendTxLen;    // +0x80 = confirmed
+    u1_t        pendTxLen;    // count of bytes in pendTxData.
     u1_t        pendTxData[MAX_LEN_PAYLOAD];
+
+    s1_t        pendMacLen;   // number of bytes of pending Mac response data; -1
+                              // implies port 0.
+    u1_t        pendMacData[LWAN_FCtrl_FOptsLen_MAX];
 
     u1_t        nwkKey[16];   // network session key
     u1_t        artKey[16];   // application router session key
@@ -461,19 +466,13 @@ struct lmic_t {
     u1_t        rxDelay;      // Rx delay after TX
 
     u1_t        margin;
-    bit_t       ladrAns;      // link adr adapt answer pending
-    bit_t       devsAns;      // device status answer pending
     s1_t        devAnsMargin; // SNR value between -32 and 31 (inclusive) for the last successfully received DevStatusReq command
     u1_t        adrEnabled;
     u1_t        moreData;     // NWK has more data pending
-#if !defined(DISABLE_MCMD_DCAP_REQ)
+#if !defined(DISABLE_MCMD_DutyCycleReq)
     bit_t       dutyCapAns;   // have to ACK duty cycle settings
 #endif
-#if !defined(DISABLE_MCMD_SNCH_REQ)
-    u1_t        snchAns;      // answer set new channel
-#endif
 #if LMIC_ENABLE_TxParamSetupReq
-    bit_t       txParamSetupAns; // transmit setup answer pending.
     u1_t        txParam;        // the saved TX param byte.
 #endif
 #if LMIC_ENABLE_DeviceTimeReq
@@ -486,7 +485,7 @@ struct lmic_t {
 
     // 2nd RX window (after up stream)
     u1_t        dn2Dr;
-#if !defined(DISABLE_MCMD_DN2P_SET)
+#if !defined(DISABLE_MCMD_RXParamSetupReq)
     u1_t        dn2Ans;       // 0=no answer pend, 0x80+ACKs
 #endif
 
@@ -494,9 +493,6 @@ struct lmic_t {
 #if !defined(DISABLE_BEACONS)
     u1_t        missedBcns;   // unable to track last N beacons
     u1_t        bcninfoTries; // how often to try (scan mode only)
-#endif
-#if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
-    u1_t        pingSetAns;   // answer set cmd and ACK bits
 #endif
     // Public part of MAC state
     u1_t        txCnt;

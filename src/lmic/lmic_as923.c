@@ -110,7 +110,6 @@ static CONST_TABLE(s1_t, TXPOWLEVELS)[] = {
 	-10,	// [5]: MaxEIRP - 10dB
 	-12,	// [6]: MaxEIRP - 12dB
 	-14,	// [7]: MaxEIRP - 14dB
-	0, 0, 0, 0, 0, 0, 0, 0
 };
 
 // from LoRaWAN 5.8: mapping from txParam to MaxEIRP
@@ -130,15 +129,20 @@ static int8_t LMICas923_getMaxEIRP(uint8_t mcmd_txparam) {
 }	
 
 // translate from an encoded power to an actual power using 
-// the maxeirp setting.
+// the maxeirp setting; return -128 if not legal.
 int8_t LMICas923_pow2dBm(uint8_t mcmd_ladr_p1) {
-        s1_t const adj = 
-		TABLE_GET_S1(
-			TXPOWLEVELS, 
-			(mcmd_ladr_p1&MCMD_LADR_POW_MASK)>>MCMD_LADR_POW_SHIFT
-			);
-			
-	return LMICas923_getMaxEIRP(LMIC.txParam) + adj;
+        uint8_t const pindex = (mcmd_ladr_p1&MCMD_LADR_POW_MASK)>>MCMD_LADR_POW_SHIFT;
+        if (pindex < sizeof(TXPOWLEVELS)) {
+                s1_t const adj = 
+                        TABLE_GET_S1(
+                                TXPOWLEVELS, 
+                                pindex
+                                );
+                                
+                return LMICas923_getMaxEIRP(LMIC.txParam) + adj;
+        } else {
+                return -128;
+        }
 }
 
 // only used in this module, but used by variant macro dr2hsym().
@@ -217,6 +221,15 @@ bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
 }
 
 bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
+        if (chidx < NUM_DEFAULT_CHANNELS) {
+                // can't disable a default channel.
+                if (freq == 0)
+                        return 0;
+                // can't change a default channel.
+                else if (freq != (LMIC.channelFreq[chidx] & ~3))
+                        return 0;
+        }
+        bit_t fEnable = (freq != 0);
         if (chidx >= MAX_CHANNELS)
                 return 0;
         if (band == -1) {
@@ -229,7 +242,10 @@ bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
         LMIC.channelDrMap[chidx] = 
 		drmap == 0 ? DR_RANGE_MAP(AS923_DR_SF12, AS923_DR_SF7B) 
 		           : drmap;
-        LMIC.channelMap |= 1 << chidx;  // enabled right away
+        if (fEnable)
+                LMIC.channelMap |= 1 << chidx;  // enabled right away
+        else
+                LMIC.channelMap &= ~(1 << chidx);
         return 1;
 }
 

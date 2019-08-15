@@ -64,6 +64,13 @@ uint8_t LMICus915_maxFrameLen(uint8_t dr) {
                 return 0xFF;
 }
 
+int8_t LMICus915_pow2dbm(uint8_t mcmd_ladr_p1) {
+        if ((mcmd_ladr_p1 & MCMD_LADR_POW_MASK) == MCMD_LADR_POW_MASK)
+                return -128;
+        else
+                return ((s1_t)(US915_TX_MAX_DBM - (((mcmd_ladr_p1)&MCMD_LADR_POW_MASK)<<1)));
+}
+
 static CONST_TABLE(ostime_t, DR2HSYM_osticks)[] = {
         us2osticksRound(128 << 5),  // DR_SF10   DR_SF12CR
         us2osticksRound(128 << 4),  // DR_SF9    DR_SF11CR
