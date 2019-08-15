@@ -1633,8 +1633,8 @@ static void buildDataFrame (void) {
     if (LMIC.pendMacLen > 0) {
         os_copyMem(LMIC.frame + end, LMIC.pendMacData, LMIC.pendMacLen);
         end += LMIC.pendMacLen;
-        LMIC.pendMacLen = 0;
     }
+    LMIC.pendMacLen = 0;
 #if !defined(DISABLE_MCMD_RXParamSetupReq)
     if (LMIC.dn2Ans) {
         if (LMIC.dn2Ans & 0x40) {
