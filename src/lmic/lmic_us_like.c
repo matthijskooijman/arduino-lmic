@@ -130,6 +130,7 @@ bit_t LMICuslike_canMapChannels(u1_t chpage, u2_t chmap) {
 	return 1;
 }
 
+// map channels. return true if configuration looks valid.
 bit_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap) {
 	/*
 	|| MCMD_LinkADRReq_ChMaskCntl_USLIKE_125ON and MCMD_LinkADRReq_ChMaskCntl_USLIKE_125OFF are special. The
@@ -138,19 +139,18 @@ bit_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap) {
 	|| is also special, in that it enables subbands.
 	*/
 	u1_t base, top;
-	bit_t result = 0;
 
 	if (chpage == MCMD_LinkADRReq_ChMaskCntl_USLIKE_BANK) {
 		// each bit enables a bank of channels
 		for (u1_t subband = 0; subband < 8; ++subband, chmap >>= 1) {
 			if (chmap & 1) {
-				result |= LMIC_enableSubBand(subband);
+				LMIC_enableSubBand(subband);
 			} else {
-				result |= LMIC_disableSubBand(subband);
+				LMIC_disableSubBand(subband);
 			}
 		}
 
-		return result;
+		return LMIC.activeChannels125khz || LMIC.activeChannels500khz;
 	}
 
 	if (chpage < MCMD_LinkADRReq_ChMaskCntl_USLIKE_SPECIAL) {
@@ -167,9 +167,9 @@ bit_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap) {
 		// enable or disable all 125kHz channels
 		for (u1_t chnl = 0; chnl < 64; ++chnl) {
 			if (en125)
-				result |= LMIC_enableChannel(chnl);
+				LMIC_enableChannel(chnl);
 			else
-				result |= LMIC_disableChannel(chnl);
+				LMIC_disableChannel(chnl);
 		}
 
 		// then apply mask to top 8 channels.
@@ -181,11 +181,11 @@ bit_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap) {
 	// Use enable/disable channel to keep activeChannel counts in sync.
 	for (u1_t chnl = base; chnl < top; ++chnl, chmap >>= 1) {
 		if (chmap & 0x0001)
-			result |= LMIC_enableChannel(chnl);
+			LMIC_enableChannel(chnl);
 		else
-			result |= LMIC_disableChannel(chnl);
+			LMIC_disableChannel(chnl);
         }
-        return result;
+	return LMIC.activeChannels125khz || LMIC.activeChannels500khz;
 }
 
 // US does not have duty cycling - return now as earliest TX time
@@ -288,12 +288,25 @@ ostime_t LMICuslike_nextJoinState(void) {
 #endif
 
 void LMICuslike_saveAdrState(lmic_saved_adr_state_t *pStateBuffer) {
-        memcpy(
+        os_copyMem(
                 pStateBuffer->channelMap,
                 LMIC.channelMap,
                 sizeof(LMIC.channelMap)
         );
+        pStateBuffer->activeChannels125khz = LMIC.activeChannels125khz;
+        pStateBuffer->activeChannels500khz = LMIC.activeChannels500khz;
 }
+
+void LMICuslike_restoreAdrState(const lmic_saved_adr_state_t *pStateBuffer) {
+        os_copyMem(
+                LMIC.channelMap,
+                pStateBuffer->channelMap,
+                sizeof(LMIC.channelMap)
+        );
+        LMIC.activeChannels125khz = pStateBuffer->activeChannels125khz;
+        LMIC.activeChannels500khz = pStateBuffer->activeChannels500khz;
+}
+
 
 bit_t LMICuslike_compareAdrState(const lmic_saved_adr_state_t *pStateBuffer) {
         return memcmp(pStateBuffer->channelMap, LMIC.channelMap, sizeof(LMIC.channelMap)) != 0;

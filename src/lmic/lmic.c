@@ -38,7 +38,7 @@
 
 DEFINE_LMIC;
 
-#define LMIC_ENABLE_TRACE   1
+//#define LMIC_ENABLE_TRACE   1
 
 #ifndef LMIC_ENABLE_TRACE
 # define LMIC_ENABLE_TRACE 0
@@ -750,36 +750,59 @@ applyAdrRequests(
     u1_t p1 = 0;
     u1_t p4 = 0;
     bit_t response_fit = 1;
+    bit_t map_ok = 1;
 
     LMICbandplan_saveAdrState(&initialState);
 
-    for (oidx = 0; oidx < olen && response_fit; ) {
-        if (adrAns == MCMD_LinkADRAns_PowerACK | MCMD_LinkADRAns_DataRateACK | MCMD_LinkADRAns_ChannelACK) {
+    // compute the changes
+    if (adrAns == MCMD_LinkADRAns_PowerACK | MCMD_LinkADRAns_DataRateACK | MCMD_LinkADRAns_ChannelACK) {
+        for (oidx = 0; oidx < olen; oidx += kAdrReqSize) {
+            // can we advance?
+            if (olen - oidx < kAdrReqSize) {
+                // ignore the malformed one at the end
+                break;
+            }
             u2_t chmap  = os_rlsbf2(&opts[oidx+2]);// list of enabled channels
 
             p1     = opts[oidx+1];                  // txpow + DR, in case last
             p4     = opts[oidx+4];                  // ChMaskCtl, NbTrans
             u1_t chpage = p4 & MCMD_LinkADRReq_Redundancy_ChMaskCntl_MASK;     // channel page
 
-            LMICbandplan_mapChannels(chpage, chmap);
+            map_ok = LMICbandplan_mapChannels(chpage, chmap);
+            ArduinoLMIC_putEventDatum("applyAdrRequests: mapChannels", (chpage << 16)|(chmap << 0));
         }
+    }
 
-        oidx += kAdrReqSize;
+    if (! map_ok) {
+        adrAns &= ~MCMD_LinkADRAns_ChannelACK;
+        LMICbandplan_restoreAdrState(&initialState);
+    }
+
+    // now put all the options
+    for (oidx = 0; oidx < olen && response_fit; oidx += kAdrReqSize) {
+        // can we advance?
+        if (olen - oidx < kAdrReqSize) {
+            // ignore the malformed one at the end
+            break;
+        }
         response_fit = put_mac_uplink_byte2(MCMD_LinkADRAns, adrAns);
     }
 
     // all done scanning options
     bit_t changes = LMICbandplan_compareAdrState(&initialState);
 
-    // handle uplink repeat count
-    u1_t uprpt  = p4 & MCMD_LinkADRReq_Redundancy_NbTrans_MASK;     // up repeat count
-    if (LMIC.upRepeat != uprpt) {
-        LMIC.upRepeat = uprpt;
-        changes = 1;
-    }
+    // handle the final options
+    if (adrAns == (MCMD_LinkADRAns_PowerACK | MCMD_LinkADRAns_DataRateACK | MCMD_LinkADRAns_ChannelACK)) {
+        // handle uplink repeat count
+        u1_t uprpt  = p4 & MCMD_LinkADRReq_Redundancy_NbTrans_MASK;     // up repeat count
+        if (LMIC.upRepeat != uprpt) {
+            LMIC.upRepeat = uprpt;
+            changes = 1;
+        }
 
-    if (adrAns & MCMD_LinkADRAns_DataRateACK) {
         dr_t dr = (dr_t)(p1>>MCMD_LinkADRReq_DR_SHIFT);
+
+        ArduinoLMIC_putEventDatum("applyAdrRequests: setDrTxPow", (adrAns << 16)|(dr << 8)|(p1 << 0));
 
         // handle power changes here, too.
         changes |= setDrTxpow(DRCHG_NWKCMD, dr, pow2dBm(p1));
@@ -798,6 +821,8 @@ scan_mac_cmds_link_adr(
     bit_t *presponse_fit
     )
     {
+    ArduinoLMIC_putEventDatum("scan_mac_cmds_link_adr", olen);
+
     if (olen == 0)
         return 0;
 
@@ -867,6 +892,15 @@ scan_mac_cmds(
 
         response_fit = 1;
         cmd = opts[oidx];
+
+        /* compute length, and exit for illegal commands */
+        int const cmdlen = getMacCmdSize(cmd);
+        if (cmdlen > olen - oidx) {
+            // "the first unknown command terminates processing"
+            olen = oidx;
+            break;
+        }
+
         switch( cmd ) {
         case MCMD_LinkCheckAns: {
             // TODO(tmm@mcci.com) capture these, reliably..
@@ -1119,17 +1153,12 @@ scan_mac_cmds(
         } /* end case */
         } /* end switch */
 
-    /* compute length, and exit for illegal commands */
-    int const cmdlen = getMacCmdSize(cmd);
-    if (cmdlen == 0) {
-        // "the first unknown command terminates processing"
-        // force olen to current oidx so we'll exit the while().
-        olen = oidx;
-    } else if (! response_fit) {
-        olen = oidx;
-    }
-
-    oidx += cmdlen;
+        /* if we're out of spce for responses, skip to end. */
+        if (! response_fit) {
+            olen = oidx;
+        } else {
+            oidx += cmdlen;
+        }
     } /* end while */
 
     return oidx;

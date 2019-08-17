@@ -158,6 +158,10 @@
 # error "LMICbandplan_compareAdrState() not defined by bandplan"
 #endif
 
+#if !defined(LMICbandplan_restoreAdrState)
+# error "LMICbandplan_restoreAdrState() not defined by bandplan"
+#endif
+
 //
 // Things common to lmic.c code
 //

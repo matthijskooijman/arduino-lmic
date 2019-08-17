@@ -80,12 +80,11 @@ bit_t LMICeulike_canMapChannels(u1_t chpage, u2_t chmap) {
     }
 }
 
-// assumes that LMICeulike_canMapChannels passed. Return true if something changed.
-// chpage is 0 or 6; 6 turns all on; 0 selects channels 0..15 via mask.
+// assumes that LMICeulike_canMapChannels passed. Return true if this would
+// be a valid final configuration.
+// chpage is 0 or 0x60; 0x60 turns all on; 0 selects channels 0..15 via mask.
 // Assumes canMapChannels has already approved this change.
 bit_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap) {
-    u2_t const old_chmap = LMIC.channelMap;
-
     switch (chpage) {
         case MCMD_LinkADRReq_ChMaskCntl_EULIKE_DIRECT:
             LMIC.channelMap = chmap;
@@ -106,7 +105,7 @@ bit_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap) {
             // do nothing.
             break;
     }
-    return old_chmap != chmap;
+    return LMIC.channelMap != 0;
 }
 
 #if !defined(DISABLE_JOIN)
@@ -159,12 +158,12 @@ ostime_t LMICeulike_nextJoinState(uint8_t nDefaultChannels) {
                 LMIC.txChnl = 0;
         if ((++LMIC.txCnt % nDefaultChannels) == 0) {
                 // Lower DR every nth try (having all default channels with same DR)
-		//
-		// TODO(tmm@mcci.com) add new DR_REGIN_JOIN_MIN instead of LORAWAN_DR0;
-		// then we can eliminate the LMIC_REGION_as923 below because we'll set
-		// the failed flag here. This will cause the outer caller to take the
-		// appropriate join path. Or add new LMICeulike_GetLowestJoinDR()
-		//
+                //
+                // TODO(tmm@mcci.com) add new DR_REGIN_JOIN_MIN instead of LORAWAN_DR0;
+                // then we can eliminate the LMIC_REGION_as923 below because we'll set
+                // the failed flag here. This will cause the outer caller to take the
+                // appropriate join path. Or add new LMICeulike_GetLowestJoinDR()
+                //
                 if (LMIC.datarate == LORAWAN_DR0)
                         failed = 1; // we have tried all DR - signal EV_JOIN_FAILED
                 else
@@ -185,12 +184,12 @@ ostime_t LMICeulike_nextJoinState(uint8_t nDefaultChannels) {
         // Duty cycle is based on txend.
         ostime_t const time = LMICbandplan_nextJoinTime(os_getTime());
 
-	// TODO(tmm@mcci.com): change delay to (0:1) secs + a known t0, but randomized;
+        // TODO(tmm@mcci.com): change delay to (0:1) secs + a known t0, but randomized;
         // starting adding a bias after 1 hour, 25 hours, etc.; and limit the duty
         // cycle on power up. For testability, add a way to set the join start time
         // externally (a test API) so we can check this feature.
         // See https://github.com/mcci-catena/arduino-lmic/issues/2
-	// Current code doesn't match LoRaWAN 1.0.2 requirements.
+        // Current code doesn't match LoRaWAN 1.0.2 requirements.
 
         LMIC.txend = time +
                 (isTESTMODE()
@@ -206,18 +205,27 @@ ostime_t LMICeulike_nextJoinState(uint8_t nDefaultChannels) {
 #endif // !DISABLE_JOIN
 
 void LMICeulike_saveAdrState(lmic_saved_adr_state_t *pStateBuffer) {
-        memcpy(
-                pStateBuffer->channelFreq,
-                LMIC.channelFreq,
-                sizeof(LMIC.channelFreq)
-        );
-        pStateBuffer->channelMap = LMIC.channelMap;
+    os_copyMem(
+            pStateBuffer->channelFreq,
+            LMIC.channelFreq,
+            sizeof(LMIC.channelFreq)
+            );
+    pStateBuffer->channelMap = LMIC.channelMap;
 }
 
 bit_t LMICeulike_compareAdrState(const lmic_saved_adr_state_t *pStateBuffer) {
         if (memcmp(pStateBuffer->channelFreq, LMIC.channelFreq, sizeof(LMIC.channelFreq)) != 0)
                 return 1;
         return pStateBuffer->channelMap != LMIC.channelMap;
+}
+
+void LMICeulike_restoreAdrState(const lmic_saved_adr_state_t *pStateBuffer) {
+    os_copyMem(
+            LMIC.channelFreq,
+            pStateBuffer->channelFreq,
+            sizeof(LMIC.channelFreq)
+            );
+    LMIC.channelMap = pStateBuffer->channelMap;
 }
 
 void LMICeulike_setRx1Freq(void) {

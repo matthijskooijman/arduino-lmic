@@ -168,6 +168,8 @@ enum { MAX_XCHANNELS = 2 };      // extra channels in RAM, channels 0-71 are imm
 
 struct lmic_saved_adr_state_s {
     u2_t        channelMap[(72+MAX_XCHANNELS+15)/16];  // enabled bits
+    u2_t        activeChannels125khz;
+    u2_t        activeChannels500khz;
 };
 
 #endif // ==========================================================================

@@ -106,4 +106,7 @@ void LMICuslike_saveAdrState(lmic_saved_adr_state_t *pStateBuffer);
 bit_t LMICuslike_compareAdrState(const lmic_saved_adr_state_t *pStateBuffer);
 #define LMICbandplan_compareAdrState(pState) LMICuslike_compareAdrState(pState)
 
+void LMICuslike_restoreAdrState(const lmic_saved_adr_state_t *pStateBuffer);
+#define LMICbandplan_restoreAdrState(pState) LMICuslike_restoreAdrState(pState)
+
 #endif // _lmic_us_like_h_
