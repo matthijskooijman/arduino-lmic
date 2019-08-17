@@ -475,11 +475,11 @@ enum {
 };
 enum {
     // Bitfields in frame control octet
-    FCT_ADREN  = 0x80,
-    FCT_ADRARQ = 0x40,
-    FCT_ACK    = 0x20,
-    FCT_MORE   = 0x10,   // also in DN direction: Class B indicator
-    FCT_OPTLEN = 0x0F,
+    FCT_ADREN       = 0x80,
+    FCT_ADRACKReq   = 0x40,
+    FCT_ACK         = 0x20,
+    FCT_MORE        = 0x10,   // also in DN direction: Class B indicator
+    FCT_OPTLEN      = 0x0F,
 };
 enum {
     // In UP direction: signals class B enabled

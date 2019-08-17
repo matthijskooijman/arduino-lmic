@@ -785,7 +785,9 @@ applyAdrRequests(
         changes |= setDrTxpow(DRCHG_NWKCMD, dr, pow2dBm(p1));
     }
 
-    LMIC.adrChanged = changes;  // move the ADR FSM up to "time to request"
+    // Certification doesn't like this, but it makes the device happier with TTN.
+    // LMIC.adrChanged = changes;  // move the ADR FSM up to "time to request"
+
     return response_fit;
 }
 
@@ -1823,7 +1825,7 @@ static void buildDataFrame (void) {
     }
     LMIC.frame[OFF_DAT_HDR] = HDR_FTYPE_DAUP | HDR_MAJOR_V1;
     LMIC.frame[OFF_DAT_FCT] = (LMIC.dnConf | LMIC.adrEnabled
-                              | (LMIC.adrAckReq >= LINK_CHECK_CONT ? FCT_ADRARQ : 0)
+                              | (LMIC.adrAckReq >= LINK_CHECK_CONT ? FCT_ADRACKReq : 0)
                               | (end-OFF_DAT_OPTS));
     os_wlsbf4(LMIC.frame+OFF_DAT_ADDR,  LMIC.devaddr);
 
