@@ -581,63 +581,28 @@ enum {
 
 // Bit fields byte#3 of MCMD_LinkADRReq payload
 enum {
-    MCMD_LADR_CHP_USLIKE_SPECIAL = 0x50,  // first special for us-like
-    MCMD_LADR_CHP_BANK    = 0x50,  // special: bits are banks.
-    MCMD_LADR_CHP_125ON   = 0x60,  // special channel page enable, bits applied to 64..71
-    MCMD_LADR_CHP_125OFF  = 0x70,  // special channel page: disble 125K, bits apply to 64..71
-    MCMD_LADR_N3RFU_MASK  = 0x80,
-    MCMD_LADR_CHPAGE_MASK = 0xF0,
-    MCMD_LADR_REPEAT_MASK = 0x0F,
-    MCMD_LADR_REPEAT_1    = 0x01,
-    MCMD_LADR_CHPAGE_1    = 0x10
+    MCMD_LinkADRReq_Redundancy_RFU            = 0x80,
+    MCMD_LinkADRReq_Redundancy_ChMaskCntl_MASK= 0x70,
+    MCMD_LinkADRReq_Redundancy_NbTrans_MASK   = 0x0F,
+
+    MCMD_LinkADRReq_ChMaskCntl_EULIKE_DIRECT  = 0x00,    // direct masking for EU
+    MCMD_LinkADRReq_ChMaskCntl_EULIKE_ALL_ON  = 0x60,    // EU: enable everything.
+
+    MCMD_LinkADRReq_ChMaskCntl_USLIKE_500K    = 0x40,    // mask is for the 8 us-like 500 kHz channels
+    MCMD_LinkADRReq_ChMaskCntl_USLIKE_SPECIAL = 0x50,    // first special for us-like
+    MCMD_LinkADRReq_ChMaskCntl_USLIKE_BANK    = 0x50,    // special: bits are banks.
+    MCMD_LinkADRReq_ChMaskCntl_USLIKE_125ON   = 0x60,    // special channel page enable, bits applied to 64..71
+    MCMD_LinkADRReq_ChMaskCntl_USLIKE_125OFF  = 0x70,    // special channel page: disble 125K, bits apply to 64..71
+
+    MCMD_LinkADRReq_ChMaskCntl_CN470_ALL_ON   = 0x60,    // turn all on for China.
 };
+
 // Bit fields byte#0 of MCMD_LinkADRReq payload
 enum {
-    MCMD_LADR_DR_MASK    = 0xF0,
-    MCMD_LADR_POW_MASK   = 0x0F,
-    MCMD_LADR_DR_SHIFT   = 4,
-    MCMD_LADR_POW_SHIFT  = 0,
-#if defined(CFG_eu868) // TODO(tmm@mcci.com): complete refactor.
-    EU868_MCMD_LADR_SF12      = EU868_DR_SF12<<4,
-    EU868_MCMD_LADR_SF11      = EU868_DR_SF11<<4,
-    EU868_MCMD_LADR_SF10      = EU868_DR_SF10<<4,
-    EU868_MCMD_LADR_SF9       = EU868_DR_SF9 <<4,
-    EU868_MCMD_LADR_SF8       = EU868_DR_SF8 <<4,
-    EU868_MCMD_LADR_SF7       = EU868_DR_SF7 <<4,
-    EU868_MCMD_LADR_SF7B      = EU868_DR_SF7B<<4,
-    EU868_MCMD_LADR_FSK       = EU868_DR_FSK <<4,
-
-    EU868_MCMD_LADR_20dBm     = 0,
-    EU868_MCMD_LADR_14dBm     = 1,
-    EU868_MCMD_LADR_11dBm     = 2,
-    EU868_MCMD_LADR_8dBm      = 3,
-    EU868_MCMD_LADR_5dBm      = 4,
-    EU868_MCMD_LADR_2dBm      = 5,
-#elif defined(CFG_us915)
-    US915_MCMD_LADR_SF10      = US915_DR_SF10<<4,
-    US915_MCMD_LADR_SF9       = US915_DR_SF9 <<4,
-    US915_MCMD_LADR_SF8       = US915_DR_SF8 <<4,
-    US915_MCMD_LADR_SF7       = US915_DR_SF7 <<4,
-    US915_MCMD_LADR_SF8C      = US915_DR_SF8C<<4,
-    US915_MCMD_LADR_SF12CR    = US915_DR_SF12CR<<4,
-    US915_MCMD_LADR_SF11CR    = US915_DR_SF11CR<<4,
-    US915_MCMD_LADR_SF10CR    = US915_DR_SF10CR<<4,
-    US915_MCMD_LADR_SF9CR     = US915_DR_SF9CR<<4,
-    US915_MCMD_LADR_SF8CR     = US915_DR_SF8CR<<4,
-    US915_MCMD_LADR_SF7CR     = US915_DR_SF7CR<<4,
-
-    US915_MCMD_LADR_30dBm     = 0,
-    US915_MCMD_LADR_28dBm     = 1,
-    US915_MCMD_LADR_26dBm     = 2,
-    US915_MCMD_LADR_24dBm     = 3,
-    US915_MCMD_LADR_22dBm     = 4,
-    US915_MCMD_LADR_20dBm     = 5,
-    US915_MCMD_LADR_18dBm     = 6,
-    US915_MCMD_LADR_16dBm     = 7,
-    US915_MCMD_LADR_14dBm     = 8,
-    US915_MCMD_LADR_12dBm     = 9,
-    US915_MCMD_LADR_10dBm     = 10
-#endif
+    MCMD_LinkADRReq_DR_MASK    = 0xF0,
+    MCMD_LinkADRReq_POW_MASK   = 0x0F,
+    MCMD_LinkADRReq_DR_SHIFT   = 4,
+    MCMD_LinkADRReq_POW_SHIFT  = 0,
 };
 
 // bit fields of the TxParam request

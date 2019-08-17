@@ -38,8 +38,19 @@
 
 DEFINE_LMIC;
 
+#define LMIC_ENABLE_TRACE   1
+
+#ifndef LMIC_ENABLE_TRACE
+# define LMIC_ENABLE_TRACE 0
+#endif
+
+#if LMIC_ENABLE_TRACE
 extern void ArduinoLMIC_putEvent(const char *pMessage);
 extern void ArduinoLMIC_putEventDatum(const char *pMessage, uint32_t datum);
+#else
+# define ArduinoLMIC_putEvent(m)     do { ; } while (0)
+# define ArduinoLMIC_putEventDatum(m, d) do { ; } while (0)
+#endif
 
 // Fwd decls.
 static void reportEventNoUpdate(ev_t);
@@ -53,6 +64,7 @@ static bit_t processJoinAccept_nojoinframe(void);
 static void startScan (void);
 #endif
 
+// set the txrxFlags, with debugging
 static inline void initTxrxFlags(const char *func, u1_t mask) {
 	LMIC_DEBUG2_PARAMETER(func);
 
@@ -62,6 +74,7 @@ static inline void initTxrxFlags(const char *func, u1_t mask) {
 	LMIC.txrxFlags = mask;
 }
 
+// or the txrxFlags, with debugging
 static inline void orTxrxFlags(const char *func, u1_t mask) {
 	initTxrxFlags(func, LMIC.txrxFlags | mask);
 }
@@ -745,7 +758,7 @@ applyAdrRequests(
 
             p1     = opts[oidx+1];                  // txpow + DR, in case last
             p4     = opts[oidx+4];                  // ChMaskCtl, NbTrans
-            u1_t chpage = p4 & MCMD_LADR_CHPAGE_MASK;     // channel page
+            u1_t chpage = p4 & MCMD_LinkADRReq_Redundancy_ChMaskCntl_MASK;     // channel page
 
             LMICbandplan_mapChannels(chpage, chmap);
         }
@@ -758,14 +771,14 @@ applyAdrRequests(
     bit_t changes = LMICbandplan_compareAdrState(&initialState);
 
     // handle uplink repeat count
-    u1_t uprpt  = p4 & MCMD_LADR_REPEAT_MASK;     // up repeat count
+    u1_t uprpt  = p4 & MCMD_LinkADRReq_Redundancy_NbTrans_MASK;     // up repeat count
     if (LMIC.upRepeat != uprpt) {
         LMIC.upRepeat = uprpt;
         changes = 1;
     }
 
     if (adrAns & MCMD_LinkADRAns_DataRateACK) {
-        dr_t dr = (dr_t)(p1>>MCMD_LADR_DR_SHIFT);
+        dr_t dr = (dr_t)(p1>>MCMD_LinkADRReq_DR_SHIFT);
 
         // handle power changes here, too.
         changes |= setDrTxpow(DRCHG_NWKCMD, dr, pow2dBm(p1));
@@ -801,9 +814,9 @@ scan_mac_cmds_link_adr(
         }
         u1_t p1     = opts[oidx+1];            // txpow + DR
         u2_t chmap  = os_rlsbf2(&opts[oidx+2]);// list of enabled channels
-        u1_t chpage = opts[oidx+4] & MCMD_LADR_CHPAGE_MASK;     // channel page
-        // u1_t uprpt  = opts[oidx+4] & MCMD_LADR_REPEAT_MASK;     // up repeat count
-        dr_t dr = (dr_t)(p1>>MCMD_LADR_DR_SHIFT);
+        u1_t chpage = opts[oidx+4] & MCMD_LinkADRReq_Redundancy_ChMaskCntl_MASK;     // channel page
+        // u1_t uprpt  = opts[oidx+4] & MCMD_LinkADRReq_Redundancy_NbTrans_MASK;     // up repeat count
+        dr_t dr = (dr_t)(p1>>MCMD_LinkADRReq_DR_SHIFT);
 
         if( !LMICbandplan_canMapChannels(chpage, chmap) )
             adrAns &= ~MCMD_LinkADRAns_ChannelACK;
@@ -2126,11 +2139,12 @@ static bit_t processDnData (void) {
             }
         }
 
-        // half-duplex gateways can have appreciable turn-around times,
+        // Half-duplex gateways can have appreciable turn-around times,
         // so we force a wait. It might be nice to randomize this a little,
         // so that armies of identical devices will not try to talk all
-        // at once.
-        txDelay(ms2osticks(500), 0);
+        // at once. This is potentially band-specific, so we let it come
+        // from the band-plan files.
+        txDelay(os_getTime() + ms2osticks(LMICbandplan_TX_RECOVERY_ms), 0);
 
 #if LMIC_ENABLE_DeviceTimeReq
         //

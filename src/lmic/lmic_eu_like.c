@@ -56,21 +56,57 @@ bit_t LMIC_enableChannel(u1_t channel) {
         return 0;
 }
 
+// check whether a map operation will work.
+// chpage is 0 or 6; 6 turns all on; 0 selects channels 0..15 via mask.
+// The spec is unclear as to whether we should veto a channel mask that enables
+// a channel that hasn't been configured; we veto it.
 bit_t LMICeulike_canMapChannels(u1_t chpage, u2_t chmap) {
-        if (chpage != 0 || chmap == 0 || (chmap & ~LMIC.channelMap) != 0)
-                return 0;  // illegal input
-        for (u1_t chnl = 0; chnl<MAX_CHANNELS; chnl++) {
-                if ((chmap & (1 << chnl)) != 0 && LMIC.channelFreq[chnl] == 0)
-                        return 0; // fail - channel is not defined
-        }
-        return 1;
+    switch (chpage) {
+        case MCMD_LinkADRReq_ChMaskCntl_EULIKE_DIRECT:
+            if ((chmap & ~LMIC.channelMap) != 0 ) {
+                return 0;
+            }
+            for (u1_t chnl = 0; chnl<MAX_CHANNELS; chnl++) {
+                    if ((chmap & (1 << chnl)) != 0 && (LMIC.channelFreq[chnl]&~3) == 0)
+                            return 0; // fail - channel is not defined
+            }
+            return 1;
+
+        case MCMD_LinkADRReq_ChMaskCntl_EULIKE_ALL_ON:
+            return 1;
+
+        default:
+            return 0;
+    }
 }
 
 // assumes that LMICeulike_canMapChannels passed. Return true if something changed.
+// chpage is 0 or 6; 6 turns all on; 0 selects channels 0..15 via mask.
+// Assumes canMapChannels has already approved this change.
 bit_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap) {
-        u2_t const old_chmap = LMIC.channelMap;
-        LMIC.channelMap = chmap;
-        return old_chmap != chmap;
+    u2_t const old_chmap = LMIC.channelMap;
+
+    switch (chpage) {
+        case MCMD_LinkADRReq_ChMaskCntl_EULIKE_DIRECT:
+            LMIC.channelMap = chmap;
+            break;
+
+        case MCMD_LinkADRReq_ChMaskCntl_EULIKE_ALL_ON: {
+            u2_t new_chmap = 0;
+            for (u1_t chnl = 0; chnl<MAX_CHANNELS; chnl++) {
+                    if (LMIC.channelFreq[chnl] != 0) {
+                        new_chmap |= (1 << chnl);
+                    }
+            }
+            LMIC.channelMap = new_chmap;
+            break;
+        }
+
+        default:
+            // do nothing.
+            break;
+    }
+    return old_chmap != chmap;
 }
 
 #if !defined(DISABLE_JOIN)

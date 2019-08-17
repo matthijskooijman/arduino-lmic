@@ -63,7 +63,7 @@ static CONST_TABLE(s1_t, TXPOWLEVELS)[] = {
 };
 
 int8_t LMICin866_pow2dBm(uint8_t mcmd_ladr_p1) {
-        uint8_t const pindex = (mcmd_ladr_p1&MCMD_LADR_POW_MASK)>>MCMD_LADR_POW_SHIFT;
+        uint8_t const pindex = (mcmd_ladr_p1&MCMD_LinkADRReq_POW_MASK)>>MCMD_LinkADRReq_POW_SHIFT;
         if (pindex < sizeof(constant_table_TXPOWLEVELS)) {
                 return TABLE_GET_S1(TXPOWLEVELS, pindex);
         } else {
