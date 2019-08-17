@@ -608,6 +608,7 @@ static void stateJustJoined (void) {
     LMIC.seqnoDn     = LMIC.seqnoUp = 0;
     LMIC.rejoinCnt   = 0;
     LMIC.dnConf      = LMIC.lastDnConf  = LMIC.adrChanged = 0;
+    LMIC.upRepeatCount = LMIC.upRepeat = 0;
 #if !defined(DISABLE_MCMD_RXParamSetupReq)
     LMIC.dn2Ans      = 0;
 #endif
@@ -1826,7 +1827,7 @@ static void buildDataFrame (void) {
                               | (end-OFF_DAT_OPTS));
     os_wlsbf4(LMIC.frame+OFF_DAT_ADDR,  LMIC.devaddr);
 
-    if( LMIC.txCnt == 0 ) {
+    if( LMIC.txCnt == 0 && LMIC.upRepeatCount == 0 ) {
         LMIC.seqnoUp += 1;
         DO_DEVDB(LMIC.seqnoUp,seqnoUp);
     } else {
@@ -1847,6 +1848,11 @@ static void buildDataFrame (void) {
             // Confirmed only makes sense if we have a payload (or at least a port)
             LMIC.frame[OFF_DAT_HDR] = HDR_FTYPE_DCUP | HDR_MAJOR_V1;
             if( LMIC.txCnt == 0 ) LMIC.txCnt = 1;
+        } else if (LMIC.upRepeat != 0) {
+            // we are repeating.  So we need to count here.
+            if (LMIC.upRepeatCount == 0) {
+                LMIC.upRepeatCount = 1;
+            }
         }
         LMIC.frame[end] = LMIC.pendTxPort;
         os_copyMem(LMIC.frame+end+1, LMIC.pendTxData, dlen);
@@ -2108,6 +2114,16 @@ static bit_t processDnData (void) {
             }
             // confirmed uplink is complete without an ack: no port and no flag
             initTxrxFlags(__func__, TXRX_NACK | TXRX_NOPORT);
+        } else if (LMIC.upRepeatCount != 0) { 
+            if (LMIC.upRepeatCount < LMIC.upRepeat) {
+                LMIC.upRepeatCount += 1;
+                txDelay(os_getTime() + ms2osticks(LMICbandplan_TX_RECOVERY_ms), 0);
+                LMIC.opmode &= ~OP_TXRXPEND;
+                engineUpdate();
+                return 1;
+            }
+            // counted out: nothing received.
+            initTxrxFlags(__func__, TXRX_NOPORT);
         } else {
             // Nothing received - implies no port
             initTxrxFlags(__func__, TXRX_NOPORT);
@@ -2351,7 +2367,6 @@ static void engineUpdate (void) {
 #endif // !DISABLE_BEACONS
 
     if( (LMIC.opmode & (OP_JOINING|OP_REJOIN|OP_TXDATA|OP_POLL)) != 0 ) {
-        // Need to TX some data...
         // Assuming txChnl points to channel which first becomes available again.
         bit_t jacc = ((LMIC.opmode & (OP_JOINING|OP_REJOIN)) != 0 ? 1 : 0);
         // Find next suitable channel and return availability time
@@ -2584,8 +2599,10 @@ void LMIC_clrTxData (void) {
 void LMIC_setTxData (void) {
     ArduinoLMIC_putEventDatum("LMIC_setTxData", (LMIC.pendTxPort << 24u) | (LMIC.pendTxConf << 16u) | (LMIC.pendTxLen << 0u));
     LMIC.opmode |= OP_TXDATA;
-    if( (LMIC.opmode & OP_JOINING) == 0 )
-        LMIC.txCnt = 0;             // cancel any ongoing TX/RX retries
+    if( (LMIC.opmode & OP_JOINING) == 0 ) {
+        LMIC.txCnt = 0;             // reset the confirmed uplink FSM
+        LMIC.upRepeatCount = 0;     // reset the unconfirmed repeat FSM
+    }
     engineUpdate();
 }
 
