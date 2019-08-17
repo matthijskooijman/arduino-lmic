@@ -98,6 +98,9 @@ static CONST_TABLE(u4_t, iniChannelFreq)[6] = {
 
 void LMICeu868_initDefaultChannels(bit_t join) {
         os_clearMem(&LMIC.channelFreq, sizeof(LMIC.channelFreq));
+#if !defined(DISABLE_MCMD_DlChannelReq)
+        os_clearMem(&LMIC.channelDlFreq, sizeof(LMIC.channelDlFreq));
+#endif // !DISABLE_MCMD_DlChannelReq
         os_clearMem(&LMIC.channelDrMap, sizeof(LMIC.channelDrMap));
         os_clearMem(&LMIC.bands, sizeof(LMIC.bands));
 
@@ -242,6 +245,8 @@ void LMICeu868_setRx1Params(void) {
     u1_t const txdr = LMIC.dndr;
     s1_t drOffset;
     s1_t candidateDr;
+
+    LMICeulike_setRx1Freq();
 
     if ( LMIC.rx1DrOffset <= 5)
         drOffset = (s1_t) LMIC.rx1DrOffset;

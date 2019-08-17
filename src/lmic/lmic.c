@@ -38,6 +38,8 @@
 
 DEFINE_LMIC;
 
+extern void ArduinoLMIC_putEvent(const char *pMessage);
+extern void ArduinoLMIC_putEventDatum(const char *pMessage, uint32_t datum);
 
 // Fwd decls.
 static void reportEventNoUpdate(ev_t);
@@ -387,9 +389,10 @@ ostime_t LMICcore_rndDelay (u1_t secSpan) {
     return delay;
 }
 
-
+// delay reftime ticks, plus a random intervael in [0..secSpan).
 static void txDelay (ostime_t reftime, u1_t secSpan) {
-    reftime += LMICcore_rndDelay(secSpan);
+    if (secSpan != 0)
+        reftime += LMICcore_rndDelay(secSpan);
     if( LMIC.globalDutyRate == 0  ||  (reftime - LMIC.globalDutyAvail) > 0 ) {
         LMIC.globalDutyAvail = reftime;
         LMIC.opmode |= OP_RNDTX;
@@ -591,9 +594,15 @@ static void resetJoinParams(void) {
 static void stateJustJoined (void) {
     LMIC.seqnoDn     = LMIC.seqnoUp = 0;
     LMIC.rejoinCnt   = 0;
-    LMIC.dnConf      = LMIC.adrChanged = 0;
+    LMIC.dnConf      = LMIC.lastDnConf  = LMIC.adrChanged = 0;
 #if !defined(DISABLE_MCMD_RXParamSetupReq)
     LMIC.dn2Ans      = 0;
+#endif
+#if !defined(DISABLE_MCMD_RXTimingSetupReq)
+    LMIC.macRxTimingSetupAns = 0;
+#endif
+#if !defined(DISABLE_MCMD_DlChannelReq) && CFG_LMIC_EU_like
+    LMIC.macDlChannelAns = 0;
 #endif
     LMIC.moreData    = 0;
     LMIC.upRepeat    = 0;
@@ -644,21 +653,21 @@ static int decodeBeacon (void) {
 }
 #endif // !DISABLE_BEACONS
 
-// put a mac response to the current output buffer.
+// put a mac response to the current output buffer. Limit according to kind of
+// mac data (piggyback vs port 0)
 static bit_t put_mac_uplink_byte(uint8_t b) {
-    uint8_t *pEnd;
-    uint8_t *pBuffer;
-
-    if (LMIC.pendMacLen < 0) {
-        if (LMIC.pendTxLen < sizeof(LMIC.pendTxData)) {
-            LMIC.pendTxData[LMIC.pendTxLen++] = b;
+    if (LMIC.pendMacPiggyback) {
+        // put in pendMacData
+        if (LMIC.pendMacLen < sizeof(LMIC.pendMacData)) {
+            LMIC.pendMacData[LMIC.pendMacLen++] = b;
             return 1;
         } else {
             return 0;
         }
     } else {
-        if (LMIC.pendMacLen < sizeof(LMIC.pendMacData)) {
-            LMIC.pendMacData[LMIC.pendMacLen++] = b;
+        // put in pendTxData
+        if (LMIC.pendMacLen < sizeof(LMIC.pendTxData)) {
+            LMIC.pendTxData[LMIC.pendMacLen++] = b;
             return 1;
         } else {
             return 0;
@@ -667,11 +676,25 @@ static bit_t put_mac_uplink_byte(uint8_t b) {
 }
 
 static bit_t put_mac_uplink_byte2(uint8_t b1, uint8_t b2) {
-    return put_mac_uplink_byte(b1) && put_mac_uplink_byte(b2);
+    u1_t outindex = LMIC.pendMacLen;
+
+    if (put_mac_uplink_byte(b1) && put_mac_uplink_byte(b2)) {
+        return 1;
+    } else {
+        LMIC.pendMacLen = outindex;
+        return 0;
+    }
 }
 
 static bit_t put_mac_uplink_byte3(u1_t b1, u1_t b2, u1_t b3) {
-    return put_mac_uplink_byte(b1) && put_mac_uplink_byte2(b2, b3);
+    u1_t outindex = LMIC.pendMacLen;
+
+    if (put_mac_uplink_byte(b1) && put_mac_uplink_byte(b2) && put_mac_uplink_byte(b3)) {
+        return 1;
+    } else {
+        LMIC.pendMacLen = outindex;
+        return 0;
+    }
 }
 
 static CONST_TABLE(u1_t, macCmdSize)[] = {
@@ -701,7 +724,7 @@ static u1_t getMacCmdSize(u1_t macCmd) {
     return TABLE_GET_U1(macCmdSize, macCmd - 2);
 }
 
-static void
+static bit_t
 applyAdrRequests(
     const uint8_t *opts,
     int olen,
@@ -712,10 +735,11 @@ applyAdrRequests(
     int oidx;
     u1_t p1 = 0;
     u1_t p4 = 0;
+    bit_t response_fit = 1;
 
     LMICbandplan_saveAdrState(&initialState);
 
-    for (oidx = 0; oidx < olen; ) {
+    for (oidx = 0; oidx < olen && response_fit; ) {
         if (adrAns == MCMD_LinkADRAns_PowerACK | MCMD_LinkADRAns_DataRateACK | MCMD_LinkADRAns_ChannelACK) {
             u2_t chmap  = os_rlsbf2(&opts[oidx+2]);// list of enabled channels
 
@@ -727,7 +751,7 @@ applyAdrRequests(
         }
 
         oidx += kAdrReqSize;
-        put_mac_uplink_byte2(MCMD_LinkADRAns, adrAns);
+        response_fit = put_mac_uplink_byte2(MCMD_LinkADRAns, adrAns);
     }
 
     // all done scanning options
@@ -748,12 +772,14 @@ applyAdrRequests(
     }
 
     LMIC.adrChanged = changes;  // move the ADR FSM up to "time to request"
+    return response_fit;
 }
 
-
-int scan_mac_cmds_link_adr(
+static int
+scan_mac_cmds_link_adr(
     const char *opts,
-    int olen
+    int olen,
+    bit_t *presponse_fit
     )
     {
     if (olen == 0)
@@ -796,14 +822,14 @@ int scan_mac_cmds_link_adr(
 
     // go back and apply the ADR changes, if any -- use the effective length,
     // and process.
-    applyAdrRequests(opts, lastOidx + kAdrReqSize, adrAns);
+    *presponse_fit = applyAdrRequests(opts, lastOidx + kAdrReqSize, adrAns);
 
     return lastOidx;
     }
 
 // scan mac commands starting at opts[] for olen, return count of bytes consumed.
-// build response either in pendMacData[] or pendTxData[], depending on whether the
-// pointer is before 
+// build response in pendMacData[], but limit length as needed; simply chop at last
+// response that fits.
 static int
 scan_mac_cmds(
     const uint8_t *opts,
@@ -814,12 +840,16 @@ scan_mac_cmds(
     bit_t fSawAdrReq = 0;
     uint8_t cmd;
 
+    LMIC.pendMacLen = 0;
     if (port == 0)
-        LMIC.pendMacLen = -1;
+        LMIC.pendMacPiggyback = 0;
     else
-        LMIC.pendMacLen = 0;
+        LMIC.pendMacPiggyback = 1;
 
     while( oidx < olen ) {
+        bit_t response_fit;
+
+        response_fit = 1;
         cmd = opts[oidx];
         switch( cmd ) {
         case MCMD_LinkCheckAns: {
@@ -839,7 +869,7 @@ scan_mac_cmds(
         // So we need to process all the contigious commands
         case MCMD_LinkADRReq: {
             // skip over all but the last command.
-            oidx += scan_mac_cmds_link_adr(opts + oidx, olen - oidx);
+            oidx += scan_mac_cmds_link_adr(opts + oidx, olen - oidx, &response_fit);
             break;
         }
 
@@ -849,7 +879,7 @@ scan_mac_cmds(
             // per [1.02] 5.5. the margin is the SNR.
             LMIC.devAnsMargin = (u1_t)(0b00111111 & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr));
 
-            put_mac_uplink_byte3(MCMD_DevStatusAns, os_getBattLevel(), LMIC.devAnsMargin);
+            response_fit = put_mac_uplink_byte3(MCMD_DevStatusAns, os_getBattLevel(), LMIC.devAnsMargin);
             break;
         }
 
@@ -866,7 +896,7 @@ scan_mac_cmds(
             if (rx1DrOffset <= 3)
                 LMIC.dn2Ans |= MCMD_RXParamSetupAns_RX1DrOffsetAck;
 
-            if( LMIC.dn2Ans == (0x80|MCMD_RXParamSetupAns_RX2DataRateACK|MCMD_RXParamSetupAns_ChannelACK| MCMD_RXParamSetupAns_RX1DrOffsetAck) ) {
+            if( LMIC.dn2Ans == (0xC0|MCMD_RXParamSetupAns_RX2DataRateACK|MCMD_RXParamSetupAns_ChannelACK| MCMD_RXParamSetupAns_RX1DrOffsetAck) ) {
                 LMIC.dn2Dr = dr;
                 LMIC.dn2Freq = freq;
                 LMIC.rx1DrOffset = rx1DrOffset;
@@ -875,11 +905,23 @@ scan_mac_cmds(
             }
 
             /* put the first copy of the message */
-            put_mac_uplink_byte2(MCMD_RXParamSetupAns, LMIC.dn2Ans & ~MCMD_RXParamSetupAns_RFU);
+            response_fit = put_mac_uplink_byte2(MCMD_RXParamSetupAns, LMIC.dn2Ans & ~MCMD_RXParamSetupAns_RFU);
 #endif // !DISABLE_MCMD_RXParamSetupReq
             break;
         }
 
+        case MCMD_RXTimingSetupReq: {
+#if !defined(DISABLE_MCMD_RXTimingSetupReq)
+            u1_t delay = opts[oidx+1] & MCMD_RXTimingSetupReq_Delay;
+            if (delay == 0)
+                delay = 1;
+
+            LMIC.rxDelay = delay;
+            LMIC.macRxTimingSetupAns = 2;
+            response_fit = put_mac_uplink_byte(MCMD_RXTimingSetupAns);
+#endif // !DISABLE_MCMD_RXTimingSetupReq
+            break;
+        }
         case MCMD_DutyCycleReq: {
 #if !defined(DISABLE_MCMD_DutyCycleReq)
             u1_t cap = opts[oidx+1];
@@ -890,45 +932,75 @@ scan_mac_cmds(
             LMIC.globalDutyAvail = os_getTime();
             DO_DEVDB(cap,dutyCap);
 
-            put_mac_uplink_byte(MCMD_DutyCycleAns);
+            response_fit = put_mac_uplink_byte(MCMD_DutyCycleAns);
 #endif // !DISABLE_MCMD_DutyCycleReq
             break;
         }
 
         case MCMD_NewChannelReq: {
-#if !defined(DISABLE_MCMD_NewChannelReq)
+#if !defined(DISABLE_MCMD_NewChannelReq) && CFG_LMIC_EU_like
             u1_t chidx = opts[oidx+1];  // channel
-            u4_t raw_feq0 = opts[oidx+2] | opts[oidx+3] | opts[oidx+4];
+            u4_t raw_f_not_zero = opts[oidx+2] | opts[oidx+3] | opts[oidx+4];
             u4_t freq  = LMICbandplan_convFreq(&opts[oidx+2]); // freq
             u1_t drs   = opts[oidx+5];  // datarate span
             u1_t ans   = MCMD_NewChannelAns_DataRateACK|MCMD_NewChannelAns_ChannelACK;
 
-            if (freq == 0 && raw_feq0 != 0) {
+            if (freq == 0 && raw_f_not_zero) {
                 ans &= ~MCMD_NewChannelAns_ChannelACK;
             }
             u1_t MaxDR = drs >> 4;
             u1_t MinDR = drs & 0xF;
-            if (MaxDR < MinDR || !validDR(MaxDR) || validDR(MinDR))
+            if (MaxDR < MinDR || !validDR(MaxDR) || !validDR(MinDR)) {
                 ans &= ~MCMD_NewChannelAns_DataRateACK;
+            }
 
             if( ans == MCMD_NewChannelAns_DataRateACK|MCMD_NewChannelAns_ChannelACK) {
                 if ( ! LMIC_setupChannel(chidx, freq, DR_RANGE_MAP(MinDR, MaxDR), -1) ) {
+                    ArduinoLMIC_putEventDatum("NewChannelReq: setupChannel failed", (MaxDR << 24u) | (MinDR << 16u) | (raw_f_not_zero << 8) | (chidx << 0));
                     ans &= ~MCMD_NewChannelAns_ChannelACK;
                 }
             }
 
-            put_mac_uplink_byte2(MCMD_NewChannelAns, ans);
+            response_fit = put_mac_uplink_byte2(MCMD_NewChannelAns, ans);
 #endif // !DISABLE_MCMD_NewChannelReq
+            break;
+        }
+
+        case MCMD_DlChannelReq: {
+#if !defined(DISABLE_MCMD_DlChannelReq) && CFG_LMIC_EU_like
+            u1_t chidx = opts[oidx+1];  // channel
+            u4_t freq  = LMICbandplan_convFreq(&opts[oidx+2]); // freq
+            u1_t ans   = MCMD_DlChannelAns_FreqACK|MCMD_DlChannelAns_ChannelACK;
+
+            if (freq == 0) {
+                ans &= ~MCMD_DlChannelAns_ChannelACK;
+            }
+            if (chidx > MAX_CHANNELS) {
+                // this is not defined by the 1.0.3 spec
+                ans = 0;
+            } else if ((LMIC.channelMap & (1 << chidx)) == 0) {
+                // the channel is not enabled for downlink.
+                ans &= ~MCMD_DlChannelAns_FreqACK;
+            }
+
+            if( ans == MCMD_DlChannelAns_FreqACK|MCMD_DlChannelAns_ChannelACK) {
+                LMIC.channelDlFreq[chidx] = freq;
+            }
+
+            response_fit = put_mac_uplink_byte2(MCMD_DlChannelAns, ans);
+            // set sticky answer.
+            LMIC.macDlChannelAns = ans | 0xC0;
+#endif // !DISABLE_MCMD_DlChannelReq
             break;
         }
 
         case MCMD_PingSlotChannelReq: {
 #if !defined(DISABLE_MCMD_PingSlotChannelReq) && !defined(DISABLE_PING)
-            u4_t raw_feq0 = opts[oidx+1] | opts[oidx+2] | opts[oidx+3];
+            u4_t raw_f_not_zero = opts[oidx+1] | opts[oidx+2] | opts[oidx+3];
             u4_t freq = LMICbandplan_convFreq(&opts[oidx+1]);
             u1_t dr = opts[oidx+4] & 0xF;
             u1_t ans = MCMD_PingSlotFreqAns_DataRateACK|MCMD_PingSlotFreqAns_ChannelACK;
-            if (raw_feq0) {
+            if (! raw_f_not_zero) {
                 freq = FREQ_PING;
             } else if (freq == 0) {
                 ans &= ~MCMD_PingSlotFreqAns_ChannelACK;
@@ -943,7 +1015,7 @@ scan_mac_cmds(
                 DO_DEVDB(LMIC.ping.freq, pingFreq);
                 DO_DEVDB(LMIC.ping.dr, pingDr);
             }
-            put_mac_uplink_byte2(MCMD_PingSlotChannelAns, ans);
+            response_fit = put_mac_uplink_byte2(MCMD_PingSlotChannelAns, ans);
 #endif // !DISABLE_MCMD_PingSlotChannelReq && !DISABLE_PING
             break;
         }
@@ -987,7 +1059,7 @@ scan_mac_cmds(
                         MCMD_TxParam_TxDWELL_MASK|
                         MCMD_TxParam_MaxEIRP_MASK);
             LMIC.txParam = txParam;
-            put_mac_uplink_byte(MCMD_TxParamSetupAns);
+            response_fit = put_mac_uplink_byte(MCMD_TxParamSetupAns);
 #endif // LMIC_ENABLE_TxParamSetupReq
             break;
         } /* end case */
@@ -1037,6 +1109,8 @@ scan_mac_cmds(
         // "the first unknown command terminates processing"
         // force olen to current oidx so we'll exit the while().
         olen = oidx;
+    } else if (! response_fit) {
+        olen = oidx;
     }
 
     oidx += cmdlen;
@@ -1060,6 +1134,8 @@ static bit_t decodeFrame (void) {
 #if LMIC_DEBUG_LEVEL > 0
     const char *window = (LMIC.txrxFlags & TXRX_DNW1) ? "RX1" : ((LMIC.txrxFlags & TXRX_DNW2) ? "RX2" : "Other");
 #endif
+    if (dlen > 0)
+        ArduinoLMIC_putEventDatum("decodeFrame", (dlen << 8) | (hdr << 0));
 
     if( dlen < OFF_DAT_OPTS+4 ||
         (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
@@ -1087,6 +1163,8 @@ static bit_t decodeFrame (void) {
     int  pend  = dlen-4;  // MIC
 
     if( addr != LMIC.devaddr ) {
+        ArduinoLMIC_putEventDatum("decodeFrame: wrong address", addr);
+
         EV(specCond, WARN, (e_.reason = EV::specCond_t::ALIEN_ADDRESS,
                             e_.eui    = MAIN::CDEV->getEui(),
                             e_.info   = addr,
@@ -1094,6 +1172,7 @@ static bit_t decodeFrame (void) {
         goto norx;
     }
     if( poff > pend ) {
+        ArduinoLMIC_putEventDatum("decodeFrame: corrupted frame", (dlen << 16) | (fct << 8) | (poff - pend));
         EV(specCond, ERR, (e_.reason = EV::specCond_t::CORRUPTED_FRAME,
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = 0x1000000 + (poff-pend) + (fct<<8) + (dlen<<16)));
@@ -1106,9 +1185,21 @@ static bit_t decodeFrame (void) {
     if( pend > poff )
         port = d[poff++];
 
-    seqno = LMIC.seqnoDn + (u2_t)(seqno - LMIC.seqnoDn);
+    // compute the 32-bit sequence number based on the 16-bit sequence number received
+    // and the internal 32-bit number.  Because the 32-bit number is used in the MIC
+    // calculation, this must be right.  (And if you're curious why a 32-bit seqno matters,
+    // it's this calculation, plus its use in the MIC calculation.)
+    //
+    // we have to be careful to get the right value for replay of last message received.
+    u2_t seqnoDiff = (u2_t)(seqno - LMIC.seqnoDn);
+    if (seqnoDiff == 0xFFFFu) {
+        seqno = LMIC.seqnoDn - 1;
+    } else {
+        seqno = LMIC.seqnoDn + seqnoDiff;
+    }
 
     if( !aes_verifyMic(LMIC.nwkKey, LMIC.devaddr, seqno, /*dn*/1, d, pend) ) {
+        ArduinoLMIC_putEventDatum("decodeFrame: bad MIC", seqno);
         EV(spe3Cond, ERR, (e_.reason = EV::spe3Cond_t::CORRUPTED_MIC,
                            e_.eui1   = MAIN::CDEV->getEui(),
                            e_.info1  = Base::lsbf4(&d[pend]),
@@ -1122,20 +1213,29 @@ static bit_t decodeFrame (void) {
                                 e_.eui    = MAIN::CDEV->getEui(),
                                 e_.info   = LMIC.seqnoDn,
                                 e_.info2  = seqno));
+            ArduinoLMIC_putEventDatum("decodeFrame: rollover discarded", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
             goto norx;
         }
-        if( seqno != LMIC.seqnoDn-1 || !LMIC.dnConf || ftype != HDR_FTYPE_DCDN ) {
+        if( seqno != LMIC.seqnoDn-1 || !LMIC.lastDnConf || ftype != HDR_FTYPE_DCDN ) {
             EV(specCond, INFO, (e_.reason = EV::specCond_t::DNSEQNO_OBSOLETE,
                                 e_.eui    = MAIN::CDEV->getEui(),
                                 e_.info   = LMIC.seqnoDn,
                                 e_.info2  = seqno));
+            ArduinoLMIC_putEventDatum("decodeFrame: Retransmit confimed discarded", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
             goto norx;
         }
         // Replay of previous sequence number allowed only if
         // previous frame and repeated both requested confirmation
+        // but set a flag, so we don't actually process the message.
+        ArduinoLMIC_putEventDatum("decodeFrame: Retransmit confimed accepted", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
         replayConf = 1;
+        LMIC.dnConf = FCT_ACK;
     }
     else {
+        if( seqnoDiff > LMICbandplan_MAX_FCNT_GAP) {
+            ArduinoLMIC_putEventDatum("decodeFrame: gap too big", (seqnoDiff << 16) | (seqno & 0xFFFFu));
+            goto norx;
+        }
         if( seqno > LMIC.seqnoDn ) {
             EV(specCond, INFO, (e_.reason = EV::specCond_t::DNSEQNO_SKIP,
                                 e_.eui    = MAIN::CDEV->getEui(),
@@ -1145,7 +1245,18 @@ static bit_t decodeFrame (void) {
         LMIC.seqnoDn = seqno+1;  // next number to be expected
         DO_DEVDB(LMIC.seqnoDn,seqnoDn);
         // DN frame requested confirmation - provide ACK once with next UP frame
-        LMIC.dnConf = (ftype == HDR_FTYPE_DCDN ? FCT_ACK : 0);
+        LMIC.dnConf = LMIC.lastDnConf = (ftype == HDR_FTYPE_DCDN ? FCT_ACK : 0);
+        if (LMIC.dnConf)
+            ArduinoLMIC_putEventDatum("decodeFrame: Confirmed downlink", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+    }
+
+    if (port == 0 && olen != 0 && pend > poff) {
+        // we have a port-zero message, and piggyback mac data.
+        // discard, section 4.3.1.6 line 544-546
+#if LMIC_DEBUG_LEVEL > 0
+        LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": port==0 && FOptsLen=%#x: discard\n", os_getTime(), olen);
+#endif
+        goto norx;
     }
 
     if( LMIC.dnConf || (fct & FCT_MORE) )
@@ -1155,27 +1266,23 @@ static bit_t decodeFrame (void) {
     LMIC.adrChanged = LMIC.rejoinCnt = 0;
     setAdrAckCount(LINK_CHECK_INIT);
 #if !defined(DISABLE_MCMD_RXParamSetupReq)
+    // We heard from network "on a Class A downlink"
     LMIC.dn2Ans = 0;
 #endif // !defined(DISABLE_MCMD_RXParamSetupReq)
+#if !defined(DISABLE_MCMD_RXTimingSetupReq)
+    // We heard from network "on a Class A downlink"
+    LMIC.macRxTimingSetupAns = 0;
+#endif // !defined(DISABLE_MCMD_RXParamSetupReq)
+#if !defined(DISABLE_MCMD_DlChannelReq) && CFG_LMIC_EU_like
+    LMIC.macDlChannelAns = 0;
+#endif
 
     int m = LMIC.rssi - RSSI_OFF - getSensitivity(LMIC.rps);
     // for legacy reasons, LMIC.margin is set to the unsigned sensitivity. It can never be negative.
     // it's only computed for legacy clients
     LMIC.margin = m < 0 ? 0 : m > 254 ? 254 : m;
 
-    if (port == 0 && olen != 0) {
-#if LMIC_DEBUG_LEVEL > 0
-        // discard, section 4.3.1.6 line 544-546
-        LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": port==0 && FOptsLen=%#x: discard\n", os_getTime(), olen);
-#endif
-        goto norx;
-    } else {
-#if LMIC_DEBUG_LEVEL > 0
-        // Process OPTS
-        LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": process options (olen=%#x)\n", os_getTime(), olen);
-#endif
-    }
-
+    // even if it's a replay confirmed, we process the mac options.
     xref2u1_t opts = &d[OFF_DAT_OPTS];
     int oidx = scan_mac_cmds(opts, olen, port);
     if( oidx != olen ) {
@@ -1205,6 +1312,7 @@ static bit_t decodeFrame (void) {
                         );
 #endif
                 }
+                // wait to transmit until txcomplete: above.
             }
         } // end decrypt payload
         EV(dfinfo, DEBUG, (e_.deveui  = MAIN::CDEV->getEui(),
@@ -1223,6 +1331,9 @@ static bit_t decodeFrame (void) {
                             e_.eui    = MAIN::CDEV->getEui(),
                             e_.info   = Base::lsbf4(&d[pend]),
                             e_.info2  = seqno));
+        // discard the data
+        ArduinoLMIC_putEventDatum("decodeFrame: discarding replay", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+        goto norx;
     }
 
     if( // NWK acks but we don't have a frame pending
@@ -1236,7 +1347,7 @@ static bit_t decodeFrame (void) {
                            e_.info   = seqno,
                            e_.info2  = ackup));
 #if LMIC_DEBUG_LEVEL > 1
-	LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": ??ack error ack=%d txCnt=%d\n", os_getTime(), ackup, LMIC.txCnt);
+        LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": ??ack error ack=%d txCnt=%d\n", os_getTime(), ackup, LMIC.txCnt);
 #endif
     }
 
@@ -1331,8 +1442,10 @@ static void txDone (ostime_t delay, osjobcb_t func) {
     }
 #endif // !DISABLE_PING
 
-    // Change RX frequency / rps (US only) before we increment txChnl
+    // Change RX frequency (can happen even for EU-like if programmed by DlChannelReq)
+    // change params and rps (US only) before we increment txChnl
     LMICbandplan_setRx1Params();
+
     // LMIC.rxsyms carries the TX datarate (can be != LMIC.datarate [confirm retries etc.])
     // Setup receive - LMIC.rxtime is preloaded with 1.5 symbols offset to tune
     // into the middle of the 8 symbols preamble.
@@ -1440,6 +1553,7 @@ static bit_t processJoinAccept (void) {
 #if CFG_region != LMIC_REGION_as923
 	    // TODO(tmm@mcci.com) regionalize
         // Lower DR every try below current UP DR
+        // need to check feasibility? join feasability is default.
         LMIC.datarate = lowerDR(LMIC.datarate, LMIC.rejoinCnt);
 #else
         // in the join of AS923 v1.1 or older, only DR2 (SF10) is used.
@@ -1630,12 +1744,15 @@ static void buildDataFrame (void) {
     // highest importance are the ones in the pendMac buffer.
     int  end = OFF_DAT_OPTS;
 
-    if (LMIC.pendMacLen > 0) {
+    if (LMIC.pendTxPort != 0 && LMIC.pendMacPiggyback && LMIC.pendMacLen != 0) {
         os_copyMem(LMIC.frame + end, LMIC.pendMacData, LMIC.pendMacLen);
         end += LMIC.pendMacLen;
     }
     LMIC.pendMacLen = 0;
+    LMIC.pendMacPiggyback = 0;
+
 #if !defined(DISABLE_MCMD_RXParamSetupReq)
+    // per 5.4, RxParamSetupAns is sticky.
     if (LMIC.dn2Ans) {
         if (LMIC.dn2Ans & 0x40) {
             LMIC.dn2Ans ^= 0x40;
@@ -1646,6 +1763,26 @@ static void buildDataFrame (void) {
         }
     }
 #endif // !DISABLE_MCMD_RXParamSetupReq
+#if !defined(DISABLE_MCMD_DlChannelReq)
+    // per 5.4, DlChannelAns is sticky.
+    if (LMIC.macDlChannelAns) {
+        if (LMIC.macDlChannelAns & 0x40) {
+            LMIC.macDlChannelAns ^= 0x40;
+        } else {
+            LMIC.frame[end + 0] = MCMD_DlChannelAns;
+            LMIC.frame[end + 1] = LMIC.macDlChannelAns & ~MCMD_DlChannelAns_RFU;
+            end += 2;
+        }
+    }
+#endif // !DISABLE_MCMD_DlChannelReq
+#if !defined(DISABLE_MCMD_RXTimingSetupReq)
+    // per 5.7, RXTimingSetupAns is sticky
+    if (LMIC.macRxTimingSetupAns == 2) {
+        LMIC.macRxTimingSetupAns = 1;
+    } else if (LMIC.macRxTimingSetupAns) {
+        LMIC.frame[end++] = MCMD_RXTimingSetupAns;
+    }
+#endif // !DISABLE_MCMD_RXTimingSetupReq)
 
     if( LMIC.adrChanged ) {
         // if ADR is enabled, and we were just counting down the
@@ -1929,15 +2066,26 @@ static void processPingRx (xref2osjob_t osjob) {
 }
 #endif // !DISABLE_PING
 
+// process downlink data at close of RX window.  Return zero if another RX window
+// should be scheduled, non-zero to prevent scheduling of RX2 (if relevant).
+// Confusingly, the caller actualyl does some of the calculation, so the answer from
+// us is not always totaly right; the rx1 window check ignores our result unless
+// LMIC.datalen was non zero before calling.
+//
+// Inputs:
+//  LMIC.dataLen    number of bytes receieved; 0 --> no message at all received.
 
 static bit_t processDnData (void) {
     ASSERT((LMIC.opmode & OP_TXRXPEND)!=0);
 
     if( LMIC.dataLen == 0 ) {
+        // if this is an RX1 window, shouldn't we return 0 to schedule
+        // RX2?
       norx:
         if( LMIC.txCnt != 0 ) {
             if( LMIC.txCnt < TXCONF_ATTEMPTS ) {
                 LMIC.txCnt += 1;
+                // TODO(tmm@mcci.com): check feasibility of lower datarate
                 setDrTxpow(DRCHG_NOACK, lowerDR(LMIC.datarate, TABLE_GET_U1(DRADJUST, LMIC.txCnt)), KEEP_TXPOW);
                 // Schedule another retransmission
                 txDelay(LMIC.rxtime, RETRY_PERIOD_secs);
@@ -1945,6 +2093,7 @@ static bit_t processDnData (void) {
                 engineUpdate();
                 return 1;
             }
+            // confirmed uplink is complete without an ack: no port and no flag
             initTxrxFlags(__func__, TXRX_NACK | TXRX_NOPORT);
         } else {
             // Nothing received - implies no port
@@ -1952,10 +2101,42 @@ static bit_t processDnData (void) {
         }
         setAdrAckCount(LMIC.adrAckReq + 1);
         LMIC.dataBeg = LMIC.dataLen = 0;
+
+      // the transmission that got us here is complete.
       txcomplete:
         LMIC.opmode &= ~(OP_TXDATA|OP_TXRXPEND);
 
+        // if there's pending mac data that's not piggyback, launch it now.
+        if (LMIC.pendMacLen != 0) {
+            if (LMIC.pendMacPiggyback) {
+                ArduinoLMIC_putEvent("piggyback mac message");
+                LMIC.opmode |= OP_POLL;     // send back the mac answers even if there's no data.
+            } else {
+                // Every mac command on port 0 requires an uplink, if there's data.
+                // TODO(tmm@mcci.com) -- this is why we need a queueing structure for
+                // uplinks.
+                // open code the logic to build this because we don't want to call
+                // engineUpdate right now.  Data is already in the uplink buffer.
+                LMIC.pendTxConf = 0; // not confirmed
+                LMIC.pendTxPort = 0; // port 0
+                LMIC.pendTxLen  = LMIC.pendMacLen;
+                LMIC.pendMacLen = 0; // discard mac data!
+                LMIC.opmode |= OP_TXDATA;
+                ArduinoLMIC_putEvent("port0 mac message");
+            }
+        }
+
+        // half-duplex gateways can have appreciable turn-around times,
+        // so we force a wait. It might be nice to randomize this a little,
+        // so that armies of identical devices will not try to talk all
+        // at once.
+        txDelay(ms2osticks(500), 0);
+
 #if LMIC_ENABLE_DeviceTimeReq
+        //
+        // if the DeviceTimeReq FSM is active, we need to move it to idle,
+        // completing the callback.
+        //
         lmic_request_time_state_t const requestTimeState = LMIC.txDeviceTimeReqState;
         if ( requestTimeState != lmic_RequestTimeState_idle ) {
             lmic_request_network_time_cb_t * const pNetworkTimeCb = LMIC.client.pNetworkTimeCb;
@@ -1986,6 +2167,9 @@ static bit_t processDnData (void) {
                               e_.eui    = MAIN::CDEV->getEui(),
                               e_.info   = LMIC.adrAckReq));
             dr_t newDr = decDR((dr_t)LMIC.datarate);
+            // TODO(tmm@mcci.com) newDr must be feasible; there must be at least
+            // one channel that supports the new datarate. If not, stay
+            // at current datarate.
             if( newDr == (dr_t)LMIC.datarate) {
                 // We are already at the minimum datarate
                 // if the link is already marked dead, we need to join.
@@ -2022,6 +2206,8 @@ static bit_t processDnData (void) {
 #endif // !DISABLE_BEACONS
         return 1;
     }
+    // if we get here, LMIC.dataLen != 0, so there is some
+    // traffic.
     if( !decodeFrame() ) {
         if( (LMIC.txrxFlags & TXRX_DNW1) != 0 )
             return 0;
@@ -2187,6 +2373,7 @@ static void engineUpdate (void) {
                 if( (LMIC.opmode & OP_REJOIN) != 0 ) {
 #if CFG_region != LMIC_REGION_as923
                     // in AS923 v1.1 or older, no need to change the datarate.
+                    // otherwise we need to check feasibility.
                     txdr = lowerDR(txdr, LMIC.rejoinCnt);
 #endif
                 }
@@ -2381,6 +2568,7 @@ void LMIC_clrTxData (void) {
 
 
 void LMIC_setTxData (void) {
+    ArduinoLMIC_putEventDatum("LMIC_setTxData", (LMIC.pendTxPort << 24u) | (LMIC.pendTxConf << 16u) | (LMIC.pendTxLen << 0u));
     LMIC.opmode |= OP_TXDATA;
     if( (LMIC.opmode & OP_JOINING) == 0 )
         LMIC.txCnt = 0;             // cancel any ongoing TX/RX retries
@@ -2390,6 +2578,10 @@ void LMIC_setTxData (void) {
 
 // send a message w/o callback
 int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
+    if ( LMIC.opmode & OP_TXDATA ) {
+        // already have a message queued
+        return -1;
+    }
     if( dlen > SIZEOFEXPR(LMIC.pendTxData) )
         return -2;
     if( data != (xref2u1_t)0 )

@@ -314,8 +314,7 @@ If defined, removes code needed for OTAA activation. Removes the APIs `LMIC_star
 
 #### Disabling Class A MAC commands
 
-`DISABLE_MCMD_DutyCycleReq`, `DISABLE_MCMD_RXParamSetupReq`, and `DISABLE_MCMD_NewChannelReq` respectively disable code for various Class A MAC
-commands.
+`DISABLE_MCMD_DutyCycleReq`, `DISABLE_MCMD_RXParamSetupReq`, `DISABLE_MCMD_RXTimingSetupReq`, `DISABLE_MCMD_NewChannelReq`, and `DISABLE_MCMD_DlChannelReq` respectively disable code for various Class A MAC commands.
 
 #### Disabling Class B MAC commands
 

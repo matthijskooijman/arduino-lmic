@@ -506,7 +506,7 @@ enum {
     MCMD_NewChannelAns = 0x07,      // u1: 7-2=RFU, 1/0:DR/freq ACK
     MCMD_RXTimingSetupAns = 0x08,   // -
     MCMD_TxParamSetupAns = 0x09,    // -
-    MCMD_DIChannelAns = 0x0A,       // u1: [7-2]:RFU 1:exists 0:OK
+    MCMD_DlChannelAns = 0x0A,       // u1: [7-2]:RFU 1:exists 0:OK
     MCMD_DeviceTimeReq = 0x0D,      // -
 
     // Class B
@@ -527,7 +527,7 @@ enum {
     MCMD_NewChannelReq = 0x07,      // u1:chidx, u3:freq, u1:DRrange
     MCMD_RXTimingSetupReq = 0x08,   // u1: [7-4]:RFU [3-0]: Delay 1-15s (0 => 1)
     MCMD_TxParamSetupReq = 0x09,    // u1: [7-6]:RFU [5:4]: dl dwell/ul dwell [3:0] max EIRP
-    MCMD_DIChannelReq = 0x0A,       // u1: channel, u3: frequency
+    MCMD_DlChannelReq = 0x0A,       // u1: channel, u3: frequency
     MCMD_DeviceTimeAns = 0x0D,      // u4: seconds since epoch, u1: fractional second
 
     // Class B
@@ -556,6 +556,15 @@ enum {
     MCMD_NewChannelAns_RFU    = 0xFC, // RFU bits
     MCMD_NewChannelAns_DataRateACK  = 0x02, // 0=unknown data rate
     MCMD_NewChannelAns_ChannelACK  = 0x01, // 0=rejected channel frequency
+};
+enum {
+    MCMD_RXTimingSetupReq_RFU   = 0xF0,     // RFU bits
+    MCMD_RXTimingSetupReq_Delay = 0x0F,     // delay in secs, 1..15; 0 is mapped to 1.
+};
+enum {
+    MCMD_DlChannelAns_RFU       = 0xFC,     // RFU bits
+    MCMD_DlChannelAns_FreqACK   = 0x02,     // 0 = uplink frequency not defined for this channel
+    MCMD_DlChannelAns_ChannelACK = 0x01,    // 0 = rejected channel freq
 };
 enum {
     MCMD_PingSlotFreqAns_RFU   = 0xFC,

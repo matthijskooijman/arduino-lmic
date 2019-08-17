@@ -399,6 +399,9 @@ struct lmic_t {
 #if CFG_LMIC_EU_like
     band_t      bands[MAX_BANDS];
     u4_t        channelFreq[MAX_CHANNELS];
+#if !defined(DISABLE_MCMD_DlChannelReq)
+    u4_t        channelDlFreq[MAX_CHANNELS];
+#endif
     // bit map of enabled datarates for each channel
     u2_t        channelDrMap[MAX_CHANNELS];
     u2_t        channelMap;
@@ -453,14 +456,16 @@ struct lmic_t {
     u1_t        pendTxLen;    // count of bytes in pendTxData.
     u1_t        pendTxData[MAX_LEN_PAYLOAD];
 
-    s1_t        pendMacLen;   // number of bytes of pending Mac response data; -1
-                              // implies port 0.
+    u1_t        pendMacLen;         // number of bytes of pending Mac response data
+    bit_t       pendMacPiggyback;   // received on port 0 or piggyback? 
+    // response data if piggybacked
     u1_t        pendMacData[LWAN_FCtrl_FOptsLen_MAX];
 
     u1_t        nwkKey[16];   // network session key
     u1_t        artKey[16];   // application router session key
 
     u1_t        dnConf;       // dn frame confirm pending: LORA::FCT_ACK or 0
+    u1_t        lastDnConf;   // downlink with seqnoDn-1 requested confirmation
     u1_t        adrChanged;
 
     u1_t        rxDelay;      // Rx delay after TX
@@ -484,6 +489,12 @@ struct lmic_t {
     u1_t        dn2Dr;
 #if !defined(DISABLE_MCMD_RXParamSetupReq)
     u1_t        dn2Ans;       // 0=no answer pend, 0x80+ACKs
+#endif
+#if !defined(DISABLE_MCMD_DlChannelReq)
+    u1_t        macDlChannelAns;        // 0 ==> no answer pending, 0x80+ACK bits
+#endif
+#if !defined(DISABLE_MCMD_RXTimingSetupReq)
+    bit_t       macRxTimingSetupAns;    // 0 ==> no answer pend, non-zero inserts response.
 #endif
 
     // Class B state

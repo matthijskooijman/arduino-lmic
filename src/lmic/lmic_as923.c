@@ -175,6 +175,9 @@ void LMICas923_initDefaultChannels(bit_t join) {
         LMIC_API_PARAMETER(join);
 
         os_clearMem(&LMIC.channelFreq, sizeof(LMIC.channelFreq));
+#if !defined(DISABLE_MCMD_DlChannelReq)
+        os_clearMem(&LMIC.channelDlFreq, sizeof(LMIC.channelDlFreq));
+#endif // !DISABLE_MCMD_DlChannelReq
         os_clearMem(&LMIC.channelDrMap, sizeof(LMIC.channelDrMap));
         os_clearMem(&LMIC.bands, sizeof(LMIC.bands));
 
@@ -275,7 +278,9 @@ void LMICas923_setRx1Params(void) {
 	int const txdr = LMIC.dndr;
 	int effective_rx1DrOffset;
 	int candidateDr;
-	
+
+        LMICeulike_setRx1Freq();
+
 	effective_rx1DrOffset = LMIC.rx1DrOffset;
 	// per section 2.7.7 of regional, lines 1101:1103:
 	switch (effective_rx1DrOffset) {

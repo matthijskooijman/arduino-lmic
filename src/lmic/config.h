@@ -119,6 +119,8 @@
 //#define DISABLE_MCMD_DutyCycleReq // duty cycle cap
 //#define DISABLE_MCMD_RXParamSetupReq // 2nd DN window param
 //#define DISABLE_MCMD_NewChannelReq // set new channel
+//#define DISABLE_MCMD_DlChannelReq // set downlink channel for RX1 for given uplink channel.
+//#define DISABLE_MCMD_RXTimingSetupReq // delay between TX and RX
 // Class B
 //#define DISABLE_MCMD_PingSlotChannelReq // set ping freq, automatically disabled by DISABLE_PING
 //#define ENABLE_MCMD_BeaconTimingAns // next beacon start, DEPRECATED, normally disabled by DISABLE_BEACON

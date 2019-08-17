@@ -184,4 +184,11 @@ bit_t LMICeulike_compareAdrState(const lmic_saved_adr_state_t *pStateBuffer) {
         return pStateBuffer->channelMap != LMIC.channelMap;
 }
 
+void LMICeulike_setRx1Freq(void) {
+#if !defined(DISABLE_MCMD_DlChannelReq)
+        uint32_t dlFreq = LMIC.channelDlFreq[LMIC.txChnl];
+        if (dlFreq != 0)
+                LMIC.freq = dlFreq;
+#endif // !DISABLE_MCMD_DlChannelReq
+}
 #endif // CFG_LMIC_EU_like

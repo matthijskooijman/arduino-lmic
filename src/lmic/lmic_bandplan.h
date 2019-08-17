@@ -169,6 +169,11 @@
 #define PRERX_FSK  1
 #define RXLEN_FSK  (1+5+2)
 
+// this is regional, but so far all regions are the same
+#if !defined(LMICbandplan_MAX_FCNT_GAP)
+# define LMICbandplan_MAX_FCNT_GAP  16384
+#endif // !defined LWAN_MAX_FCNT_GAP
+
 #define BCN_INTV_osticks       sec2osticks(BCN_INTV_sec)
 #define TXRX_GUARD_osticks     ms2osticks(TXRX_GUARD_ms)
 #define JOIN_GUARD_osticks     ms2osticks(JOIN_GUARD_ms)
