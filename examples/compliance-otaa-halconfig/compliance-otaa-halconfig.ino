@@ -244,7 +244,7 @@ void printOpmode(uint16_t opmode, char sep = ',') {
 }
 
 void printTxend(ostime_t txend) {
-    Serial.print(F(", txend=")); Serial.print(txend); 
+    Serial.print(F(", txend=")); Serial.print(txend);
 }
 
 void eventPrint(cEventQueue::eventnode_t &e) {
