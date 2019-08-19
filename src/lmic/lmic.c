@@ -924,7 +924,7 @@ scan_mac_cmds(
         }
 
         case MCMD_DevStatusReq: {
-            // LMIC.snr is SNR time 4, convert to real SNR; rounding towards zero.
+            // LMIC.snr is SNR times 4, convert to real SNR; rounding towards zero.
             const int snr = (LMIC.snr + 2) / 4;
             // per [1.02] 5.5. the margin is the SNR.
             LMIC.devAnsMargin = (u1_t)(0b00111111 & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr));
@@ -2145,7 +2145,7 @@ static bit_t processDnData (void) {
             }
             // confirmed uplink is complete without an ack: no port and no flag
             initTxrxFlags(__func__, TXRX_NACK | TXRX_NOPORT);
-        } else if (LMIC.upRepeatCount != 0) { 
+        } else if (LMIC.upRepeatCount != 0) {
             if (LMIC.upRepeatCount < LMIC.upRepeat) {
                 LMIC.upRepeatCount += 1;
                 txDelay(os_getTime() + ms2osticks(LMICbandplan_TX_RECOVERY_ms), 0);

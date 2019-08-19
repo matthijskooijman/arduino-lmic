@@ -460,7 +460,7 @@ struct lmic_t {
     u1_t        pendTxData[MAX_LEN_PAYLOAD];
 
     u1_t        pendMacLen;         // number of bytes of pending Mac response data
-    bit_t       pendMacPiggyback;   // received on port 0 or piggyback? 
+    bit_t       pendMacPiggyback;   // received on port 0 or piggyback?
     // response data if piggybacked
     u1_t        pendMacData[LWAN_FCtrl_FOptsLen_MAX];
 
