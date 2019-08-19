@@ -1829,14 +1829,6 @@ static void buildDataFrame (void) {
     }
 #endif // !DISABLE_MCMD_RXTimingSetupReq)
 
-    if( LMIC.adrChanged ) {
-        // if ADR is enabled, and we were just counting down the
-        // transmits before starting an ADR, advance the timer so
-        // we'll do an ADR now.
-        if (LMIC.adrAckReq < LINK_CHECK_CONT)
-            setAdrAckCount(LINK_CHECK_CONT);
-        LMIC.adrChanged = 0;
-    }
 #if LMIC_ENABLE_DeviceTimeReq
     if ( LMIC.txDeviceTimeReqState == lmic_RequestTimeState_tx ) {
         LMIC.frame[end+0] = MCMD_DeviceTimeReq;
@@ -1851,6 +1843,15 @@ static void buildDataFrame (void) {
     }
 #endif
     ASSERT(end <= OFF_DAT_OPTS+16);
+
+    if( LMIC.adrChanged ) {
+        // if ADR is enabled, and we were just counting down the
+        // transmits before starting an ADR, advance the timer so
+        // we'll do an ADR now.
+        if (LMIC.adrAckReq < LINK_CHECK_CONT)
+            setAdrAckCount(LINK_CHECK_CONT);
+        LMIC.adrChanged = 0;
+    }
 
     u1_t flen = end + (txdata ? 5+dlen : 4);
     if( flen > MAX_LEN_FRAME ) {
