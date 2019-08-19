@@ -1844,6 +1844,12 @@ static void buildDataFrame (void) {
         LMIC.txDeviceTimeReqState = lmic_RequestTimeState_rx;
     }
 #endif // LMIC_ENABLE_DeviceTimeReq
+#if !defined(DISABLE_BEACONS) && defined(ENABLE_MCMD_BeaconTimingAns)
+    if ( LMIC.bcninfoTries > 0 ) {
+        LMIC.frame[end+0] = MCMD_BeaconInfoReq;
+        end += 1;
+    }
+#endif
     ASSERT(end <= OFF_DAT_OPTS+16);
 
     u1_t flen = end + (txdata ? 5+dlen : 4);
@@ -1962,7 +1968,7 @@ bit_t LMIC_enableTracking (u1_t tryBcnInfo) {
     if( (LMIC.opmode & (OP_SCAN|OP_TRACK|OP_SHUTDOWN)) != 0 )
         return 0;  // already in progress or failed to enable
     // If BCN info requested from NWK then app has to take are
-    // of sending data up so that MCMD_BeaconTimingReq can be attached.
+    // of sending data up so that MCMD_BeaconInfoReq can be attached.
     if( (LMIC.bcninfoTries = tryBcnInfo) == 0 )
         startScan();
     return 1;  // enabled
@@ -2254,7 +2260,7 @@ static bit_t processDnData (void) {
                 reportEventNoUpdate(EV_LINK_DEAD); // update?
         }
 #if !defined(DISABLE_BEACONS)
-        // If this falls to zero the NWK did not answer our MCMD_BeaconTimingReq commands - try full scan
+        // If this falls to zero the NWK did not answer our MCMD_BeaconInfoReq commands - try full scan
         if( LMIC.bcninfoTries > 0 ) {
             if( (LMIC.opmode & OP_TRACK) != 0 ) {
                 reportEventNoUpdate(EV_BEACON_FOUND); // update?

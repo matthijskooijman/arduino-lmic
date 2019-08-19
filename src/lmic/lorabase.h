@@ -512,7 +512,7 @@ enum {
     // Class B
     MCMD_PingSlotInfoReq = 0x10,    // u1: 7=RFU, 6-4:interval, 3-0:datarate
     MCMD_PingSlotChannelAns = 0x11, // u1: 7-1:RFU, 0:freq ok
-    MCMD_BeaconTimingReq = 0x12,    // - (DEPRECATED)
+    MCMD_BeaconInfoReq = 0x12,      // - (DEPRECATED)
     MCMD_BeaconFreqAns = 0x13,      // u1: 7-1:RFU, 0:freq ok
 };
 
