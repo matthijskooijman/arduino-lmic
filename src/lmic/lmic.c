@@ -2154,6 +2154,7 @@ static bit_t processDnData (void) {
             initTxrxFlags(__func__, TXRX_NACK | TXRX_NOPORT);
         } else if (LMIC.upRepeatCount != 0) {
             if (LMIC.upRepeatCount < LMIC.upRepeat) {
+                ArduinoLMIC_putEventDatum("processDnData: repeat", (LMIC.upRepeat<<8u) | (LMIC.upRepeatCount<<0u));
                 LMIC.upRepeatCount += 1;
                 txDelay(os_getTime() + ms2osticks(LMICbandplan_TX_RECOVERY_ms), 0);
                 LMIC.opmode &= ~OP_TXRXPEND;
@@ -2161,6 +2162,7 @@ static bit_t processDnData (void) {
                 return 1;
             }
             // counted out: nothing received.
+            LMIC.upRepeatCount = 0;
             initTxrxFlags(__func__, TXRX_NOPORT);
         } else {
             // Nothing received - implies no port
