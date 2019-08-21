@@ -1869,6 +1869,7 @@ static void buildDataFrame (void) {
         LMIC.seqnoUp += 1;
         DO_DEVDB(LMIC.seqnoUp,seqnoUp);
     } else {
+        ArduinoLMIC_putEventDatum("retransmit", (LMIC.frame[OFF_DAT_FCT] << 24u) | (LMIC.txCnt << 16u)|(LMIC.upRepeatCount << 8u) | (LMIC.upRepeat<<0u));
         EV(devCond, INFO, (e_.reason = EV::devCond_t::RE_TX,
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = LMIC.seqnoUp-1,
@@ -2162,7 +2163,6 @@ static bit_t processDnData (void) {
                 return 1;
             }
             // counted out: nothing received.
-            LMIC.upRepeatCount = 0;
             initTxrxFlags(__func__, TXRX_NOPORT);
         } else {
             // Nothing received - implies no port
@@ -2174,6 +2174,8 @@ static bit_t processDnData (void) {
       // the transmission that got us here is complete.
       txcomplete:
         LMIC.opmode &= ~(OP_TXDATA|OP_TXRXPEND);
+        // turn off all the repeat stuff.
+        LMIC.txCnt = LMIC.upRepeatCount = 0;
 
         // if there's pending mac data that's not piggyback, launch it now.
         if (LMIC.pendMacLen != 0) {
