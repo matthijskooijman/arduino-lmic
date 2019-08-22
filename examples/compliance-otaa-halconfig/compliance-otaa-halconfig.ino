@@ -154,16 +154,16 @@ private:
 cEventQueue eventQueue;
 
 extern "C" {
-    void ArduinoLMIC_putEvent(const char *pMessage);
-    void ArduinoLMIC_putEventDatum(const char *pMessage, uint32_t datum);
+    void LMICOS_logEvent(const char *pMessage);
+    void LMICOS_logEventUint32(const char *pMessage, uint32_t datum);
 }
 
-void ArduinoLMIC_putEvent(const char *pMessage)
+void LMICOS_logEvent(const char *pMessage)
     {
     eventQueue.putEvent(ev_t(-1), pMessage);
     }
 
-void ArduinoLMIC_putEventDatum(const char *pMessage, uint32_t datum)
+void LMICOS_logEventUint32(const char *pMessage, uint32_t datum)
     {
     eventQueue.putEvent(ev_t(-2), pMessage, datum);
     }

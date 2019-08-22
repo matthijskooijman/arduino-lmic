@@ -38,20 +38,6 @@
 
 DEFINE_LMIC;
 
-//#define LMIC_ENABLE_TRACE   1
-
-#ifndef LMIC_ENABLE_TRACE
-# define LMIC_ENABLE_TRACE 0
-#endif
-
-#if LMIC_ENABLE_TRACE
-extern void ArduinoLMIC_putEvent(const char *pMessage);
-extern void ArduinoLMIC_putEventDatum(const char *pMessage, uint32_t datum);
-#else
-# define ArduinoLMIC_putEvent(m)     do { ; } while (0)
-# define ArduinoLMIC_putEventDatum(m, d) do { ; } while (0)
-#endif
-
 // Fwd decls.
 static void reportEventNoUpdate(ev_t);
 static void reportEventAndUpdate(ev_t);
@@ -769,7 +755,7 @@ applyAdrRequests(
             u1_t chpage = p4 & MCMD_LinkADRReq_Redundancy_ChMaskCntl_MASK;     // channel page
 
             map_ok = LMICbandplan_mapChannels(chpage, chmap);
-            ArduinoLMIC_putEventDatum("applyAdrRequests: mapChannels", (chpage << 16)|(chmap << 0));
+            LMICOS_logEventUint32("applyAdrRequests: mapChannels", (chpage << 16)|(chmap << 0));
         }
     }
 
@@ -802,7 +788,7 @@ applyAdrRequests(
 
         dr_t dr = (dr_t)(p1>>MCMD_LinkADRReq_DR_SHIFT);
 
-        ArduinoLMIC_putEventDatum("applyAdrRequests: setDrTxPow", (adrAns << 16)|(dr << 8)|(p1 << 0));
+        LMICOS_logEventUint32("applyAdrRequests: setDrTxPow", (adrAns << 16)|(dr << 8)|(p1 << 0));
 
         // handle power changes here, too.
         changes |= setDrTxpow(DRCHG_NWKCMD, dr, pow2dBm(p1));
@@ -821,7 +807,7 @@ scan_mac_cmds_link_adr(
     bit_t *presponse_fit
     )
     {
-    ArduinoLMIC_putEventDatum("scan_mac_cmds_link_adr", olen);
+    LMICOS_logEventUint32("scan_mac_cmds_link_adr", olen);
 
     if (olen == 0)
         return 0;
@@ -1006,7 +992,7 @@ scan_mac_cmds(
 
             if( ans == MCMD_NewChannelAns_DataRateACK|MCMD_NewChannelAns_ChannelACK) {
                 if ( ! LMIC_setupChannel(chidx, freq, DR_RANGE_MAP(MinDR, MaxDR), -1) ) {
-                    ArduinoLMIC_putEventDatum("NewChannelReq: setupChannel failed", (MaxDR << 24u) | (MinDR << 16u) | (raw_f_not_zero << 8) | (chidx << 0));
+                    LMICOS_logEventUint32("NewChannelReq: setupChannel failed", (MaxDR << 24u) | (MinDR << 16u) | (raw_f_not_zero << 8) | (chidx << 0));
                     ans &= ~MCMD_NewChannelAns_ChannelACK;
                 }
             }
@@ -1180,7 +1166,7 @@ static bit_t decodeFrame (void) {
     const char *window = (LMIC.txrxFlags & TXRX_DNW1) ? "RX1" : ((LMIC.txrxFlags & TXRX_DNW2) ? "RX2" : "Other");
 #endif
     if (dlen > 0)
-        ArduinoLMIC_putEventDatum("decodeFrame", (dlen << 8) | (hdr << 0));
+        LMICOS_logEventUint32("decodeFrame", (dlen << 8) | (hdr << 0));
 
     if( dlen < OFF_DAT_OPTS+4 ||
         (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
@@ -1208,7 +1194,7 @@ static bit_t decodeFrame (void) {
     int  pend  = dlen-4;  // MIC
 
     if( addr != LMIC.devaddr ) {
-        ArduinoLMIC_putEventDatum("decodeFrame: wrong address", addr);
+        LMICOS_logEventUint32("decodeFrame: wrong address", addr);
 
         EV(specCond, WARN, (e_.reason = EV::specCond_t::ALIEN_ADDRESS,
                             e_.eui    = MAIN::CDEV->getEui(),
@@ -1217,7 +1203,7 @@ static bit_t decodeFrame (void) {
         goto norx;
     }
     if( poff > pend ) {
-        ArduinoLMIC_putEventDatum("decodeFrame: corrupted frame", (dlen << 16) | (fct << 8) | (poff - pend));
+        LMICOS_logEventUint32("decodeFrame: corrupted frame", (dlen << 16) | (fct << 8) | (poff - pend));
         EV(specCond, ERR, (e_.reason = EV::specCond_t::CORRUPTED_FRAME,
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = 0x1000000 + (poff-pend) + (fct<<8) + (dlen<<16)));
@@ -1244,7 +1230,7 @@ static bit_t decodeFrame (void) {
     }
 
     if( !aes_verifyMic(LMIC.nwkKey, LMIC.devaddr, seqno, /*dn*/1, d, pend) ) {
-        ArduinoLMIC_putEventDatum("decodeFrame: bad MIC", seqno);
+        LMICOS_logEventUint32("decodeFrame: bad MIC", seqno);
         EV(spe3Cond, ERR, (e_.reason = EV::spe3Cond_t::CORRUPTED_MIC,
                            e_.eui1   = MAIN::CDEV->getEui(),
                            e_.info1  = Base::lsbf4(&d[pend]),
@@ -1258,7 +1244,7 @@ static bit_t decodeFrame (void) {
                                 e_.eui    = MAIN::CDEV->getEui(),
                                 e_.info   = LMIC.seqnoDn,
                                 e_.info2  = seqno));
-            ArduinoLMIC_putEventDatum("decodeFrame: rollover discarded", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+            LMICOS_logEventUint32("decodeFrame: rollover discarded", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
             goto norx;
         }
         if( seqno != LMIC.seqnoDn-1 || !LMIC.lastDnConf || ftype != HDR_FTYPE_DCDN ) {
@@ -1266,19 +1252,19 @@ static bit_t decodeFrame (void) {
                                 e_.eui    = MAIN::CDEV->getEui(),
                                 e_.info   = LMIC.seqnoDn,
                                 e_.info2  = seqno));
-            ArduinoLMIC_putEventDatum("decodeFrame: Retransmit confimed discarded", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+            LMICOS_logEventUint32("decodeFrame: Retransmit confimed discarded", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
             goto norx;
         }
         // Replay of previous sequence number allowed only if
         // previous frame and repeated both requested confirmation
         // but set a flag, so we don't actually process the message.
-        ArduinoLMIC_putEventDatum("decodeFrame: Retransmit confimed accepted", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+        LMICOS_logEventUint32("decodeFrame: Retransmit confimed accepted", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
         replayConf = 1;
         LMIC.dnConf = FCT_ACK;
     }
     else {
         if( seqnoDiff > LMICbandplan_MAX_FCNT_GAP) {
-            ArduinoLMIC_putEventDatum("decodeFrame: gap too big", (seqnoDiff << 16) | (seqno & 0xFFFFu));
+            LMICOS_logEventUint32("decodeFrame: gap too big", (seqnoDiff << 16) | (seqno & 0xFFFFu));
             goto norx;
         }
         if( seqno > LMIC.seqnoDn ) {
@@ -1292,7 +1278,7 @@ static bit_t decodeFrame (void) {
         // DN frame requested confirmation - provide ACK once with next UP frame
         LMIC.dnConf = LMIC.lastDnConf = (ftype == HDR_FTYPE_DCDN ? FCT_ACK : 0);
         if (LMIC.dnConf)
-            ArduinoLMIC_putEventDatum("decodeFrame: Confirmed downlink", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+            LMICOS_logEventUint32("decodeFrame: Confirmed downlink", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
     }
 
     if (port == 0 && olen != 0 && pend > poff) {
@@ -1377,7 +1363,7 @@ static bit_t decodeFrame (void) {
                             e_.info   = Base::lsbf4(&d[pend]),
                             e_.info2  = seqno));
         // discard the data
-        ArduinoLMIC_putEventDatum("decodeFrame: discarding replay", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+        LMICOS_logEventUint32("decodeFrame: discarding replay", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
         goto norx;
     }
 
@@ -1869,7 +1855,7 @@ static void buildDataFrame (void) {
         LMIC.seqnoUp += 1;
         DO_DEVDB(LMIC.seqnoUp,seqnoUp);
     } else {
-        ArduinoLMIC_putEventDatum("retransmit", (LMIC.frame[OFF_DAT_FCT] << 24u) | (LMIC.txCnt << 16u)|(LMIC.upRepeatCount << 8u) | (LMIC.upRepeat<<0u));
+        LMICOS_logEventUint32("retransmit", (LMIC.frame[OFF_DAT_FCT] << 24u) | (LMIC.txCnt << 16u)|(LMIC.upRepeatCount << 8u) | (LMIC.upRepeat<<0u));
         EV(devCond, INFO, (e_.reason = EV::devCond_t::RE_TX,
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = LMIC.seqnoUp-1,
@@ -2155,7 +2141,7 @@ static bit_t processDnData (void) {
             initTxrxFlags(__func__, TXRX_NACK | TXRX_NOPORT);
         } else if (LMIC.upRepeatCount != 0) {
             if (LMIC.upRepeatCount < LMIC.upRepeat) {
-                ArduinoLMIC_putEventDatum("processDnData: repeat", (LMIC.upRepeat<<8u) | (LMIC.upRepeatCount<<0u));
+                LMICOS_logEventUint32("processDnData: repeat", (LMIC.upRepeat<<8u) | (LMIC.upRepeatCount<<0u));
                 LMIC.upRepeatCount += 1;
                 txDelay(os_getTime() + ms2osticks(LMICbandplan_TX_RECOVERY_ms), 0);
                 LMIC.opmode &= ~OP_TXRXPEND;
@@ -2180,7 +2166,7 @@ static bit_t processDnData (void) {
         // if there's pending mac data that's not piggyback, launch it now.
         if (LMIC.pendMacLen != 0) {
             if (LMIC.pendMacPiggyback) {
-                ArduinoLMIC_putEvent("piggyback mac message");
+                LMICOS_logEvent("piggyback mac message");
                 LMIC.opmode |= OP_POLL;     // send back the mac answers even if there's no data.
             } else {
                 // Every mac command on port 0 requires an uplink, if there's data.
@@ -2193,7 +2179,7 @@ static bit_t processDnData (void) {
                 LMIC.pendTxLen  = LMIC.pendMacLen;
                 LMIC.pendMacLen = 0; // discard mac data!
                 LMIC.opmode |= OP_TXDATA;
-                ArduinoLMIC_putEvent("port0 mac message");
+                LMICOS_logEvent("port0 mac message");
             }
         }
 
@@ -2639,7 +2625,7 @@ void LMIC_clrTxData (void) {
 
 
 void LMIC_setTxData (void) {
-    ArduinoLMIC_putEventDatum("LMIC_setTxData", (LMIC.pendTxPort << 24u) | (LMIC.pendTxConf << 16u) | (LMIC.pendTxLen << 0u));
+    LMICOS_logEventUint32("LMIC_setTxData", (LMIC.pendTxPort << 24u) | (LMIC.pendTxConf << 16u) | (LMIC.pendTxLen << 0u));
     LMIC.opmode |= OP_TXDATA;
     if( (LMIC.opmode & OP_JOINING) == 0 ) {
         LMIC.txCnt = 0;             // reset the confirmed uplink FSM

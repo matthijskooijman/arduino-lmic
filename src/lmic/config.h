@@ -192,4 +192,11 @@
 # define LMIC_ENABLE_long_messages 1        /* PARAM */
 #endif
 
+// LMIC_ENABLE_event_logging
+// LMIC debugging for certification tests requires this, because debug prints affect
+// timing too dramatically.
+#if !defined(LMIC_ENABLE_event_logging)
+# define LMIC_ENABLE_event_logging 1        /* PARAM */
+#endif
+
 #endif // _lmic_config_h_
