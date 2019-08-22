@@ -256,6 +256,29 @@ enum _ev_t { EV_SCAN_TIMEOUT=1, EV_BEACON_FOUND,
              EV_TXSTART, EV_TXCANCELED, EV_RXSTART, EV_JOIN_TXCOMPLETE };
 typedef enum _ev_t ev_t;
 
+// this macro can be used to initalize a normal table of event strings
+#define LMIC_EVENT_NAME_TABLE__INIT                                         \
+    "<<zero>>",                                                             \
+    "EV_SCAN_TIMEOUT", "EV_BEACON_FOUND",                                   \
+    "EV_BEACON_MISSED", "EV_BEACON_TRACKED", "EV_JOINING",                  \
+    "EV_JOINED", "EV_RFU1", "EV_JOIN_FAILED", "EV_REJOIN_FAILED",           \
+    "EV_TXCOMPLETE", "EV_LOST_TSYNC", "EV_RESET",                           \
+    "EV_RXCOMPLETE", "EV_LINK_DEAD", "EV_LINK_ALIVE", "EV_SCAN_FOUND",      \
+    "EV_TXSTART", "EV_TXCANCELED", "EV_RXSTART", "EV_JOIN_TXCOMPLETE"
+
+// if working on an AVR (or worried about it), you can use this multi-zero
+// string and put this in a single const F() string.  Index through this
+// counting up from 0, until you get to the entry you want or to an
+// entry that begins with a \0.
+#define LMIC_EVENT_NAME_MULTISZ__INIT                                       \
+    "<<zero>>\0"                                                            \
+    "EV_SCAN_TIMEOUT\0" "EV_BEACON_FOUND\0"                                 \
+    "EV_BEACON_MISSED\0" "EV_BEACON_TRACKED\0" "EV_JOINING\0"               \
+    "EV_JOINED\0" "EV_RFU1\0" "EV_JOIN_FAILED\0" "EV_REJOIN_FAILED\0"       \
+    "EV_TXCOMPLETE\0" "EV_LOST_TSYNC\0" "EV_RESET\0"                        \
+    "EV_RXCOMPLETE\0" "EV_LINK_DEAD\0" "EV_LINK_ALIVE\0" "EV_SCAN_FOUND\0"  \
+    "EV_TXSTART\0" "EV_TXCANCELED\0" "EV_RXSTART\0" "EV_JOIN_TXCOMPLETE\0"
+
 enum {
         // This value represents 100% error in LMIC.clockError
         MAX_CLOCK_ERROR = 65536,

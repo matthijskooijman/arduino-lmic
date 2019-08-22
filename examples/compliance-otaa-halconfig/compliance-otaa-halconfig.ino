@@ -56,15 +56,7 @@ bool g_fTestMode = false;
 lmic_event_cb_t myEventCb;
 lmic_rxmessage_cb_t myRxMessageCb;
 
-const char * const evNames[] = {
-    "<<zero>>",
-    "EV_SCAN_TIMEOUT", "EV_BEACON_FOUND",
-    "EV_BEACON_MISSED", "EV_BEACON_TRACKED", "EV_JOINING",
-    "EV_JOINED", "EV_RFU1", "EV_JOIN_FAILED", "EV_REJOIN_FAILED",
-    "EV_TXCOMPLETE", "EV_LOST_TSYNC", "EV_RESET",
-    "EV_RXCOMPLETE", "EV_LINK_DEAD", "EV_LINK_ALIVE", "EV_SCAN_FOUND",
-    "EV_TXSTART", "EV_TXCANCELED", "EV_RXSTART", "EV_JOIN_TXCOMPLETE"
-};
+const char * const evNames[] = { LMIC_EVENT_NAME_TABLE__INIT };
 
 /*
 
