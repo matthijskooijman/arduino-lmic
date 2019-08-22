@@ -145,6 +145,7 @@ private:
 
 cEventQueue eventQueue;
 
+#if LMIC_ENABLE_event_logging
 extern "C" {
     void LMICOS_logEvent(const char *pMessage);
     void LMICOS_logEventUint32(const char *pMessage, uint32_t datum);
@@ -159,6 +160,7 @@ void LMICOS_logEventUint32(const char *pMessage, uint32_t datum)
     {
     eventQueue.putEvent(ev_t(-2), pMessage, datum);
     }
+#endif // LMIC_ENABLE_event_logging
 
 uint8_t lastTxChannel;
 bool lastTxStart;
