@@ -60,6 +60,7 @@ requires C99 mode to be enabled by default.
 		- [Disabling user events](#disabling-user-events)
 		- [Disabling external reference to `onEvent()`](#disabling-external-reference-to-onevent)
 		- [Enabling long messages](#enabling-long-messages)
+		- [Enabling LMIC event logging calls](#enabling-lmic-event-logging-calls)
 		- [Special purpose](#special-purpose)
 - [Supported hardware](#supported-hardware)
 - [Pre-Integrated Boards](#pre-integrated-boards)
@@ -333,6 +334,12 @@ In some embedded systems, `onEvent()` may be defined for some other purpose; so 
 #### Enabling long messages
 
 To save RAM for simple devices, the LMIC allows message length to be limited to 64 bytes instead of the LoRaWAN standard of 255 bytes max. This saves about 2*192 bytes of RAM. Unfortunately, compliance tests require the full message size. Long messages are enabled by setting `LMIC_ENABLE_long_messages` to 1, or disabled by setting it to zero. This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, the maximum frame size is 255 bytes, and if zero, the maximum frame size is 64 bytes.
+
+#### Enabling LMIC event logging calls
+
+When debugging the LMIC, debug prints change timing, and can make things not work at all. The LMIC has embedded optional calls to capture debug information that can be printed out later, when the LMIC is not active. Logging is enabled by setting `LMIC_ENABLE_event_logging` to 1. The default is not to log. This C preprocessor macro is always defined as a post-condition of `#include "config.h"`.
+
+The compliance test script includes a suitable logging implementation; the other example scripts do not.
 
 #### Special purpose
 

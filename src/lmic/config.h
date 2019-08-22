@@ -194,9 +194,9 @@
 
 // LMIC_ENABLE_event_logging
 // LMIC debugging for certification tests requires this, because debug prints affect
-// timing too dramatically.
+// timing too dramatically. But normal operation doesn't need this.
 #if !defined(LMIC_ENABLE_event_logging)
-# define LMIC_ENABLE_event_logging 1        /* PARAM */
+# define LMIC_ENABLE_event_logging 0        /* PARAM */
 #endif
 
 #endif // _lmic_config_h_
