@@ -123,7 +123,7 @@
 #define FSKRegSeqConfig2                           0x37 //              -
 #define LORARegDetectionThreshold                  0x37
 #define FSKRegTimerResol                           0x38 //              -
-#define FSKRegTimer1Coef                           0x39 //              - 
+#define FSKRegTimer1Coef                           0x39 //              -
 #define LORARegSyncWord                            0x39
 #define FSKRegTimer2Coef                           0x3A //              -
 #define LORARegHighBwOptimize2                     0x3A
