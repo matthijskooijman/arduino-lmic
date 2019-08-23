@@ -2118,162 +2118,202 @@ static void processPingRx (xref2osjob_t osjob) {
 //
 // Inputs:
 //  LMIC.dataLen    number of bytes receieved; 0 --> no message at all received.
+//  LMIC.txCnt      currnt confirmed uplink count, or 0 for unconfirmed.
+//  LMIC.txrxflags  state of play for the Class A engine and message receipt.
+//
+// and many other flags in txcomplete().
+
+// forward references.
+static bit_t processDnData_norx(void);
+static bit_t processDnData_txcomplete(void);
 
 static bit_t processDnData (void) {
     ASSERT((LMIC.opmode & OP_TXRXPEND)!=0);
 
     if( LMIC.dataLen == 0 ) {
         // if this is an RX1 window, shouldn't we return 0 to schedule
-        // RX2?
-      norx:
-        if( LMIC.txCnt != 0 ) {
-            if( LMIC.txCnt < TXCONF_ATTEMPTS ) {
-                LMIC.txCnt += 1;
-                // TODO(tmm@mcci.com): check feasibility of lower datarate
-                setDrTxpow(DRCHG_NOACK, lowerDR(LMIC.datarate, TABLE_GET_U1(DRADJUST, LMIC.txCnt)), KEEP_TXPOW);
-                // Schedule another retransmission
-                txDelay(LMIC.rxtime, RETRY_PERIOD_secs);
-                LMIC.opmode &= ~OP_TXRXPEND;
-                engineUpdate();
-                return 1;
-            }
-            // confirmed uplink is complete without an ack: no port and no flag
-            initTxrxFlags(__func__, TXRX_NACK | TXRX_NOPORT);
-        } else if (LMIC.upRepeatCount != 0) {
-            if (LMIC.upRepeatCount < LMIC.upRepeat) {
-                LMICOS_logEventUint32("processDnData: repeat", (LMIC.upRepeat<<8u) | (LMIC.upRepeatCount<<0u));
-                LMIC.upRepeatCount += 1;
-                txDelay(os_getTime() + ms2osticks(LMICbandplan_TX_RECOVERY_ms), 0);
-                LMIC.opmode &= ~OP_TXRXPEND;
-                engineUpdate();
-                return 1;
-            }
-            // counted out: nothing received.
-            initTxrxFlags(__func__, TXRX_NOPORT);
-        } else {
-            // Nothing received - implies no port
-            initTxrxFlags(__func__, TXRX_NOPORT);
-        }
-        setAdrAckCount(LMIC.adrAckReq + 1);
-        LMIC.dataBeg = LMIC.dataLen = 0;
-
-      // the transmission that got us here is complete.
-      txcomplete:
-        LMIC.opmode &= ~(OP_TXDATA|OP_TXRXPEND);
-        // turn off all the repeat stuff.
-        LMIC.txCnt = LMIC.upRepeatCount = 0;
-
-        // if there's pending mac data that's not piggyback, launch it now.
-        if (LMIC.pendMacLen != 0) {
-            if (LMIC.pendMacPiggyback) {
-                LMICOS_logEvent("piggyback mac message");
-                LMIC.opmode |= OP_POLL;     // send back the mac answers even if there's no data.
-            } else {
-                // Every mac command on port 0 requires an uplink, if there's data.
-                // TODO(tmm@mcci.com) -- this is why we need a queueing structure for
-                // uplinks.
-                // open code the logic to build this because we don't want to call
-                // engineUpdate right now.  Data is already in the uplink buffer.
-                LMIC.pendTxConf = 0; // not confirmed
-                LMIC.pendTxPort = 0; // port 0
-                LMIC.pendTxLen  = LMIC.pendMacLen;
-                LMIC.pendMacLen = 0; // discard mac data!
-                LMIC.opmode |= OP_TXDATA;
-                LMICOS_logEvent("port0 mac message");
-            }
-        }
-
-        // Half-duplex gateways can have appreciable turn-around times,
-        // so we force a wait. It might be nice to randomize this a little,
-        // so that armies of identical devices will not try to talk all
-        // at once. This is potentially band-specific, so we let it come
-        // from the band-plan files.
-        txDelay(os_getTime() + ms2osticks(LMICbandplan_TX_RECOVERY_ms), 0);
-
-#if LMIC_ENABLE_DeviceTimeReq
-        //
-        // if the DeviceTimeReq FSM is active, we need to move it to idle,
-        // completing the callback.
-        //
-        lmic_request_time_state_t const requestTimeState = LMIC.txDeviceTimeReqState;
-        if ( requestTimeState != lmic_RequestTimeState_idle ) {
-            lmic_request_network_time_cb_t * const pNetworkTimeCb = LMIC.client.pNetworkTimeCb;
-            int flagSuccess = (LMIC.txDeviceTimeReqState == lmic_RequestTimeState_success);
-            LMIC.txDeviceTimeReqState = lmic_RequestTimeState_idle;
-            if (pNetworkTimeCb != NULL) {
-                // reset the callback, so that the user's routine
-                // can post another request if desired.
-                LMIC.client.pNetworkTimeCb = NULL;
-
-                // call the user's notification routine.
-                (*pNetworkTimeCb)(LMIC.client.pNetworkTimeUserData, flagSuccess);
-            }
-        }
-#endif // LMIC_ENABLE_DeviceTimeReq
-
-        if( (LMIC.txrxFlags & (TXRX_DNW1|TXRX_DNW2|TXRX_PING)) != 0  &&  (LMIC.opmode & OP_LINKDEAD) != 0 ) {
-            LMIC.opmode &= ~OP_LINKDEAD;
-            reportEventNoUpdate(EV_LINK_ALIVE);
-        }
-        reportEventAndUpdate(EV_TXCOMPLETE);
-        // If we haven't heard from NWK in a while although we asked for a sign
-        // assume link is dead - notify application and keep going
-        if( LMIC.adrAckReq > LINK_CHECK_DEAD ) {
-            // We haven't heard from NWK for some time although we
-            // asked for a response for some time - assume we're disconnected. Lower DR one notch.
-            EV(devCond, ERR, (e_.reason = EV::devCond_t::LINK_DEAD,
-                              e_.eui    = MAIN::CDEV->getEui(),
-                              e_.info   = LMIC.adrAckReq));
-            dr_t newDr = decDR((dr_t)LMIC.datarate);
-            // TODO(tmm@mcci.com) newDr must be feasible; there must be at least
-            // one channel that supports the new datarate. If not, stay
-            // at current datarate.
-            if( newDr == (dr_t)LMIC.datarate) {
-                // We are already at the minimum datarate
-                // if the link is already marked dead, we need to join.
-#if !defined(DISABLE_JOIN)
-                if ( LMIC.adrAckReq > LINK_CHECK_UNJOIN ) {
-                    LMIC.opmode |= OP_UNJOIN;
-                }
-#endif // !defined(DISABLE_JOIN)
-            } else {
-                // not in the dead state... let's wait another 32
-                // uplinks before panicking.
-                setAdrAckCount(LINK_CHECK_CONT);
-            }
-            // Decrease DataRate and restore fullpower.
-            setDrTxpow(DRCHG_NOADRACK, newDr, pow2dBm(0));
-
-            // be careful only to report EV_LINK_DEAD once.
-            u2_t old_opmode = LMIC.opmode;
-            LMIC.opmode = old_opmode | OP_LINKDEAD;
-            if (LMIC.opmode != old_opmode)
-                reportEventNoUpdate(EV_LINK_DEAD); // update?
-        }
-#if !defined(DISABLE_BEACONS)
-        // If this falls to zero the NWK did not answer our MCMD_BeaconInfoReq commands - try full scan
-        if( LMIC.bcninfoTries > 0 ) {
-            if( (LMIC.opmode & OP_TRACK) != 0 ) {
-                reportEventNoUpdate(EV_BEACON_FOUND); // update?
-                LMIC.bcninfoTries = 0;
-            }
-            else if( --LMIC.bcninfoTries == 0 ) {
-                startScan();   // NWK did not answer - try scan
-            }
-        }
-#endif // !DISABLE_BEACONS
-        return 1;
+        // RX2?  in fact, the rx1 caller ignores what we return, and
+        // norx() doesn't call txcomplete if this is RX1.
+        return processDnData_norx();
     }
     // if we get here, LMIC.dataLen != 0, so there is some
     // traffic.
-    if( !decodeFrame() ) {
+    else if( !decodeFrame() ) {
+        // if we are in downlink window 1, we need to schedule
+        // downlink window 2.
         if( (LMIC.txrxFlags & TXRX_DNW1) != 0 )
             return 0;
-        goto norx;
+        else
+            // otherwise we are in downlink window 2; we will not
+            // get any more downlink traffic from this uplink, so we need
+            // to close the books on this uplink attempt
+            return processDnData_norx();
     }
-    goto txcomplete;
+    // downlink frame was accepted. This means that we're done. Except
+    // there's one bizarre corner case. If we sent a confirmed message
+    // and got a downlink that didn't have an ACK, we have to retry.
+    // It is not clear why the network is permitted to do this; the
+    // fact that they scheduled a downlink for us during one of the RX
+    // windows is clear confirmation that the uplink made it to the
+    // network and was valid. However, compliance checks this, so
+    // we have to handle it and retransmit.
+    else if (LMIC.txCnt != 0 && (LMIC.txrxFlags & TXRX_NACK) != 0)
+        {
+        // grr.  we're confirmed but the network downlink did not
+        // set the ACK bit. We know txCnt is non-zero, so this
+        // will immediately fall into the retransmit path. We don't
+        // want to do this unless it's a confirmed uplink.
+        return processDnData_norx();
+        }
+    // the transmit of the uplink is really complete.
+    else {
+        return processDnData_txcomplete();
+    }
 }
 
+// nothing was received this window.
+static bit_t processDnData_norx(void) {
+    if( LMIC.txCnt != 0 ) {
+        if( LMIC.txCnt < TXCONF_ATTEMPTS ) {
+            LMIC.txCnt += 1;
+            // TODO(tmm@mcci.com): check feasibility of lower datarate
+            setDrTxpow(DRCHG_NOACK, lowerDR(LMIC.datarate, TABLE_GET_U1(DRADJUST, LMIC.txCnt)), KEEP_TXPOW);
+            // Schedule another retransmission
+            txDelay(LMIC.rxtime, RETRY_PERIOD_secs);
+            LMIC.opmode &= ~OP_TXRXPEND;
+            engineUpdate();
+            return 1;
+        }
+        // confirmed uplink is complete without an ack: no port and no flag
+        initTxrxFlags(__func__, TXRX_NACK | TXRX_NOPORT);
+    } else if (LMIC.upRepeatCount != 0) {
+        if (LMIC.upRepeatCount < LMIC.upRepeat) {
+            LMICOS_logEventUint32("processDnData: repeat", (LMIC.upRepeat<<8u) | (LMIC.upRepeatCount<<0u));
+            LMIC.upRepeatCount += 1;
+            txDelay(os_getTime() + ms2osticks(LMICbandplan_TX_RECOVERY_ms), 0);
+            LMIC.opmode &= ~OP_TXRXPEND;
+            engineUpdate();
+            return 1;
+        }
+        // counted out: nothing received.
+        initTxrxFlags(__func__, TXRX_NOPORT);
+    } else {
+        // Nothing received - implies no port
+        initTxrxFlags(__func__, TXRX_NOPORT);
+    }
+    setAdrAckCount(LMIC.adrAckReq + 1);
+    LMIC.dataBeg = LMIC.dataLen = 0;
+
+    return processDnData_txcomplete();
+}
+
+// this Class-A uplink-and-receive cycle is complete.
+static bit_t processDnData_txcomplete(void) {
+    LMIC.opmode &= ~(OP_TXDATA|OP_TXRXPEND);
+    // turn off all the repeat stuff.
+    LMIC.txCnt = LMIC.upRepeatCount = 0;
+
+    // if there's pending mac data that's not piggyback, launch it now.
+    if (LMIC.pendMacLen != 0) {
+        if (LMIC.pendMacPiggyback) {
+            LMICOS_logEvent("piggyback mac message");
+            LMIC.opmode |= OP_POLL;     // send back the mac answers even if there's no data.
+        } else {
+            // Every mac command on port 0 requires an uplink, if there's data.
+            // TODO(tmm@mcci.com) -- this is why we need a queueing structure for
+            // uplinks.
+            // open code the logic to build this because we don't want to call
+            // engineUpdate right now.  Data is already in the uplink buffer.
+            LMIC.pendTxConf = 0; // not confirmed
+            LMIC.pendTxPort = 0; // port 0
+            LMIC.pendTxLen  = LMIC.pendMacLen;
+            LMIC.pendMacLen = 0; // discard mac data!
+            LMIC.opmode |= OP_TXDATA;
+            LMICOS_logEvent("port0 mac message");
+        }
+    }
+
+    // Half-duplex gateways can have appreciable turn-around times,
+    // so we force a wait. It might be nice to randomize this a little,
+    // so that armies of identical devices will not try to talk all
+    // at once. This is potentially band-specific, so we let it come
+    // from the band-plan files.
+    txDelay(os_getTime() + ms2osticks(LMICbandplan_TX_RECOVERY_ms), 0);
+
+#if LMIC_ENABLE_DeviceTimeReq
+    //
+    // if the DeviceTimeReq FSM is active, we need to move it to idle,
+    // completing the callback.
+    //
+    lmic_request_time_state_t const requestTimeState = LMIC.txDeviceTimeReqState;
+    if ( requestTimeState != lmic_RequestTimeState_idle ) {
+        lmic_request_network_time_cb_t * const pNetworkTimeCb = LMIC.client.pNetworkTimeCb;
+        int flagSuccess = (LMIC.txDeviceTimeReqState == lmic_RequestTimeState_success);
+        LMIC.txDeviceTimeReqState = lmic_RequestTimeState_idle;
+        if (pNetworkTimeCb != NULL) {
+            // reset the callback, so that the user's routine
+            // can post another request if desired.
+            LMIC.client.pNetworkTimeCb = NULL;
+
+            // call the user's notification routine.
+            (*pNetworkTimeCb)(LMIC.client.pNetworkTimeUserData, flagSuccess);
+        }
+    }
+#endif // LMIC_ENABLE_DeviceTimeReq
+
+    if( (LMIC.txrxFlags & (TXRX_DNW1|TXRX_DNW2|TXRX_PING)) != 0  &&  (LMIC.opmode & OP_LINKDEAD) != 0 ) {
+        LMIC.opmode &= ~OP_LINKDEAD;
+        reportEventNoUpdate(EV_LINK_ALIVE);
+    }
+    reportEventAndUpdate(EV_TXCOMPLETE);
+    // If we haven't heard from NWK in a while although we asked for a sign
+    // assume link is dead - notify application and keep going
+    if( LMIC.adrAckReq > LINK_CHECK_DEAD ) {
+        // We haven't heard from NWK for some time although we
+        // asked for a response for some time - assume we're disconnected. Lower DR one notch.
+        EV(devCond, ERR, (e_.reason = EV::devCond_t::LINK_DEAD,
+                            e_.eui    = MAIN::CDEV->getEui(),
+                            e_.info   = LMIC.adrAckReq));
+        dr_t newDr = decDR((dr_t)LMIC.datarate);
+        // TODO(tmm@mcci.com) newDr must be feasible; there must be at least
+        // one channel that supports the new datarate. If not, stay
+        // at current datarate.
+        if( newDr == (dr_t)LMIC.datarate) {
+            // We are already at the minimum datarate
+            // if the link is already marked dead, we need to join.
+#if !defined(DISABLE_JOIN)
+            if ( LMIC.adrAckReq > LINK_CHECK_UNJOIN ) {
+                LMIC.opmode |= OP_UNJOIN;
+            }
+#endif // !defined(DISABLE_JOIN)
+        } else {
+            // not in the dead state... let's wait another 32
+            // uplinks before panicking.
+            setAdrAckCount(LINK_CHECK_CONT);
+        }
+        // Decrease DataRate and restore fullpower.
+        setDrTxpow(DRCHG_NOADRACK, newDr, pow2dBm(0));
+
+        // be careful only to report EV_LINK_DEAD once.
+        u2_t old_opmode = LMIC.opmode;
+        LMIC.opmode = old_opmode | OP_LINKDEAD;
+        if (LMIC.opmode != old_opmode)
+            reportEventNoUpdate(EV_LINK_DEAD); // update?
+    }
+#if !defined(DISABLE_BEACONS)
+    // If this falls to zero the NWK did not answer our MCMD_BeaconInfoReq commands - try full scan
+    if( LMIC.bcninfoTries > 0 ) {
+        if( (LMIC.opmode & OP_TRACK) != 0 ) {
+            reportEventNoUpdate(EV_BEACON_FOUND); // update?
+            LMIC.bcninfoTries = 0;
+        }
+        else if( --LMIC.bcninfoTries == 0 ) {
+            startScan();   // NWK did not answer - try scan
+        }
+    }
+#endif // !DISABLE_BEACONS
+    return 1;
+}
 
 #if !defined(DISABLE_BEACONS)
 static void processBeacon (xref2osjob_t osjob) {
