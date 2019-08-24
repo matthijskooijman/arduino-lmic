@@ -665,7 +665,7 @@ void setup_printSignOn()
 
 void setupForNetwork(bool preJoin) {
 #if defined(CFG_us915)
-    LMIC_selectSubBand(1);
+    LMIC_selectSubBand(0);
 
     if (! preJoin) {
 //        LMIC_setLinkCheckMode(0);
