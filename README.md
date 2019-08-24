@@ -1098,7 +1098,8 @@ function uflt12f(rawUflt12)
 
 - HEAD adds the following changes.
 
-  - [#378](https://github.com/mcci-catena/arduino-lmic/pull/378) completely reworks MAC downlink handling. Resulting code passes the LoRaWAN V1.5 EU certification test. (v2.32.2.70)
+  - [#385](https://github.com/mcci-catena/arduino-lmic/issues/385) corrects an error handling data rate selection for `TxParamSetupReq`, found in US-915 certification testing. (v2.3.2.71)
+  - [#378](https://github.com/mcci-catena/arduino-lmic/pull/378) completely reworks MAC downlink handling. Resulting code passes the LoRaWAN V1.5 EU certification test. (v2.3.2.70)
   - [#360](https://github.com/mcci-catena/arduino-lmic/pull/360) adds support for the KR-920 regional plan.
 
 - v2.3.2 is a patch release. It incorporates two pull requests.

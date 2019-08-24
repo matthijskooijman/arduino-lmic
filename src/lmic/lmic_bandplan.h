@@ -162,6 +162,10 @@
 # error "LMICbandplan_restoreAdrState() not defined by bandplan"
 #endif
 
+#if !defined(LMICbandplan_isDataRateFeasible)
+# error "LMICbandplan_isDataRateFeasible() not defined by bandplan"
+#endif
+
 //
 // Things common to lmic.c code
 //

@@ -225,6 +225,13 @@ const char *getCrcName(rps_t rps) {
     return getNocrc(rps) ? "NoCrc" : "Crc";
 }
 
+void printHex2(unsigned v) {
+    v &= 0xff;
+    if (v < 16)
+        Serial.print('0');
+    Serial.print(v, HEX);
+}
+
 void printFreq(u4_t freq) {
     Serial.print(F(": freq="));
     Serial.print(freq / 1000000);
@@ -233,13 +240,13 @@ void printFreq(u4_t freq) {
 }
 
 void printRps(rps_t rps) {
-    Serial.print(F(" rps=0x")); Serial.print(unsigned(rps), HEX);
+    Serial.print(F(" rps=0x")); printHex2(rps);
     Serial.print(F(" (")); Serial.print(getSfName(rps));
     Serial.print(F(" ")); Serial.print(getBwName(rps));
     Serial.print(F(" ")); Serial.print(getCrName(rps));
     Serial.print(F(" ")); Serial.print(getCrcName(rps));
     Serial.print(F(" IH=")); Serial.print(unsigned(getIh(rps)));
-    Serial.print(F(")"));
+    Serial.print(')');
 }
 
 void printOpmode(uint16_t opmode, char sep = ',') {
@@ -261,18 +268,18 @@ void printDatarate(u1_t datarate) {
     Serial.print(F(", datarate=")); Serial.print(unsigned(datarate));
 }
 
-void printTxrxflags(u2_t txrxFlags) {
-    Serial.print(F(", txrxFlags=0x")); Serial.print(unsigned(txrxFlags), HEX);
+void printTxrxflags(u1_t txrxFlags) {
+    Serial.print(F(", txrxFlags=0x")); printHex2(txrxFlags);
     if (txrxFlags & TXRX_ACK)
         Serial.print(F("; Received ack"));
 }
 
 void printSaveIrqFlags(u1_t saveIrqFlags) {
     Serial.print(F(", saveIrqFlags 0x"));
-    Serial.print(unsigned(saveIrqFlags), HEX);
+    printHex2(saveIrqFlags);
 }
 
-// dump all the registers.
+// dump all the registers.  Must have printf setup.
 void printAllRegisters(void) {
     uint8_t regbuf[0x80];
     regbuf[0] = 0;
@@ -280,9 +287,11 @@ void printAllRegisters(void) {
 
     for (unsigned i = 0; i < sizeof(regbuf); ++i) {
         if (i % 16 == 0) {
-            printf("\r\n%02x:", i);
+            printNl();
+            printHex2(i);
         }
-        printf("%s%02x", ((i % 16) == 8) ? " - " : " ", regbuf[i]);
+        printHex2(regbuf[i]);
+        Serial.print(((i % 16) == 8) ? F(" - ") : F(" "));
     }
 
     // reset the radio, just in case the register dump caused issues.
@@ -297,7 +306,7 @@ void printAllRegisters(void) {
 }
 
 void printNl(void) {
-    Serial.println("");
+    Serial.println();
 }
 
 void eventPrint(cEventQueue::eventnode_t &e) {
@@ -322,7 +331,7 @@ void eventPrint(cEventQueue::eventnode_t &e) {
         printTxChnl(e.txChnl);
         printRps(e.rps);
         printOpmode(e.opmode);
-        printTxrxflags(e.opmode);
+        printTxrxflags(e.txrxFlags);
         printSaveIrqFlags(e.saveIrqFlags);
         printAllRegisters();
     } else {
@@ -360,15 +369,15 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                     Serial.print("artKey: ");
                     for (int i=0; i<sizeof(artKey); ++i) {
                         if (i != 0)
-                        Serial.print("-");
-                        Serial.print(artKey[i], HEX);
+                            Serial.print("-");
+                        printHex2(artKey[i]);
                     }
                     Serial.println("");
                     Serial.print("nwkKey: ");
                     for (int i=0; i<sizeof(nwkKey); ++i) {
                             if (i != 0)
                                     Serial.print("-");
-                            Serial.print(nwkKey[i], HEX);
+                            printHex2(nwkKey[i]);
                     }
                 } while (0);
                 break;
@@ -503,7 +512,7 @@ void myRxMessageCb(
             if (port == LORAWAN_PORT_COMPLIANCE) {
                 Serial.print(F("Received test packet 0x"));
                 if (nMessage > 0)
-                    Serial.print(pMessage[0], HEX);
+                    printHex2(pMessage[0]);
                 Serial.print(F(" length "));
                 Serial.println((unsigned) nMessage);
             }
@@ -607,14 +616,11 @@ void setup() {
     do_send(&sendjob);
 }
 
-void setup_printSignOnDashes(void)
+void setup_printSignOnDashLine(void)
     {
-    Serial.print(F("------------------------------------"));
-    }
-void setup_printSignOnDashLine()
-    {
-    setup_printSignOnDashes();
-    setup_printSignOnDashes();
+    for (unsigned i = 0; i < 78; ++i)
+        Serial.print('-');
+
     printNl();
     }
 
@@ -656,7 +662,7 @@ void setup_printSignOn()
     printVersion(ARDUINO_LMIC_VERSION);
     Serial.print(F(" configured for region "));
     Serial.print(CFG_region);
-    Serial.println(F("."));
+    Serial.println('.');
     Serial.println(F("Remember to select 'Line Ending: Newline' at the bottom of the monitor window."));
 
     setup_printSignOnDashLine();
@@ -665,7 +671,7 @@ void setup_printSignOn()
 
 void setupForNetwork(bool preJoin) {
 #if defined(CFG_us915)
-    LMIC_selectSubBand(1);
+    LMIC_selectSubBand(0);
 
     if (! preJoin) {
 //        LMIC_setLinkCheckMode(0);
