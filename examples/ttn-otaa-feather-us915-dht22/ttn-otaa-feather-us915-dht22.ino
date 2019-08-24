@@ -1,15 +1,15 @@
 /*******************************************************************************
  * The Things Network - Sensor Data Example
- * 
+ *
  * Example of sending a valid LoRaWAN packet with DHT22 temperature and
  * humidity data to The Things Networ using a Feather M0 LoRa.
- * 
+ *
  * Learn Guide: https://learn.adafruit.com/the-things-network-for-feather
- * 
+ *
  * Copyright (c) 2015 Thomas Telkamp and Matthijs Kooijman
  * Copyright (c) 2018 Terry Moore, MCCI
  * Copyright (c) 2018 Brent Rubell, Adafruit Industries
- * 
+ *
  * Permission is hereby granted, free of charge, to anyone
  * obtaining a copy of this document and accompanying files,
  * to do whatever they want with them without any restriction,
@@ -146,7 +146,7 @@ void onEvent (ev_t ev) {
             Serial.println(F("EV_REJOIN_FAILED"));
             break;
             break;
-        case EV_TXCOMPLETE:            
+        case EV_TXCOMPLETE:
             Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
             if (LMIC.txrxFlags & TXRX_ACK)
               Serial.println(F("Received ack"));
@@ -202,7 +202,7 @@ void do_send(osjob_t* j){
         Serial.print("Temperature: "); Serial.print(temperature);
         Serial.println(" *C");
         // adjust for the f2sflt16 range (-1 to 1)
-        temperature = temperature / 100; 
+        temperature = temperature / 100;
 
         // read the humidity from the DHT22
         float rHumidity = dht.readHumidity();
@@ -210,7 +210,7 @@ void do_send(osjob_t* j){
         Serial.println(rHumidity);
         // adjust for the f2sflt16 range (-1 to 1)
         rHumidity = rHumidity / 100;
-        
+
         // float -> int
         // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
         uint16_t payloadTemp = LMIC_f2sflt16(temperature);

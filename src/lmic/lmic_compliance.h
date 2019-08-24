@@ -7,7 +7,7 @@ Function:
 
 Copyright notice and license info:
         See LICENSE file accompanying this project.
- 
+
 Author:
         Terry Moore, MCCI Corporation	March 2019
 

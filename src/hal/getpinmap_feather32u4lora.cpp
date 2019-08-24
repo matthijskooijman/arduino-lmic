@@ -45,7 +45,7 @@ public:
 	// virtual void end(void) override
 
 	// virtual ostime_t setModuleActive(bool state) override
-	
+
 	};
 
 static HalConfiguration_Feather32U4LoRa_t myConfig;

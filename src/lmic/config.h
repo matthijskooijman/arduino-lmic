@@ -116,12 +116,14 @@
 
 // define these in lmic_project_config.h to disable the corresponding MAC commands.
 // Class A
-//#define DISABLE_MCMD_DCAP_REQ // duty cycle cap
-//#define DISABLE_MCMD_DN2P_SET // 2nd DN window param
-//#define DISABLE_MCMD_SNCH_REQ // set new channel
+//#define DISABLE_MCMD_DutyCycleReq // duty cycle cap
+//#define DISABLE_MCMD_RXParamSetupReq // 2nd DN window param
+//#define DISABLE_MCMD_NewChannelReq // set new channel
+//#define DISABLE_MCMD_DlChannelReq // set downlink channel for RX1 for given uplink channel.
+//#define DISABLE_MCMD_RXTimingSetupReq // delay between TX and RX
 // Class B
-//#define DISABLE_MCMD_PING_SET // set ping freq, automatically disabled by DISABLE_PING
-//#define DISABLE_MCMD_BCNI_ANS // next beacon start, automatically disabled by DISABLE_BEACON
+//#define DISABLE_MCMD_PingSlotChannelReq // set ping freq, automatically disabled by DISABLE_PING
+//#define ENABLE_MCMD_BeaconTimingAns // next beacon start, DEPRECATED, normally disabled by DISABLE_BEACON
 
 // DEPRECATED(tmm@mcci.com); replaced by LMIC.noRXIQinversion (dynamic). Don't define this.
 //#define DISABLE_INVERT_IQ_ON_RX
@@ -188,6 +190,13 @@
 // LMIC certification requires that this be enabled.
 #if !defined(LMIC_ENABLE_long_messages)
 # define LMIC_ENABLE_long_messages 1        /* PARAM */
+#endif
+
+// LMIC_ENABLE_event_logging
+// LMIC debugging for certification tests requires this, because debug prints affect
+// timing too dramatically. But normal operation doesn't need this.
+#if !defined(LMIC_ENABLE_event_logging)
+# define LMIC_ENABLE_event_logging 0        /* PARAM */
 #endif
 
 #endif // _lmic_config_h_

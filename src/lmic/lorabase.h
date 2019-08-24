@@ -475,16 +475,21 @@ enum {
 };
 enum {
     // Bitfields in frame control octet
-    FCT_ADREN  = 0x80,
-    FCT_ADRARQ = 0x40,
-    FCT_ACK    = 0x20,
-    FCT_MORE   = 0x10,   // also in DN direction: Class B indicator
-    FCT_OPTLEN = 0x0F,
+    FCT_ADREN       = 0x80,
+    FCT_ADRACKReq   = 0x40,
+    FCT_ACK         = 0x20,
+    FCT_MORE        = 0x10,   // also in DN direction: Class B indicator
+    FCT_OPTLEN      = 0x0F,
 };
 enum {
     // In UP direction: signals class B enabled
     FCT_CLASSB = FCT_MORE
 };
+
+enum {
+    LWAN_FCtrl_FOptsLen_MAX = 0x0Fu,  // maximum size of embedded MAC commands
+};
+
 enum {
     NWKID_MASK = (int)0xFE000000,
     NWKID_BITS = 7
@@ -493,65 +498,78 @@ enum {
 // MAC uplink commands   downwlink too
 enum {
     // Class A
-    MCMD_LCHK_REQ = 0x02, // -  LinkCheckReq       : -
-    MCMD_LADR_ANS = 0x03, // -  LinkADRAnd         : u1:7-3:RFU, 3/2/1: pow/DR/Ch ACK
-    MCMD_DCAP_ANS = 0x04, // -  DutyCycleAns       : -
-    MCMD_DN2P_ANS = 0x05, // -  RxParamSetupAns    : u1:7-2:RFU  1/0:datarate/channel ack
-    MCMD_DEVS_ANS = 0x06, // -  DevStatusAns       : u1:battery 0,1-254,255=?, u1:7-6:RFU,5-0:margin(-32..31)
-    MCMD_SNCH_ANS = 0x07, // -  NewChannelAns      : u1: 7-2=RFU, 1/0:DR/freq ACK
-    MCMD_RXTimingSetupAns = 0x08,       //         : -
-    MCMD_TxParamSetupAns = 0x09,        //         : -
-    MCMD_DIChannelAns = 0x0A,           //         : u1: [7-2]:RFU 1:exists 0:OK
-    MCMD_DeviceTimeReq = 0x0D,
+    MCMD_LinkCheckReq = 0x02,       // -
+    MCMD_LinkADRAns = 0x03,         // u1:7-3:RFU, 3/2/1: pow/DR/Ch ACK
+    MCMD_DutyCycleAns = 0x04,       // -
+    MCMD_RXParamSetupAns = 0x05,    // u1:7-2:RFU  1/0:datarate/channel ack
+    MCMD_DevStatusAns = 0x06,       // u1:battery 0,1-254,255=?, u1:7-6:RFU,5-0:margin(-32..31)
+    MCMD_NewChannelAns = 0x07,      // u1: 7-2=RFU, 1/0:DR/freq ACK
+    MCMD_RXTimingSetupAns = 0x08,   // -
+    MCMD_TxParamSetupAns = 0x09,    // -
+    MCMD_DlChannelAns = 0x0A,       // u1: [7-2]:RFU 1:exists 0:OK
+    MCMD_DeviceTimeReq = 0x0D,      // -
 
     // Class B
-    MCMD_PING_IND = 0x10, // -  pingability indic  : u1: 7=RFU, 6-4:interval, 3-0:datarate
-    MCMD_PING_ANS = 0x11, // -  ack ping freq      : u1: 7-1:RFU, 0:freq ok
-    MCMD_BCNI_REQ = 0x12, // -  next beacon start  : -
+    MCMD_PingSlotInfoReq = 0x10,    // u1: 7=RFU, 6-4:interval, 3-0:datarate
+    MCMD_PingSlotChannelAns = 0x11, // u1: 7-1:RFU, 0:freq ok
+    MCMD_BeaconInfoReq = 0x12,      // - (DEPRECATED)
+    MCMD_BeaconFreqAns = 0x13,      // u1: 7-1:RFU, 0:freq ok
 };
 
 // MAC downlink commands
 enum {
     // Class A
-    MCMD_LCHK_ANS = 0x02, // LinkCheckAns       : u1:margin 0-254,255=unknown margin / u1:gwcnt         LinkCheckReq
-    MCMD_LADR_REQ = 0x03, // LinkADRReq         : u1:DR/TXPow, u2:chmask, u1:chpage/repeat
-    MCMD_DCAP_REQ = 0x04, // DutyCycleReq       : u1:255 dead [7-4]:RFU, [3-0]:cap 2^-k
-    MCMD_DN2P_SET = 0x05, // RXParamSetupReq    : u1:7-4:RFU/3-0:datarate, u3:freq
-    MCMD_DEVS_REQ = 0x06, // DevStatusReq       : -
-    MCMD_SNCH_REQ = 0x07, // NewChannelReq      : u1:chidx, u3:freq, u1:DRrange
-    MCMD_RXTimingSetupReq = 0x08,       //      : u1: [7-4]:RFU [3-0]: Delay 1-15s (0 => 1)
-    MCMD_TxParamSetupReq = 0x09,        //      : u1: [7-6]:RFU [5:4]: dl dwell/ul dwell [3:0] max EIRP
-    MCMD_DIChannelReq = 0x0A,           //      : u1: channel, u3: frequency
-    MCMD_DeviceTimeAns = 0x0D,
+    MCMD_LinkCheckAns = 0x02,       // u1:margin 0-254,255=unknown margin / u1:gwcnt         LinkCheckReq
+    MCMD_LinkADRReq = 0x03,         // u1:DR/TXPow, u2:chmask, u1:chpage/repeat
+    MCMD_DutyCycleReq = 0x04,       // u1:255 dead [7-4]:RFU, [3-0]:cap 2^-k
+    MCMD_RXParamSetupReq = 0x05,    // u1:7-4:RFU/3-0:datarate, u3:freq
+    MCMD_DevStatusReq = 0x06,       // -
+    MCMD_NewChannelReq = 0x07,      // u1:chidx, u3:freq, u1:DRrange
+    MCMD_RXTimingSetupReq = 0x08,   // u1: [7-4]:RFU [3-0]: Delay 1-15s (0 => 1)
+    MCMD_TxParamSetupReq = 0x09,    // u1: [7-6]:RFU [5:4]: dl dwell/ul dwell [3:0] max EIRP
+    MCMD_DlChannelReq = 0x0A,       // u1: channel, u3: frequency
+    MCMD_DeviceTimeAns = 0x0D,      // u4: seconds since epoch, u1: fractional second
 
     // Class B
-    MCMD_PING_SET = 0x11, // set ping freq      : u3: freq
-    MCMD_BCNI_ANS = 0x12, // next beacon start  : u2: delay(in TUNIT millis), u1:channel
+    MCMD_PingSlotInfoAns = 0x10,    // -
+    MCMD_PingSlotChannelReq = 0x11, // u3: freq, u1:dr [7-4]:RFU [3:0]:datarate
+    MCMD_BeaconTimingAns = 0x12,    // u2: delay(in TUNIT millis), u1:channel (DEPRECATED)
+    MCMD_BeaconFreqReq = 0x13,      // u3: freq
 };
 
 enum {
-    MCMD_BCNI_TUNIT = 30  // time unit of delay value in millis
+    MCMD_BeaconTimingAns_TUNIT = 30  // time unit of delay value in millis
 };
 enum {
-    MCMD_LADR_ANS_RFU    = 0xF8, // RFU bits
-    MCMD_LADR_ANS_POWACK = 0x04, // 0=not supported power level
-    MCMD_LADR_ANS_DRACK  = 0x02, // 0=unknown data rate
-    MCMD_LADR_ANS_CHACK  = 0x01, // 0=unknown channel enabled
+    MCMD_LinkADRAns_RFU    = 0xF8,      // RFU bits
+    MCMD_LinkADRAns_PowerACK = 0x04,    // 0=not supported power level
+    MCMD_LinkADRAns_DataRateACK  = 0x02, // 0=unknown data rate
+    MCMD_LinkADRAns_ChannelACK  = 0x01, // 0=unknown channel enabled
 };
 enum {
-    MCMD_DN2P_ANS_RFU    = 0xF8, // RFU bits
-    MCMD_DN2P_ANS_RX1DrOffsetAck = 0x04, // 0=dr2 not allowed
-    MCMD_DN2P_ANS_DRACK  = 0x02, // 0=unknown data rate
-    MCMD_DN2P_ANS_CHACK  = 0x01, // 0=unknown channel enabled
+    MCMD_RXParamSetupAns_RFU    = 0xF8, // RFU bits
+    MCMD_RXParamSetupAns_RX1DrOffsetAck = 0x04, // 0=dr2 not allowed
+    MCMD_RXParamSetupAns_RX2DataRateACK  = 0x02, // 0=unknown data rate
+    MCMD_RXParamSetupAns_ChannelACK  = 0x01, // 0=unknown channel enabled
 };
 enum {
-    MCMD_SNCH_ANS_RFU    = 0xFC, // RFU bits
-    MCMD_SNCH_ANS_DRACK  = 0x02, // 0=unknown data rate
-    MCMD_SNCH_ANS_FQACK  = 0x01, // 0=rejected channel frequency
+    MCMD_NewChannelAns_RFU    = 0xFC, // RFU bits
+    MCMD_NewChannelAns_DataRateACK  = 0x02, // 0=unknown data rate
+    MCMD_NewChannelAns_ChannelACK  = 0x01, // 0=rejected channel frequency
 };
 enum {
-    MCMD_PING_ANS_RFU   = 0xFE,
-    MCMD_PING_ANS_FQACK = 0x01
+    MCMD_RXTimingSetupReq_RFU   = 0xF0,     // RFU bits
+    MCMD_RXTimingSetupReq_Delay = 0x0F,     // delay in secs, 1..15; 0 is mapped to 1.
+};
+enum {
+    MCMD_DlChannelAns_RFU       = 0xFC,     // RFU bits
+    MCMD_DlChannelAns_FreqACK   = 0x02,     // 0 = uplink frequency not defined for this channel
+    MCMD_DlChannelAns_ChannelACK = 0x01,    // 0 = rejected channel freq
+};
+enum {
+    MCMD_PingSlotFreqAns_RFU   = 0xFC,
+    MCMD_PingSlotFreqAns_DataRateACK = 0x02,
+    MCMD_PingSlotFreqAns_ChannelACK = 0x01,
 };
 
 enum {
@@ -561,65 +579,30 @@ enum {
     MCMD_DEVS_BATT_NOINFO = 0xFF, // unknown battery level
 };
 
-// Bit fields byte#3 of MCMD_LADR_REQ payload
+// Bit fields byte#3 of MCMD_LinkADRReq payload
 enum {
-    MCMD_LADR_CHP_USLIKE_SPECIAL = 0x50,  // first special for us-like
-    MCMD_LADR_CHP_BANK    = 0x50,  // special: bits are banks.
-    MCMD_LADR_CHP_125ON   = 0x60,  // special channel page enable, bits applied to 64..71
-    MCMD_LADR_CHP_125OFF  = 0x70,  // special channel page: disble 125K, bits apply to 64..71
-    MCMD_LADR_N3RFU_MASK  = 0x80,
-    MCMD_LADR_CHPAGE_MASK = 0xF0,
-    MCMD_LADR_REPEAT_MASK = 0x0F,
-    MCMD_LADR_REPEAT_1    = 0x01,
-    MCMD_LADR_CHPAGE_1    = 0x10
+    MCMD_LinkADRReq_Redundancy_RFU            = 0x80,
+    MCMD_LinkADRReq_Redundancy_ChMaskCntl_MASK= 0x70,
+    MCMD_LinkADRReq_Redundancy_NbTrans_MASK   = 0x0F,
+
+    MCMD_LinkADRReq_ChMaskCntl_EULIKE_DIRECT  = 0x00,    // direct masking for EU
+    MCMD_LinkADRReq_ChMaskCntl_EULIKE_ALL_ON  = 0x60,    // EU: enable everything.
+
+    MCMD_LinkADRReq_ChMaskCntl_USLIKE_500K    = 0x40,    // mask is for the 8 us-like 500 kHz channels
+    MCMD_LinkADRReq_ChMaskCntl_USLIKE_SPECIAL = 0x50,    // first special for us-like
+    MCMD_LinkADRReq_ChMaskCntl_USLIKE_BANK    = 0x50,    // special: bits are banks.
+    MCMD_LinkADRReq_ChMaskCntl_USLIKE_125ON   = 0x60,    // special channel page enable, bits applied to 64..71
+    MCMD_LinkADRReq_ChMaskCntl_USLIKE_125OFF  = 0x70,    // special channel page: disble 125K, bits apply to 64..71
+
+    MCMD_LinkADRReq_ChMaskCntl_CN470_ALL_ON   = 0x60,    // turn all on for China.
 };
-// Bit fields byte#0 of MCMD_LADR_REQ payload
+
+// Bit fields byte#0 of MCMD_LinkADRReq payload
 enum {
-    MCMD_LADR_DR_MASK    = 0xF0,
-    MCMD_LADR_POW_MASK   = 0x0F,
-    MCMD_LADR_DR_SHIFT   = 4,
-    MCMD_LADR_POW_SHIFT  = 0,
-#if defined(CFG_eu868) // TODO(tmm@mcci.com): complete refactor.
-    EU868_MCMD_LADR_SF12      = EU868_DR_SF12<<4,
-    EU868_MCMD_LADR_SF11      = EU868_DR_SF11<<4,
-    EU868_MCMD_LADR_SF10      = EU868_DR_SF10<<4,
-    EU868_MCMD_LADR_SF9       = EU868_DR_SF9 <<4,
-    EU868_MCMD_LADR_SF8       = EU868_DR_SF8 <<4,
-    EU868_MCMD_LADR_SF7       = EU868_DR_SF7 <<4,
-    EU868_MCMD_LADR_SF7B      = EU868_DR_SF7B<<4,
-    EU868_MCMD_LADR_FSK       = EU868_DR_FSK <<4,
-
-    EU868_MCMD_LADR_20dBm     = 0,
-    EU868_MCMD_LADR_14dBm     = 1,
-    EU868_MCMD_LADR_11dBm     = 2,
-    EU868_MCMD_LADR_8dBm      = 3,
-    EU868_MCMD_LADR_5dBm      = 4,
-    EU868_MCMD_LADR_2dBm      = 5,
-#elif defined(CFG_us915)
-    US915_MCMD_LADR_SF10      = US915_DR_SF10<<4,
-    US915_MCMD_LADR_SF9       = US915_DR_SF9 <<4,
-    US915_MCMD_LADR_SF8       = US915_DR_SF8 <<4,
-    US915_MCMD_LADR_SF7       = US915_DR_SF7 <<4,
-    US915_MCMD_LADR_SF8C      = US915_DR_SF8C<<4,
-    US915_MCMD_LADR_SF12CR    = US915_DR_SF12CR<<4,
-    US915_MCMD_LADR_SF11CR    = US915_DR_SF11CR<<4,
-    US915_MCMD_LADR_SF10CR    = US915_DR_SF10CR<<4,
-    US915_MCMD_LADR_SF9CR     = US915_DR_SF9CR<<4,
-    US915_MCMD_LADR_SF8CR     = US915_DR_SF8CR<<4,
-    US915_MCMD_LADR_SF7CR     = US915_DR_SF7CR<<4,
-
-    US915_MCMD_LADR_30dBm     = 0,
-    US915_MCMD_LADR_28dBm     = 1,
-    US915_MCMD_LADR_26dBm     = 2,
-    US915_MCMD_LADR_24dBm     = 3,
-    US915_MCMD_LADR_22dBm     = 4,
-    US915_MCMD_LADR_20dBm     = 5,
-    US915_MCMD_LADR_18dBm     = 6,
-    US915_MCMD_LADR_16dBm     = 7,
-    US915_MCMD_LADR_14dBm     = 8,
-    US915_MCMD_LADR_12dBm     = 9,
-    US915_MCMD_LADR_10dBm     = 10
-#endif
+    MCMD_LinkADRReq_DR_MASK    = 0xF0,
+    MCMD_LinkADRReq_POW_MASK   = 0x0F,
+    MCMD_LinkADRReq_DR_SHIFT   = 4,
+    MCMD_LinkADRReq_POW_SHIFT  = 0,
 };
 
 // bit fields of the TxParam request

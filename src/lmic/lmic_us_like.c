@@ -94,29 +94,29 @@ void LMICuslike_initDefaultChannels(bit_t fJoin) {
 // verify that a given setting is permitted
 bit_t LMICuslike_canMapChannels(u1_t chpage, u2_t chmap) {
 	/*
-	|| MCMD_LADR_CHP_125ON and MCMD_LADR_CHP_125OFF are special. The
+	|| MCMD_LinkADRReq_ChMaskCntl_USLIKE_125ON and MCMD_LinkADRReq_ChMaskCntl_USLIKE_125OFF are special. The
 	|| channel map appllies to 500kHz (ch 64..71) and in addition
 	|| all channels 0..63 are turned off or on.  MCMC_LADR_CHP_BANK
 	|| is also special, in that it enables subbands.
 	*/
-	if (chpage < MCMD_LADR_CHP_USLIKE_SPECIAL) {
-		if (chmap == 0)
-			return 0;
-
+	if (chpage < MCMD_LinkADRReq_ChMaskCntl_USLIKE_SPECIAL) {
 		// operate on channels 0..15, 16..31, 32..47, 48..63, 64..71
-		if (chpage == (64 >> 4)) {
+		if (chpage == MCMD_LinkADRReq_ChMaskCntl_USLIKE_500K) {
 			if (chmap & 0xFF00) {
 				// those are reserved bits, fail.
 				return 0;
 			}
+		} else {
+			return 1;
 		}
-	} else if (chpage == MCMD_LADR_CHP_BANK) {
+	} else if (chpage == MCMD_LinkADRReq_ChMaskCntl_USLIKE_BANK) {
 		if (chmap == 0 || (chmap & 0xFF00) != 0) {
 			// no bits set, or reserved bitsset , fail.
 			return 0;
 		}
-	} else if (chpage == MCMD_LADR_CHP_125ON || chpage == MCMD_LADR_CHP_125OFF) {
-                u1_t const en125 = chpage == MCMD_LADR_CHP_125ON;
+	} else if (chpage == MCMD_LinkADRReq_ChMaskCntl_USLIKE_125ON ||
+	           chpage == MCMD_LinkADRReq_ChMaskCntl_USLIKE_125OFF) {
+                u1_t const en125 = chpage == MCMD_LinkADRReq_ChMaskCntl_USLIKE_125ON;
 
 		// if disabling all 125kHz chans, must have at least one 500kHz chan
 		// don't allow reserved bits to be set in chmap.
@@ -130,45 +130,46 @@ bit_t LMICuslike_canMapChannels(u1_t chpage, u2_t chmap) {
 	return 1;
 }
 
+// map channels. return true if configuration looks valid.
 bit_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap) {
 	/*
-	|| MCMD_LADR_CHP_125ON and MCMD_LADR_CHP_125OFF are special. The
+	|| MCMD_LinkADRReq_ChMaskCntl_USLIKE_125ON and MCMD_LinkADRReq_ChMaskCntl_USLIKE_125OFF are special. The
 	|| channel map appllies to 500kHz (ch 64..71) and in addition
 	|| all channels 0..63 are turned off or on.  MCMC_LADR_CHP_BANK
 	|| is also special, in that it enables subbands.
 	*/
 	u1_t base, top;
-	bit_t result = 0;
 
-	if (chpage == MCMD_LADR_CHP_BANK) {
+	if (chpage == MCMD_LinkADRReq_ChMaskCntl_USLIKE_BANK) {
 		// each bit enables a bank of channels
 		for (u1_t subband = 0; subband < 8; ++subband, chmap >>= 1) {
 			if (chmap & 1) {
-				result |= LMIC_enableSubBand(subband);
+				LMIC_enableSubBand(subband);
 			} else {
-				result |= LMIC_disableSubBand(subband);
+				LMIC_disableSubBand(subband);
 			}
 		}
 
-		return result;
+		return LMIC.activeChannels125khz || LMIC.activeChannels500khz;
 	}
 
-	if (chpage < MCMD_LADR_CHP_USLIKE_SPECIAL) {
+	if (chpage < MCMD_LinkADRReq_ChMaskCntl_USLIKE_SPECIAL) {
 		// operate on channels 0..15, 16..31, 32..47, 48..63
 		base = chpage << 4;
 		top = base + 16;
 		if (base == 64) {
 			top = 72;
 		}
-	} else /* if (chpage == MCMD_LADR_CHP_125ON || chpage == MCMD_LADR_CHP_125OFF) */ {
-                u1_t const en125 = chpage == MCMD_LADR_CHP_125ON;
+	} else /* if (chpage == MCMD_LinkADRReq_ChMaskCntl_USLIKE_125ON ||
+	              chpage == MCMD_LinkADRReq_ChMaskCntl_USLIKE_125OFF) */ {
+                u1_t const en125 = chpage == MCMD_LinkADRReq_ChMaskCntl_USLIKE_125ON;
 
 		// enable or disable all 125kHz channels
 		for (u1_t chnl = 0; chnl < 64; ++chnl) {
 			if (en125)
-				result |= LMIC_enableChannel(chnl);
+				LMIC_enableChannel(chnl);
 			else
-				result |= LMIC_disableChannel(chnl);
+				LMIC_disableChannel(chnl);
 		}
 
 		// then apply mask to top 8 channels.
@@ -180,11 +181,11 @@ bit_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap) {
 	// Use enable/disable channel to keep activeChannel counts in sync.
 	for (u1_t chnl = base; chnl < top; ++chnl, chmap >>= 1) {
 		if (chmap & 0x0001)
-			result |= LMIC_enableChannel(chnl);
+			LMIC_enableChannel(chnl);
 		else
-			result |= LMIC_disableChannel(chnl);
+			LMIC_disableChannel(chnl);
         }
-        return result;
+	return LMIC.activeChannels125khz || LMIC.activeChannels500khz;
 }
 
 // US does not have duty cycling - return now as earliest TX time
@@ -287,12 +288,25 @@ ostime_t LMICuslike_nextJoinState(void) {
 #endif
 
 void LMICuslike_saveAdrState(lmic_saved_adr_state_t *pStateBuffer) {
-        memcpy(
+        os_copyMem(
                 pStateBuffer->channelMap,
                 LMIC.channelMap,
                 sizeof(LMIC.channelMap)
         );
+        pStateBuffer->activeChannels125khz = LMIC.activeChannels125khz;
+        pStateBuffer->activeChannels500khz = LMIC.activeChannels500khz;
 }
+
+void LMICuslike_restoreAdrState(const lmic_saved_adr_state_t *pStateBuffer) {
+        os_copyMem(
+                LMIC.channelMap,
+                pStateBuffer->channelMap,
+                sizeof(LMIC.channelMap)
+        );
+        LMIC.activeChannels125khz = pStateBuffer->activeChannels125khz;
+        LMIC.activeChannels500khz = pStateBuffer->activeChannels500khz;
+}
+
 
 bit_t LMICuslike_compareAdrState(const lmic_saved_adr_state_t *pStateBuffer) {
         return memcmp(pStateBuffer->channelMap, LMIC.channelMap, sizeof(LMIC.channelMap)) != 0;

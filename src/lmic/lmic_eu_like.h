@@ -101,4 +101,10 @@ void LMICeulike_saveAdrState(lmic_saved_adr_state_t *pStateBuffer);
 bit_t LMICeulike_compareAdrState(const lmic_saved_adr_state_t *pStateBuffer);
 #define LMICbandplan_compareAdrState(pState) LMICeulike_compareAdrState(pState)
 
+void LMICeulike_restoreAdrState(const lmic_saved_adr_state_t *pStateBuffer);
+#define LMICbandplan_restoreAdrState(pState) LMICeulike_restoreAdrState(pState)
+
+// set Rx1 frequency (might be different than uplink).
+void LMICeulike_setRx1Freq(void);
+
 #endif // _lmic_eu_like_h_

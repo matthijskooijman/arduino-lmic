@@ -54,16 +54,21 @@ static CONST_TABLE(u1_t, maxFrameLens)[] = { 59+5,59+5,59+5,123+5, 230+5, 230+5 
 uint8_t LMICin866_maxFrameLen(uint8_t dr) {
         if (dr < LENOF_TABLE(maxFrameLens))
                 return TABLE_GET_U1(maxFrameLens, dr);
-        else 
+        else
                 return 0xFF;
 }
 
 static CONST_TABLE(s1_t, TXPOWLEVELS)[] = {
-        30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10, 0, 0,0,0,0
+        30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10
 };
 
 int8_t LMICin866_pow2dBm(uint8_t mcmd_ladr_p1) {
-        return TABLE_GET_S1(TXPOWLEVELS, (mcmd_ladr_p1&MCMD_LADR_POW_MASK)>>MCMD_LADR_POW_SHIFT);
+        uint8_t const pindex = (mcmd_ladr_p1&MCMD_LinkADRReq_POW_MASK)>>MCMD_LinkADRReq_POW_SHIFT;
+        if (pindex < LENOF_TABLE(TXPOWLEVELS)) {
+                return TABLE_GET_S1(TXPOWLEVELS, pindex);
+        } else {
+                return -128;
+        }
 }
 
 // only used in this module, but used by variant macro dr2hsym().
@@ -88,8 +93,8 @@ ostime_t LMICin866_dr2hsym(uint8_t dr) {
 enum { NUM_DEFAULT_CHANNELS = 3 };
 static CONST_TABLE(u4_t, iniChannelFreq)[NUM_DEFAULT_CHANNELS] = {
         // Default operational frequencies
-        IN866_F1 | BAND_MILLI, 
-        IN866_F2 | BAND_MILLI, 
+        IN866_F1 | BAND_MILLI,
+        IN866_F2 | BAND_MILLI,
         IN866_F3 | BAND_MILLI,
 };
 
@@ -98,6 +103,9 @@ void LMICin866_initDefaultChannels(bit_t join) {
         LMIC_API_PARAMETER(join);
 
         os_clearMem(&LMIC.channelFreq, sizeof(LMIC.channelFreq));
+#if !defined(DISABLE_MCMD_DlChannelReq)
+        os_clearMem(&LMIC.channelDlFreq, sizeof(LMIC.channelDlFreq));
+#endif // !DISABLE_MCMD_DlChannelReq
         os_clearMem(&LMIC.channelDrMap, sizeof(LMIC.channelDrMap));
         os_clearMem(&LMIC.bands, sizeof(LMIC.bands));
 
@@ -125,17 +133,29 @@ bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
 }
 
 bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
+        if (chidx < NUM_DEFAULT_CHANNELS) {
+                // can't disable a default channel.
+                if (freq == 0)
+                        return 0;
+                // can't change a default channel.
+                else if (freq != (LMIC.channelFreq[chidx] & ~3))
+                        return 0;
+        }
+        bit_t fEnable = (freq != 0);
         if (chidx >= MAX_CHANNELS)
                 return 0;
         if (band == -1) {
-                freq |= BAND_MILLI;
+                freq = (freq&~3) | BAND_MILLI;
         } else {
                 if (band > BAND_MILLI) return 0;
                 freq = (freq&~3) | band;
         }
         LMIC.channelFreq[chidx] = freq;
         LMIC.channelDrMap[chidx] = drmap == 0 ? DR_RANGE_MAP(IN866_DR_SF12, IN866_DR_SF7) : drmap;
-        LMIC.channelMap |= 1 << chidx;  // enabled right away
+        if (fEnable)
+                LMIC.channelMap |= 1 << chidx;  // enabled right away
+        else
+                LMIC.channelMap &= ~(1 << chidx);
         return 1;
 }
 
@@ -169,7 +189,7 @@ ostime_t LMICin866_nextTx(ostime_t now) {
                 }
         }
 
-        // no enabled channel found! just use the last channel. 
+        // no enabled channel found! just use the last channel.
         return now;
 }
 
@@ -200,6 +220,8 @@ void LMICin866_setRx1Params(void) {
     u1_t const txdr = LMIC.dndr;
     s1_t drOffset;
     s1_t candidateDr;
+
+    LMICeulike_setRx1Freq();
 
     if ( LMIC.rx1DrOffset <= 5)
         drOffset = (s1_t) LMIC.rx1DrOffset;

@@ -69,7 +69,7 @@ LMICuslike_isValidBeacon1(const uint8_t *d) {
 #define LMICbandplan_advanceBeaconChannel()     \
         do { LMIC.bcnChnl = (LMIC.bcnChnl+1) & 7; } while (0)
 
-// TODO(tmm@mcci.com): decide whether we want to do this on every 
+// TODO(tmm@mcci.com): decide whether we want to do this on every
 // reset or just restore the last sub-band selected by the user.
 #define LMICbandplan_resetDefaultChannels()     \
         LMICbandplan_initDefaultChannels(/* normal */ 0)
@@ -105,5 +105,8 @@ void LMICuslike_saveAdrState(lmic_saved_adr_state_t *pStateBuffer);
 
 bit_t LMICuslike_compareAdrState(const lmic_saved_adr_state_t *pStateBuffer);
 #define LMICbandplan_compareAdrState(pState) LMICuslike_compareAdrState(pState)
+
+void LMICuslike_restoreAdrState(const lmic_saved_adr_state_t *pStateBuffer);
+#define LMICbandplan_restoreAdrState(pState) LMICuslike_restoreAdrState(pState)
 
 #endif // _lmic_us_like_h_

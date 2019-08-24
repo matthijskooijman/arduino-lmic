@@ -60,6 +60,7 @@ requires C99 mode to be enabled by default.
 		- [Disabling user events](#disabling-user-events)
 		- [Disabling external reference to `onEvent()`](#disabling-external-reference-to-onevent)
 		- [Enabling long messages](#enabling-long-messages)
+		- [Enabling LMIC event logging calls](#enabling-lmic-event-logging-calls)
 		- [Special purpose](#special-purpose)
 - [Supported hardware](#supported-hardware)
 - [Pre-Integrated Boards](#pre-integrated-boards)
@@ -314,14 +315,13 @@ If defined, removes code needed for OTAA activation. Removes the APIs `LMIC_star
 
 #### Disabling Class A MAC commands
 
-`DISABLE_MCMD_DCAP_REQ`, `DISABLE_MCMD_DN2P_SET`, and `DISABLE_MCMD_SNCH_REQ` respectively disable code for various Class A MAC
-commands.
+`DISABLE_MCMD_DutyCycleReq`, `DISABLE_MCMD_RXParamSetupReq`, `DISABLE_MCMD_RXTimingSetupReq`, `DISABLE_MCMD_NewChannelReq`, and `DISABLE_MCMD_DlChannelReq` respectively disable code for various Class A MAC commands.
 
 #### Disabling Class B MAC commands
 
-`DISABLE_MCMD_PING_SET` disables the PING_SET MAC commands. It's implied by `DISABLE_PING`.
+`DISABLE_MCMD_PingSlotChannelReq` disables the PING_SET MAC commands. It's implied by `DISABLE_PING`.
 
-`DISABLE_MCMD_BCNI_ANS` disables the next-beacon start command. It's implied by `DISABLE_BEACON`
+`ENABLE_MCMD_BeaconTimingAns` enables the next-beacon start command. It's disabled by default, and overridden (if enabled) by `DISABLE_BEACON`. (This command is deprecated.)
 
 #### Disabling user events
 
@@ -334,6 +334,12 @@ In some embedded systems, `onEvent()` may be defined for some other purpose; so 
 #### Enabling long messages
 
 To save RAM for simple devices, the LMIC allows message length to be limited to 64 bytes instead of the LoRaWAN standard of 255 bytes max. This saves about 2*192 bytes of RAM. Unfortunately, compliance tests require the full message size. Long messages are enabled by setting `LMIC_ENABLE_long_messages` to 1, or disabled by setting it to zero. This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, the maximum frame size is 255 bytes, and if zero, the maximum frame size is 64 bytes.
+
+#### Enabling LMIC event logging calls
+
+When debugging the LMIC, debug prints change timing, and can make things not work at all. The LMIC has embedded optional calls to capture debug information that can be printed out later, when the LMIC is not active. Logging is enabled by setting `LMIC_ENABLE_event_logging` to 1. The default is not to log. This C preprocessor macro is always defined as a post-condition of `#include "config.h"`.
+
+The compliance test script includes a suitable logging implementation; the other example scripts do not.
 
 #### Special purpose
 
@@ -1092,6 +1098,7 @@ function uflt12f(rawUflt12)
 
 - HEAD adds the following changes.
 
+  - [#378](https://github.com/mcci-catena/arduino-lmic/pull/378) completely reworks MAC downlink handling. Resulting code passes the LoRaWAN V1.5 EU certification test. (v2.32.2.70)
   - [#360](https://github.com/mcci-catena/arduino-lmic/pull/360) adds support for the KR-920 regional plan.
 
 - v2.3.2 is a patch release. It incorporates two pull requests.

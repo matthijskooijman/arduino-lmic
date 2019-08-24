@@ -52,11 +52,11 @@ CONST_TABLE(u1_t, _DR2RPS_CRC)[] = {
         MAKERPS(SF9 , BW500, CR_4_5, 0, 0),     // [11]
         MAKERPS(SF8 , BW500, CR_4_5, 0, 0),     // [12]
         MAKERPS(SF7 , BW500, CR_4_5, 0, 0),     // [13]
-        ILLEGAL_RPS                             
+        ILLEGAL_RPS
 };
 
-static CONST_TABLE(u1_t, maxFrameLens)[] = { 
-        59+5,  59+5,  59+5, 123+5, 230+5, 230+5, 230+5, 255, 
+static CONST_TABLE(u1_t, maxFrameLens)[] = {
+        59+5,  59+5,  59+5, 123+5, 230+5, 230+5, 230+5, 255,
         41+5, 117+5, 230+5, 230+5, 230+5, 230+5 };
 
 uint8_t LMICau921_maxFrameLen(uint8_t dr) {
@@ -66,24 +66,31 @@ uint8_t LMICau921_maxFrameLen(uint8_t dr) {
                 return 0xFF;
 }
 
+int8_t LMICau921_pow2dbm(uint8_t mcmd_ladr_p1) {
+        if ((mcmd_ladr_p1 & MCMD_LinkADRReq_POW_MASK) == MCMD_LinkADRReq_POW_MASK)
+                return -128;
+        else
+                return ((s1_t)(30 - (((mcmd_ladr_p1)&MCMD_LinkADRReq_POW_MASK)<<1)));
+}
+
 static CONST_TABLE(ostime_t, DR2HSYM_osticks)[] = {
-        us2osticksRound(128 << 7),  // DR_SF12  
+        us2osticksRound(128 << 7),  // DR_SF12
         us2osticksRound(128 << 6),  // DR_SF11
         us2osticksRound(128 << 5),  // DR_SF10
-        us2osticksRound(128 << 4),  // DR_SF9 
-        us2osticksRound(128 << 3),  // DR_SF8 
-        us2osticksRound(128 << 2),  // DR_SF7 
+        us2osticksRound(128 << 4),  // DR_SF9
+        us2osticksRound(128 << 3),  // DR_SF8
+        us2osticksRound(128 << 2),  // DR_SF7
         us2osticksRound(128 << 1),  // DR_SF8C
-        us2osticksRound(128 << 0),  // ------ 
+        us2osticksRound(128 << 0),  // ------
         us2osticksRound(128 << 5),  // DR_SF12CR
-        us2osticksRound(128 << 4),  // DR_SF11CR 
-        us2osticksRound(128 << 3),  // DR_SF10CR 
+        us2osticksRound(128 << 4),  // DR_SF11CR
+        us2osticksRound(128 << 3),  // DR_SF10CR
         us2osticksRound(128 << 2),  // DR_SF9CR
         us2osticksRound(128 << 1),  // DR_SF8CR
         us2osticksRound(128 << 0),  // DR_SF7CR
 };
 
-// get ostime for symbols based on datarate. This is not like us915, 
+// get ostime for symbols based on datarate. This is not like us915,
 // becuase the times don't match between the upper half and lower half
 // of the table.
 ostime_t LMICau921_dr2hsym(uint8_t dr) {

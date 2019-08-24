@@ -4,8 +4,8 @@ LMIC VERSION 1.6  (13-July-2015)
 
  - License changed to BSD
  - Modem included, see LMiC-Modem.pdf and examples/modem
- - Additional stm32 hardware and Blipper board specific peripheral code 
- 
+ - Additional stm32 hardware and Blipper board specific peripheral code
+
 
 ==============================================================================
 LMIC VERSION 1.5  (8-May-2015)

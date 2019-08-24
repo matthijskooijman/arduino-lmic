@@ -158,6 +158,10 @@
 # error "LMICbandplan_compareAdrState() not defined by bandplan"
 #endif
 
+#if !defined(LMICbandplan_restoreAdrState)
+# error "LMICbandplan_restoreAdrState() not defined by bandplan"
+#endif
+
 //
 // Things common to lmic.c code
 //
@@ -168,6 +172,16 @@
 #define PAMBL_FSK  5
 #define PRERX_FSK  1
 #define RXLEN_FSK  (1+5+2)
+
+// this is regional, but so far all regions are the same
+#if !defined(LMICbandplan_MAX_FCNT_GAP)
+# define LMICbandplan_MAX_FCNT_GAP  16384
+#endif // !defined LWAN_MAX_FCNT_GAP
+
+// this is probably regional, but for now default can be the same
+#if !defined(LMICbandplan_TX_RECOVERY_ms)
+# define LMICbandplan_TX_RECOVERY_ms    100
+#endif
 
 #define BCN_INTV_osticks       sec2osticks(BCN_INTV_sec)
 #define TXRX_GUARD_osticks     ms2osticks(TXRX_GUARD_ms)

@@ -38,7 +38,7 @@ static const u1_t PROGMEM DEVEUI[8]= { 1, 0, 0, 0, 0, 0, 0, 0 };
 void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 
 // This key should be in big endian format (or, since it is not really a
-// number but a block of memory, endianness does not really apply). 
+// number but a block of memory, endianness does not really apply).
 static const u1_t PROGMEM APPKEY[16] = { 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 2 };
 void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
 
@@ -56,15 +56,7 @@ bool g_fTestMode = false;
 lmic_event_cb_t myEventCb;
 lmic_rxmessage_cb_t myRxMessageCb;
 
-const char * const evNames[] = {
-    "<<zero>>",
-    "EV_SCAN_TIMEOUT", "EV_BEACON_FOUND",
-    "EV_BEACON_MISSED", "EV_BEACON_TRACKED", "EV_JOINING",
-    "EV_JOINED", "EV_RFU1", "EV_JOIN_FAILED", "EV_REJOIN_FAILED",
-    "EV_TXCOMPLETE", "EV_LOST_TSYNC", "EV_RESET",
-    "EV_RXCOMPLETE", "EV_LINK_DEAD", "EV_LINK_ALIVE", "EV_SCAN_FOUND",
-    "EV_TXSTART", "EV_TXCANCELED", "EV_RXSTART", "EV_JOIN_TXCOMPLETE"
-};
+const char * const evNames[] = { LMIC_EVENT_NAME_TABLE__INIT };
 
 /*
 
@@ -95,6 +87,8 @@ public:
     struct eventnode_t {
         osjob_t     job;
         ev_t        event;
+        const char *pMessage;
+        uint32_t    datum;
         ostime_t    time;
         ostime_t    txend;
         u4_t        freq;
@@ -117,7 +111,7 @@ public:
         return true;
     }
 
-    bool putEvent(ev_t event) {
+    bool putEvent(ev_t event, const char *pMessage = nullptr, uint32_t datum = 0) {
         auto i = m_tail + 1;
         if (i == sizeof(m_queue) / sizeof(m_queue[0])) {
             i = 0;
@@ -127,6 +121,8 @@ public:
             pn->time = os_getTime();
             pn->txend = LMIC.txend;
             pn->event = event;
+            pn->pMessage = pMessage;
+            pn->datum = datum;
             pn->freq = LMIC.freq;
             pn->txChnl = LMIC.txChnl;
             pn->rps = LMIC.rps;
@@ -143,11 +139,38 @@ public:
 
 private:
     unsigned m_head, m_tail;
-    eventnode_t m_queue[16];
+    eventnode_t m_queue[32];
     osjob_t m_job;
 };
 
 cEventQueue eventQueue;
+
+#if LMIC_ENABLE_event_logging
+extern "C" {
+    void LMICOS_logEvent(const char *pMessage);
+    void LMICOS_logEventUint32(const char *pMessage, uint32_t datum);
+}
+
+void LMICOS_logEvent(const char *pMessage)
+    {
+    eventQueue.putEvent(ev_t(-1), pMessage);
+    }
+
+void LMICOS_logEventUint32(const char *pMessage, uint32_t datum)
+    {
+    eventQueue.putEvent(ev_t(-2), pMessage, datum);
+    }
+#endif // LMIC_ENABLE_event_logging
+
+hal_failure_handler_t log_assertion;
+
+void log_assertion(const char *pMessage, uint16_t line) {
+    eventQueue.putEvent(ev_t(-3), pMessage, line);
+    eventPrintAll();
+    Serial.println("***HALTED BY ASSERT***");
+    while (true)
+        yield();
+}
 
 uint8_t lastTxChannel;
 bool lastTxStart;
@@ -203,6 +226,7 @@ const char *getCrcName(rps_t rps) {
 }
 
 void printFreq(u4_t freq) {
+    Serial.print(F(": freq="));
     Serial.print(freq / 1000000);
     Serial.print(F("."));
     Serial.print((freq % 1000000) / 100000);
@@ -218,156 +242,210 @@ void printRps(rps_t rps) {
     Serial.print(F(")"));
 }
 
+void printOpmode(uint16_t opmode, char sep = ',') {
+    if (sep != 0)
+        Serial.print(sep);
+    Serial.print(F(" opmode=")); Serial.print(opmode, HEX);
+}
+
+void printTxend(ostime_t txend) {
+    Serial.print(F(", txend=")); Serial.print(txend);
+}
+
+void printTxChnl(u1_t txChnl) {
+    Serial.print(F(": ch="));
+    Serial.print(unsigned(txChnl));
+}
+
+void printDatarate(u1_t datarate) {
+    Serial.print(F(", datarate=")); Serial.print(unsigned(datarate));
+}
+
+void printTxrxflags(u2_t txrxFlags) {
+    Serial.print(F(", txrxFlags=0x")); Serial.print(unsigned(txrxFlags), HEX);
+    if (txrxFlags & TXRX_ACK)
+        Serial.print(F("; Received ack"));
+}
+
+void printSaveIrqFlags(u1_t saveIrqFlags) {
+    Serial.print(F(", saveIrqFlags 0x"));
+    Serial.print(unsigned(saveIrqFlags), HEX);
+}
+
+// dump all the registers.
+void printAllRegisters(void) {
+    uint8_t regbuf[0x80];
+    regbuf[0] = 0;
+    hal_spi_read(1, regbuf + 1, sizeof(regbuf) - 1);
+
+    for (unsigned i = 0; i < sizeof(regbuf); ++i) {
+        if (i % 16 == 0) {
+            printf("\r\n%02x:", i);
+        }
+        printf("%s%02x", ((i % 16) == 8) ? " - " : " ", regbuf[i]);
+    }
+
+    // reset the radio, just in case the register dump caused issues.
+    hal_pin_rst(0);
+    delay(2);
+    hal_pin_rst(2);
+    delay(6);
+
+    // restore the radio to idle.
+    const uint8_t opmode = 0x88;    // LoRa and sleep.
+    hal_spi_write(0x81, &opmode, 1);
+}
+
+void printNl(void) {
+    Serial.println("");
+}
+
 void eventPrint(cEventQueue::eventnode_t &e) {
     ev_t ev = e.event;
 
     Serial.print(e.time);
-    Serial.print(F(": "));
-    if (ev < sizeof(evNames) / sizeof(evNames[0])) {
-        Serial.print(evNames[ev]);
+    Serial.print(F(" ("));
+    Serial.print(osticks2ms(e.time));
+    Serial.print(F(" ms): "));
+
+    if (ev == ev_t(-1) || ev == ev_t(-2)) {
+        Serial.print(e.pMessage);
+        if (ev == ev_t(-2)) {
+            Serial.print(F(", datum=0x")); Serial.print(e.datum, HEX);
+        }
+        printOpmode(e.opmode, '.');
+    } else if (ev == ev_t(-3)) {
+        Serial.print(e.pMessage);
+        Serial.print(F(", line ")); Serial.print(e.datum);
+        printFreq(e.freq);
+        printTxend(e.txend);
+        printTxChnl(e.txChnl);
+        printRps(e.rps);
+        printOpmode(e.opmode);
+        printTxrxflags(e.opmode);
+        printSaveIrqFlags(e.saveIrqFlags);
+        printAllRegisters();
     } else {
-        Serial.print(F("Unknown event: "));
-        Serial.print((unsigned) ev);
-    }
+        if (ev < sizeof(evNames) / sizeof(evNames[0])) {
+            Serial.print(evNames[ev]);
+        } else {
+            Serial.print(F("Unknown event: "));
+            Serial.print((unsigned) ev);
+        }
+        switch(ev) {
+            case EV_SCAN_TIMEOUT:
+                break;
+            case EV_BEACON_FOUND:
+                break;
+            case EV_BEACON_MISSED:
+                break;
+            case EV_BEACON_TRACKED:
+                break;
+            case EV_JOINING:
+                break;
 
-    switch(ev) {
-        case EV_SCAN_TIMEOUT:
-            break;
-        case EV_BEACON_FOUND:
-            break;
-        case EV_BEACON_MISSED:
-            break;
-        case EV_BEACON_TRACKED:
-            break;
-        case EV_JOINING:
-            break;
-
-        case EV_JOINED:
-            Serial.print(F(": ch "));
-            Serial.println(unsigned(e.txChnl));
-            {
-              u4_t netid = 0;
-              devaddr_t devaddr = 0;
-              u1_t nwkKey[16];
-              u1_t artKey[16];
-              LMIC_getSessionKeys(&netid, &devaddr, nwkKey, artKey);
-              Serial.print("netid: ");
-              Serial.println(netid, DEC);
-              Serial.print("devaddr: ");
-              Serial.println(devaddr, HEX);
-              Serial.print("artKey: ");
-              for (int i=0; i<sizeof(artKey); ++i) {
-                if (i != 0)
-                  Serial.print("-");
-                Serial.print(artKey[i], HEX);
-              }
-              Serial.println("");
-              Serial.print("nwkKey: ");
-              for (int i=0; i<sizeof(nwkKey); ++i) {
-                      if (i != 0)
-                              Serial.print("-");
-                      Serial.print(nwkKey[i], HEX);
-              }
-            }
-            break;
-        /*
-        || This event is defined but not used in the code. No
-        || point in wasting codespace on it.
-        ||
-        || case EV_RFU1:
-        ||     Serial.println(F("EV_RFU1"));
-        ||     break;
-        */
-        case EV_JOIN_FAILED:
-            // print out rx info
-            Serial.print(F(":  freq=")); printFreq(e.freq);
-            printRps(e.rps);
-            Serial.print(F(" opmode=")); Serial.print(e.opmode, HEX);
-            printf(" irqLevel %u", hal_getIrqLevel());
-
-            do {
-                uint8_t regbuf[0x80];
-                regbuf[0] = 0;
-                hal_spi_read(1, regbuf + 1, sizeof(regbuf) - 1);
-
-                for (unsigned i = 0; i < sizeof(regbuf); ++i) {
-                    if (i % 16 == 0) {
-                        printf("\r\n%02x:", i);
+            case EV_JOINED:
+                printTxChnl(e.txChnl);
+                printNl();
+                do  {
+                    u4_t netid = 0;
+                    devaddr_t devaddr = 0;
+                    u1_t nwkKey[16];
+                    u1_t artKey[16];
+                    LMIC_getSessionKeys(&netid, &devaddr, nwkKey, artKey);
+                    Serial.print("netid: ");
+                    Serial.println(netid, DEC);
+                    Serial.print("devaddr: ");
+                    Serial.println(devaddr, HEX);
+                    Serial.print("artKey: ");
+                    for (int i=0; i<sizeof(artKey); ++i) {
+                        if (i != 0)
+                        Serial.print("-");
+                        Serial.print(artKey[i], HEX);
                     }
-                    printf("%s%02x", ((i % 16) == 8) ? " - " : " ", regbuf[i]);
-                }
+                    Serial.println("");
+                    Serial.print("nwkKey: ");
+                    for (int i=0; i<sizeof(nwkKey); ++i) {
+                            if (i != 0)
+                                    Serial.print("-");
+                            Serial.print(nwkKey[i], HEX);
+                    }
+                } while (0);
+                break;
+            /*
+            || This event is defined but not used in the code. No
+            || point in wasting codespace on it.
+            ||
+            || case EV_RFU1:
+            ||     Serial.println(F("EV_RFU1"));
+            ||     break;
+            */
+            case EV_JOIN_FAILED:
+                // print out rx info
+                printFreq(e.freq);
+                printRps(e.rps);
+                printOpmode(e.opmode);
+                printf(" irqLevel %u", hal_getIrqLevel());
 
-            hal_pin_rst(0);
-            delay(2);
-            hal_pin_rst(2);
-            delay(6);
+                printAllRegisters();
+                break;
 
-            const uint8_t opmode = 0x88;    // LoRa and sleep.
-            hal_spi_write(0x81, &opmode, 1);
+            case EV_REJOIN_FAILED:
+                // this event means that someone tried a rejoin, and it failed.
+                // it doesn't really mean anything bad, it's just advisory.
+                break;
 
-            } while (0);
-            break;
+            case EV_TXCOMPLETE:
+                printTxChnl(e.txChnl);
+                printRps(e.rps);
+                printTxrxflags(e.txrxFlags);
+                break;
+            case EV_LOST_TSYNC:
+                break;
+            case EV_RESET:
+                break;
+            case EV_RXCOMPLETE:
+                break;
+            case EV_LINK_DEAD:
+                break;
+            case EV_LINK_ALIVE:
+                break;
+            /*
+            || This event is defined but not used in the code. No
+            || point in wasting codespace on it.
+            ||
+            || case EV_SCAN_FOUND:
+            ||    Serial.println(F("EV_SCAN_FOUND"));
+            ||    break;
+            */
+            case EV_TXSTART:
+                // this event tells us that a transmit is about to start.
+                // but printing here is bad for timing.
+                printTxChnl(e.txChnl);
+                printRps(e.rps);
+                printDatarate(e.datarate);
+                printOpmode(e.opmode);
+                printTxend(e.txend);
+                break;
 
-        case EV_REJOIN_FAILED:
-            // this event means that someone tried a rejoin, and it failed.
-            // it doesn't really mean anything bad, it's just advisory.
-            break;
+            case EV_RXSTART:
+                printFreq(e.freq);
+                printRps(e.rps);
+                printDatarate(e.datarate);
+                printOpmode(e.opmode);
+                printTxend(e.txend);
+                Serial.print(F(", delta ms ")); Serial.print(osticks2ms(e.time - e.txend));
+                break;
 
-        case EV_TXCOMPLETE:
-            Serial.print(F(": ch "));
-            Serial.print(e.txChnl);
-            printRps(e.rps);
-            Serial.print(F(" txrxflags 0x")); Serial.print(e.txrxFlags, HEX);
-            if (e.txrxFlags & TXRX_ACK)
-                Serial.print(F("; Received ack"));
-            break;
-        case EV_LOST_TSYNC:
-            break;
-        case EV_RESET:
-            break;
-        case EV_RXCOMPLETE:
-            break;
-        case EV_LINK_DEAD:
-            break;
-        case EV_LINK_ALIVE:
-            break;
-        /*
-        || This event is defined but not used in the code. No
-        || point in wasting codespace on it.
-        ||
-        || case EV_SCAN_FOUND:
-        ||    Serial.println(F("EV_SCAN_FOUND"));
-        ||    break;
-        */
-        case EV_TXSTART:
-            // this event tells us that a transmit is about to start.
-            // but printing here is bad for timing.
-            Serial.print(F(": ch "));
-            Serial.print(unsigned(e.txChnl));
-            printRps(e.rps);
-            Serial.print(F(", datarate ")); Serial.print(unsigned(e.datarate));
-            Serial.print(F(", opmode ")); Serial.print(unsigned(e.opmode), HEX);
-            break;
+            case EV_JOIN_TXCOMPLETE:
+                printSaveIrqFlags(e.saveIrqFlags);
+                break;
 
-        case EV_RXSTART:
-            Serial.print(F(": freq="));
-            printFreq(e.freq);
-            printRps(e.rps);
-            Serial.print(F(", datarate ")); Serial.print(unsigned(e.datarate));
-            Serial.print(F(", opmode ")); Serial.print(unsigned(e.opmode), HEX);
-            Serial.print(F(", txend ")); Serial.print(e.txend); 
-            Serial.print(F(", delta ms ")); Serial.print(osticks2ms(e.time - e.txend));
-            break;
-
-        case EV_JOIN_TXCOMPLETE:
-            Serial.print(F(": saveIrqFlags 0x"));
-            Serial.print(unsigned(e.saveIrqFlags), HEX);
-            break;
-
-        default:
-            break;
+            default:
+                break;
+        }
     }
-    Serial.println("");
+    printNl();
 }
 
 /*
@@ -386,7 +464,7 @@ Definition:
                 uint8_t port,
                 const uint8_t *pMessage,
                 size_t nMessage
-                ); 
+                );
         }
 
 Description:
@@ -474,7 +552,7 @@ void sendComplete(
     if (! g_fTestMode) {
             // Schedule next transmission
             os_setTimedCallback(j, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
-    }        
+    }
 }
 
 void myFail(const char *pMessage) {
@@ -497,7 +575,7 @@ void setup() {
     while (! Serial)
         ;
     Serial.begin(115200);
-    Serial.println(F("Starting"));
+    setup_printSignOn();
 
     // LMIC init using the computed target
     const auto pPinMap = Arduino_LMIC::GetPinmap_ThisBoard();
@@ -508,10 +586,11 @@ void setup() {
     }
 
     // now that we have a pinmap, initalize the low levels accordingly.
+    hal_set_failure_handler(log_assertion);
     os_init_ex(pPinMap);
 
     // LMIC_reset() doesn't affect callbacks, so we can do this first.
-    if (! (LMIC_registerRxMessageCb(myRxMessageCb, /* userData */ nullptr) && 
+    if (! (LMIC_registerRxMessageCb(myRxMessageCb, /* userData */ nullptr) &&
            LMIC_registerEventCb(myEventCb, /* userData */ nullptr))) {
         myFail("couldn't register callbacks");
     }
@@ -528,6 +607,62 @@ void setup() {
     do_send(&sendjob);
 }
 
+void setup_printSignOnDashes(void)
+    {
+    Serial.print(F("------------------------------------"));
+    }
+void setup_printSignOnDashLine()
+    {
+    setup_printSignOnDashes();
+    setup_printSignOnDashes();
+    printNl();
+    }
+
+static constexpr const char *filebasename2(const char *s, const char *p) {
+    return p[0] == '\0'                     ? s                             :
+           (p[0] == '/' || p[0] == '\\')    ? filebasename2(p + 1, p + 1)   :
+                                              filebasename2(s, p + 1)       ;
+}
+
+static constexpr const char *filebasename(const char *s)
+    {
+    return filebasename2(s, s);
+    }
+
+void printVersionFragment(char sep, uint8_t v) {
+    if (sep != 0) {
+        Serial.print(sep);
+    }
+    Serial.print(unsigned(v));
+}
+
+void printVersion(uint32_t v) {
+    printVersionFragment(0, uint8_t(v >> 24u));
+    printVersionFragment('.', uint8_t(v >> 16u));
+    printVersionFragment('.', uint8_t(v >> 8u));
+    if (uint8_t(v) != 0) {
+        printVersionFragment('.', uint8_t(v));
+    }
+}
+
+void setup_printSignOn()
+    {
+    printNl();
+
+    setup_printSignOnDashLine();
+
+    Serial.println(filebasename(__FILE__));
+    Serial.print(F("LMIC version "));
+    printVersion(ARDUINO_LMIC_VERSION);
+    Serial.print(F(" configured for region "));
+    Serial.print(CFG_region);
+    Serial.println(F("."));
+    Serial.println(F("Remember to select 'Line Ending: Newline' at the bottom of the monitor window."));
+
+    setup_printSignOnDashLine();
+    printNl();
+    }
+
 void setupForNetwork(bool preJoin) {
 #if defined(CFG_us915)
     LMIC_selectSubBand(1);
@@ -541,7 +676,7 @@ void setupForNetwork(bool preJoin) {
 
 void loop() {
     os_runloop_once();
-    while ((LMIC.opmode & OP_TXRXPEND) == 0 && 
+    while ((LMIC.opmode & OP_TXRXPEND) == 0 &&
            ! os_queryTimeCriticalJobs(ms2osticks(1000)) &&
            eventPrintOne())
         ;

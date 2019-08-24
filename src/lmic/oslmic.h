@@ -324,6 +324,18 @@ extern xref2u1_t AESaux;
 u4_t os_aes (u1_t mode, xref2u1_t buf, u2_t len);
 #endif
 
+// ======================================================================
+// Simple logging support. Vanishes unless enabled.
+
+#if LMIC_ENABLE_event_logging
+extern void LMICOS_logEvent(const char *pMessage);
+extern void LMICOS_logEventUint32(const char *pMessage, uint32_t datum);
+#else // ! LMIC_ENABLE_event_logging
+# define LMICOS_logEvent(m)     do { ; } while (0)
+# define LMICOS_logEventUint32(m, d) do { ; } while (0)
+#endif // ! LMIC_ENABLE_event_logging
+
+
 LMIC_END_DECLS
 
 #endif // _oslmic_h_

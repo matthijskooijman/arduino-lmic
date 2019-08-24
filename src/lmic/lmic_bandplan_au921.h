@@ -40,7 +40,8 @@
 uint8_t LMICau921_maxFrameLen(uint8_t dr);
 #define maxFrameLen(dr) LMICau921_maxFrameLen(dr)
 
-#define pow2dBm(mcmd_ladr_p1) ((s1_t)(30 - (((mcmd_ladr_p1)&MCMD_LADR_POW_MASK)<<1)))
+int8_t LMICau921_pow2dbm(uint8_t mcmd_ladr_p1);
+#define pow2dBm(mcmd_ladr_p1) LMICau921_pow2dbm(mcmd_ladr_p1)
 
 ostime_t LMICau921_dr2hsym(uint8_t dr);
 #define dr2hsym(dr) LMICau921_dr2hsym(dr)

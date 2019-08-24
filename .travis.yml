@@ -84,6 +84,7 @@ before_install:
   # Put one or more arguments into lmic_project_config.h as  `#define $i 1\n` or `#define $i $arg`
   - function _splitdef { if [ "$1" = "${1/=/}" ]; then echo "$1" 1 ; else echo "${1/=/ }" ; fi ; }
   - function _projcfg { for i in "$@" ; do printf '#define %s %s\n' $(_splitdef "$i") ; done  > $PWD/project_config/lmic_project_config.h ; }
+  - function _projcfg_class_a { for i in "$@" "DISABLE_PING" "DISABLE_BEACONS"; do printf '#define %s %s\n' $(_splitdef "$i") ; done  > $PWD/project_config/lmic_project_config.h ; }
   #
   # Handy macro to deal with expected failures.
   - 'function _expect_failure { if [ $? -eq 0 ]; then echo "Suceeded, but should have failed!" ; echo project_config/lmic_project_config.h ; cat $PWD/project_config/lmic_project_config.h ; return 1 ; else echo "Failed, as expected"; return 0 ; fi ; }'
@@ -135,6 +136,14 @@ script:
  - _notesp32 || { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/ttn-abp/ttn-abp.ino ; }
  # make sure debug works
  - _notesp32 || { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio LMIC_DEBUG_LEVEL=2 LMIC_PRINTF_TO=Serial && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
+ # make sure the compliance sketch compiles on AVR in all regions.
+ - _notesp32 ||  { _projcfg CFG_us915   CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notesp32 ||  { _projcfg CFG_eu868   CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notesp32 ||  { _projcfg CFG_au921   CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notesp32 ||  { _projcfg CFG_as923   CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notesp32 ||  { _projcfg CFG_as923jp CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notesp32 ||  { _projcfg CFG_kr920   CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notesp32 ||  { _projcfg CFG_in866   CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
 
  #
  # *** Tests for Feather 32u4
@@ -155,6 +164,15 @@ script:
  - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino ; }
  - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_kr920   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino ; }
  - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino ; }
+
+ # make sure the compliance sketch compiles on AVR in all regions. This also requires class-A only
+ - _notavr ||  { _projcfg_class_a CFG_us915   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notavr ||  { _projcfg_class_a CFG_eu868   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notavr ||  { _projcfg_class_a CFG_au921   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notavr ||  { _projcfg_class_a CFG_as923   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notavr ||  { _projcfg_class_a CFG_as923jp CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notavr ||  { _projcfg_class_a CFG_kr920   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notavr ||  { _projcfg_class_a CFG_in866   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
 
  # test the raw sketch
  - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw/raw.ino ; }
@@ -213,8 +231,8 @@ script:
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
- - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_kr920   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
- - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
+ - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_kr920   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
+ - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
 #
 # test ttn-abp with all regions
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp/ttn-abp.ino ; }
@@ -263,6 +281,9 @@ script:
  - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4450' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
  - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4460' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
  - _notsamd ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915 CFG_sx1276_radio && arduino --verify --board $(_samdopts 'mcci_catena_4470' projcfg) $PWD/examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino ; }
+
+ # make sure the compliance sketch compiles on SAMD in EU region.
+ - _notsamd ||  arduino --verify --board $(_samdopts 'mcci_catena_4450' eu868  ) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino
 
 #
 # some tests that should generate build failures.

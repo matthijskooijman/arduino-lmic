@@ -186,7 +186,7 @@ void do_send(osjob_t* j){
 }
 
 void setup() {
-//    pinMode(13, OUTPUT); 
+//    pinMode(13, OUTPUT);
     while (!Serial); // wait for Serial to be initialized
     Serial.begin(115200);
     delay(100);     // per sample code on RF_95 test
@@ -272,7 +272,7 @@ void loop() {
     else {
       digitalWrite(13, LOW);
     }
-      
+
     os_runloop_once();
-    
+
 }

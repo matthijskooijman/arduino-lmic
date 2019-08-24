@@ -105,7 +105,7 @@ extern "C"{
 #define ARDUINO_LMIC_VERSION_CALC(major, minor, patch, local)	\
 	(((major) << 24u) | ((minor) << 16u) | ((patch) << 8u) | (local))
 
-#define	ARDUINO_LMIC_VERSION	ARDUINO_LMIC_VERSION_CALC(2, 3, 2, 60)	/* v2.3.2.60 */
+#define	ARDUINO_LMIC_VERSION	ARDUINO_LMIC_VERSION_CALC(2, 3, 2, 70)	/* v2.3.2.70 */
 
 #define	ARDUINO_LMIC_VERSION_GET_MAJOR(v)	\
 	(((v) >> 24u) & 0xFFu)
@@ -168,6 +168,8 @@ enum { MAX_XCHANNELS = 2 };      // extra channels in RAM, channels 0-71 are imm
 
 struct lmic_saved_adr_state_s {
     u2_t        channelMap[(72+MAX_XCHANNELS+15)/16];  // enabled bits
+    u2_t        activeChannels125khz;
+    u2_t        activeChannels500khz;
 };
 
 #endif // ==========================================================================
@@ -253,6 +255,29 @@ enum _ev_t { EV_SCAN_TIMEOUT=1, EV_BEACON_FOUND,
              EV_RXCOMPLETE, EV_LINK_DEAD, EV_LINK_ALIVE, EV_SCAN_FOUND,
              EV_TXSTART, EV_TXCANCELED, EV_RXSTART, EV_JOIN_TXCOMPLETE };
 typedef enum _ev_t ev_t;
+
+// this macro can be used to initalize a normal table of event strings
+#define LMIC_EVENT_NAME_TABLE__INIT                                         \
+    "<<zero>>",                                                             \
+    "EV_SCAN_TIMEOUT", "EV_BEACON_FOUND",                                   \
+    "EV_BEACON_MISSED", "EV_BEACON_TRACKED", "EV_JOINING",                  \
+    "EV_JOINED", "EV_RFU1", "EV_JOIN_FAILED", "EV_REJOIN_FAILED",           \
+    "EV_TXCOMPLETE", "EV_LOST_TSYNC", "EV_RESET",                           \
+    "EV_RXCOMPLETE", "EV_LINK_DEAD", "EV_LINK_ALIVE", "EV_SCAN_FOUND",      \
+    "EV_TXSTART", "EV_TXCANCELED", "EV_RXSTART", "EV_JOIN_TXCOMPLETE"
+
+// if working on an AVR (or worried about it), you can use this multi-zero
+// string and put this in a single const F() string.  Index through this
+// counting up from 0, until you get to the entry you want or to an
+// entry that begins with a \0.
+#define LMIC_EVENT_NAME_MULTISZ__INIT                                       \
+    "<<zero>>\0"                                                            \
+    "EV_SCAN_TIMEOUT\0" "EV_BEACON_FOUND\0"                                 \
+    "EV_BEACON_MISSED\0" "EV_BEACON_TRACKED\0" "EV_JOINING\0"               \
+    "EV_JOINED\0" "EV_RFU1\0" "EV_JOIN_FAILED\0" "EV_REJOIN_FAILED\0"       \
+    "EV_TXCOMPLETE\0" "EV_LOST_TSYNC\0" "EV_RESET\0"                        \
+    "EV_RXCOMPLETE\0" "EV_LINK_DEAD\0" "EV_LINK_ALIVE\0" "EV_SCAN_FOUND\0"  \
+    "EV_TXSTART\0" "EV_TXCANCELED\0" "EV_RXSTART\0" "EV_JOIN_TXCOMPLETE\0"
 
 enum {
         // This value represents 100% error in LMIC.clockError
@@ -399,6 +424,10 @@ struct lmic_t {
 #if CFG_LMIC_EU_like
     band_t      bands[MAX_BANDS];
     u4_t        channelFreq[MAX_CHANNELS];
+#if !defined(DISABLE_MCMD_DlChannelReq)
+    u4_t        channelDlFreq[MAX_CHANNELS];
+#endif
+    // bit map of enabled datarates for each channel
     u2_t        channelDrMap[MAX_CHANNELS];
     u2_t        channelMap;
 #elif CFG_LMIC_US_like
@@ -445,35 +474,33 @@ struct lmic_t {
     u1_t        errcr;        // error coding rate (used for TX only)
     u1_t        rejoinCnt;    // adjustment for rejoin datarate
 
+    u1_t        upRepeatCount;  // current up-repeat
     bit_t       initBandplanAfterReset; // cleared by LMIC_reset(), set by first join. See issue #244
 
     u1_t        pendTxPort;
     u1_t        pendTxConf;   // confirmed data
-    u1_t        pendTxLen;    // +0x80 = confirmed
+    u1_t        pendTxLen;    // count of bytes in pendTxData.
     u1_t        pendTxData[MAX_LEN_PAYLOAD];
+
+    u1_t        pendMacLen;         // number of bytes of pending Mac response data
+    bit_t       pendMacPiggyback;   // received on port 0 or piggyback?
+    // response data if piggybacked
+    u1_t        pendMacData[LWAN_FCtrl_FOptsLen_MAX];
 
     u1_t        nwkKey[16];   // network session key
     u1_t        artKey[16];   // application router session key
 
     u1_t        dnConf;       // dn frame confirm pending: LORA::FCT_ACK or 0
+    u1_t        lastDnConf;   // downlink with seqnoDn-1 requested confirmation
     u1_t        adrChanged;
 
     u1_t        rxDelay;      // Rx delay after TX
 
     u1_t        margin;
-    bit_t       ladrAns;      // link adr adapt answer pending
-    bit_t       devsAns;      // device status answer pending
     s1_t        devAnsMargin; // SNR value between -32 and 31 (inclusive) for the last successfully received DevStatusReq command
     u1_t        adrEnabled;
     u1_t        moreData;     // NWK has more data pending
-#if !defined(DISABLE_MCMD_DCAP_REQ)
-    bit_t       dutyCapAns;   // have to ACK duty cycle settings
-#endif
-#if !defined(DISABLE_MCMD_SNCH_REQ)
-    u1_t        snchAns;      // answer set new channel
-#endif
 #if LMIC_ENABLE_TxParamSetupReq
-    bit_t       txParamSetupAns; // transmit setup answer pending.
     u1_t        txParam;        // the saved TX param byte.
 #endif
 #if LMIC_ENABLE_DeviceTimeReq
@@ -486,17 +513,20 @@ struct lmic_t {
 
     // 2nd RX window (after up stream)
     u1_t        dn2Dr;
-#if !defined(DISABLE_MCMD_DN2P_SET)
+#if !defined(DISABLE_MCMD_RXParamSetupReq)
     u1_t        dn2Ans;       // 0=no answer pend, 0x80+ACKs
+#endif
+#if !defined(DISABLE_MCMD_DlChannelReq)
+    u1_t        macDlChannelAns;        // 0 ==> no answer pending, 0x80+ACK bits
+#endif
+#if !defined(DISABLE_MCMD_RXTimingSetupReq)
+    bit_t       macRxTimingSetupAns;    // 0 ==> no answer pend, non-zero inserts response.
 #endif
 
     // Class B state
 #if !defined(DISABLE_BEACONS)
     u1_t        missedBcns;   // unable to track last N beacons
     u1_t        bcninfoTries; // how often to try (scan mode only)
-#endif
-#if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
-    u1_t        pingSetAns;   // answer set cmd and ACK bits
 #endif
     // Public part of MAC state
     u1_t        txCnt;

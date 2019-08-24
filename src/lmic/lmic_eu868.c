@@ -59,11 +59,16 @@ uint8_t LMICeu868_maxFrameLen(uint8_t dr) {
 }
 
 static CONST_TABLE(s1_t, TXPOWLEVELS)[] = {
-        16, 14, 12, 10, 8, 6, 4, 2, 0,0,0,0, 0,0,0,0
+        16, 14, 12, 10, 8, 6, 4, 2
 };
 
 int8_t LMICeu868_pow2dBm(uint8_t mcmd_ladr_p1) {
-        return TABLE_GET_S1(TXPOWLEVELS, (mcmd_ladr_p1&MCMD_LADR_POW_MASK)>>MCMD_LADR_POW_SHIFT);
+        uint8_t const pindex = (mcmd_ladr_p1&MCMD_LinkADRReq_POW_MASK)>>MCMD_LinkADRReq_POW_SHIFT;
+        if (pindex < LENOF_TABLE(TXPOWLEVELS)) {
+                return TABLE_GET_S1(TXPOWLEVELS, pindex);
+        } else {
+                return -128;
+        }
 }
 
 // only used in this module, but used by variant macro dr2hsym().
@@ -93,6 +98,9 @@ static CONST_TABLE(u4_t, iniChannelFreq)[6] = {
 
 void LMICeu868_initDefaultChannels(bit_t join) {
         os_clearMem(&LMIC.channelFreq, sizeof(LMIC.channelFreq));
+#if !defined(DISABLE_MCMD_DlChannelReq)
+        os_clearMem(&LMIC.channelDlFreq, sizeof(LMIC.channelDlFreq));
+#endif // !DISABLE_MCMD_DlChannelReq
         os_clearMem(&LMIC.channelDrMap, sizeof(LMIC.channelDrMap));
         os_clearMem(&LMIC.bands, sizeof(LMIC.bands));
 
@@ -130,6 +138,15 @@ bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
 }
 
 bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
+        if (chidx < NUM_DEFAULT_CHANNELS) {
+                // can't disable a default channel.
+                if (freq == 0)
+                        return 0;
+                // can't change a default channel.
+                else if (freq != (LMIC.channelFreq[chidx] & ~3))
+                        return 0;
+        }
+        bit_t fEnable = (freq != 0);
         if (chidx >= MAX_CHANNELS)
                 return 0;
         if (band == -1) {
@@ -146,9 +163,11 @@ bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
                 freq = (freq&~3) | band;
         }
         LMIC.channelFreq[chidx] = freq;
-        // TODO(tmm@mcci.com): don't use US SF directly, use something from the LMIC context or a static const
         LMIC.channelDrMap[chidx] = drmap == 0 ? DR_RANGE_MAP(EU868_DR_SF12, EU868_DR_SF7) : drmap;
-        LMIC.channelMap |= 1 << chidx;  // enabled right away
+        if (fEnable)
+                LMIC.channelMap |= 1 << chidx;  // enabled right away
+        else
+                LMIC.channelMap &= ~(1 << chidx);
         return 1;
 }
 
@@ -226,6 +245,8 @@ void LMICeu868_setRx1Params(void) {
     u1_t const txdr = LMIC.dndr;
     s1_t drOffset;
     s1_t candidateDr;
+
+    LMICeulike_setRx1Freq();
 
     if ( LMIC.rx1DrOffset <= 5)
         drOffset = (s1_t) LMIC.rx1DrOffset;
