@@ -73,7 +73,7 @@ enum {
         US915_FREQ_MAX = 928000000
 };
 enum {
-        US915_TX_MAX_DBM = 30           // 30 dBm (but not EIRP): assumes we're 
+        US915_TX_MAX_DBM = 30           // 30 dBm (but not EIRP): assumes we're
                                         // on an 64-channel bandplan. See code
                                         // that computes tx power.
 };

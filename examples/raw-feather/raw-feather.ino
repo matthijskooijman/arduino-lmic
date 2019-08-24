@@ -58,7 +58,7 @@ Author:
 
 // Pin mapping for Adafruit Feather M0 LoRa, etc.
 //
-// Adafruit BSPs are not consistent -- m0 express defs ARDUINO_SAMD_FEATHER_M0, 
+// Adafruit BSPs are not consistent -- m0 express defs ARDUINO_SAMD_FEATHER_M0,
 // m0 defs ADAFRUIT_FEATHER_M0
 //
 #if defined(ARDUINO_SAMD_FEATHER_M0) || defined(ADAFRUIT_FEATHER_M0)

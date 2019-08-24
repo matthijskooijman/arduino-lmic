@@ -69,7 +69,7 @@ LMICuslike_isValidBeacon1(const uint8_t *d) {
 #define LMICbandplan_advanceBeaconChannel()     \
         do { LMIC.bcnChnl = (LMIC.bcnChnl+1) & 7; } while (0)
 
-// TODO(tmm@mcci.com): decide whether we want to do this on every 
+// TODO(tmm@mcci.com): decide whether we want to do this on every
 // reset or just restore the last sub-band selected by the user.
 #define LMICbandplan_resetDefaultChannels()     \
         LMICbandplan_initDefaultChannels(/* normal */ 0)

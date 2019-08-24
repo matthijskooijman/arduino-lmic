@@ -49,7 +49,7 @@ public:
 	// virtual void end(void) override
 
 	// virtual ostime_t setModuleActive(bool state) override
-	
+
 	};
 
 static HalConfiguration_ttgo_lora32_v1 myConfig;

@@ -52,7 +52,7 @@ static CONST_TABLE(u1_t, maxFrameLens)[] = { 59+5,59+5,59+5,123+5, 230+5, 230+5 
 uint8_t LMICkr920_maxFrameLen(uint8_t dr) {
         if (dr < LENOF_TABLE(maxFrameLens))
                 return TABLE_GET_U1(maxFrameLens, dr);
-        else 
+        else
                 return 0xFF;
 }
 
@@ -89,8 +89,8 @@ ostime_t LMICkr920_dr2hsym(uint8_t dr) {
 enum { NUM_DEFAULT_CHANNELS = 3 };
 static CONST_TABLE(u4_t, iniChannelFreq)[NUM_DEFAULT_CHANNELS] = {
         // Default operational frequencies
-        KR920_F1 | BAND_MILLI, 
-        KR920_F2 | BAND_MILLI, 
+        KR920_F1 | BAND_MILLI,
+        KR920_F2 | BAND_MILLI,
         KR920_F3 | BAND_MILLI,
 };
 
@@ -200,7 +200,7 @@ ostime_t LMICkr920_nextTx(ostime_t now) {
                 }
         }
 
-        // no enabled channel found! just use the last channel. 
+        // no enabled channel found! just use the last channel.
         return now;
 }
 

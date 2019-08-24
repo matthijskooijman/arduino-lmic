@@ -54,7 +54,7 @@ static CONST_TABLE(u1_t, maxFrameLens)[] = { 59+5,59+5,59+5,123+5, 230+5, 230+5 
 uint8_t LMICin866_maxFrameLen(uint8_t dr) {
         if (dr < LENOF_TABLE(maxFrameLens))
                 return TABLE_GET_U1(maxFrameLens, dr);
-        else 
+        else
                 return 0xFF;
 }
 
@@ -93,8 +93,8 @@ ostime_t LMICin866_dr2hsym(uint8_t dr) {
 enum { NUM_DEFAULT_CHANNELS = 3 };
 static CONST_TABLE(u4_t, iniChannelFreq)[NUM_DEFAULT_CHANNELS] = {
         // Default operational frequencies
-        IN866_F1 | BAND_MILLI, 
-        IN866_F2 | BAND_MILLI, 
+        IN866_F1 | BAND_MILLI,
+        IN866_F2 | BAND_MILLI,
         IN866_F3 | BAND_MILLI,
 };
 
@@ -189,7 +189,7 @@ ostime_t LMICin866_nextTx(ostime_t now) {
                 }
         }
 
-        // no enabled channel found! just use the last channel. 
+        // no enabled channel found! just use the last channel.
         return now;
 }
 

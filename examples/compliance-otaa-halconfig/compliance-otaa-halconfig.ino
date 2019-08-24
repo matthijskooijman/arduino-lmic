@@ -38,7 +38,7 @@ static const u1_t PROGMEM DEVEUI[8]= { 1, 0, 0, 0, 0, 0, 0, 0 };
 void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 
 // This key should be in big endian format (or, since it is not really a
-// number but a block of memory, endianness does not really apply). 
+// number but a block of memory, endianness does not really apply).
 static const u1_t PROGMEM APPKEY[16] = { 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 2 };
 void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
 
@@ -464,7 +464,7 @@ Definition:
                 uint8_t port,
                 const uint8_t *pMessage,
                 size_t nMessage
-                ); 
+                );
         }
 
 Description:
@@ -552,7 +552,7 @@ void sendComplete(
     if (! g_fTestMode) {
             // Schedule next transmission
             os_setTimedCallback(j, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
-    }        
+    }
 }
 
 void myFail(const char *pMessage) {
@@ -590,7 +590,7 @@ void setup() {
     os_init_ex(pPinMap);
 
     // LMIC_reset() doesn't affect callbacks, so we can do this first.
-    if (! (LMIC_registerRxMessageCb(myRxMessageCb, /* userData */ nullptr) && 
+    if (! (LMIC_registerRxMessageCb(myRxMessageCb, /* userData */ nullptr) &&
            LMIC_registerEventCb(myEventCb, /* userData */ nullptr))) {
         myFail("couldn't register callbacks");
     }
@@ -676,7 +676,7 @@ void setupForNetwork(bool preJoin) {
 
 void loop() {
     os_runloop_once();
-    while ((LMIC.opmode & OP_TXRXPEND) == 0 && 
+    while ((LMIC.opmode & OP_TXRXPEND) == 0 &&
            ! os_queryTimeCriticalJobs(ms2osticks(1000)) &&
            eventPrintOne())
         ;

@@ -7,7 +7,7 @@ Function:
 
 Copyright notice and license info:
 	See LICENSE file accompanying this project.
- 
+
 Author:
 	Terry Moore, MCCI Corporation	November 2018
 
@@ -39,7 +39,7 @@ Description:
 	error. The results of using this macro where a declaration is not
 	permitted are unspecified.
 
-	This is different from #if !(fErrorIfFalse) / #error in that the 
+	This is different from #if !(fErrorIfFalse) / #error in that the
 	expression is evaluated by the compiler rather than by the pre-
 	processor. Therefore things like sizeof() can be used.
 

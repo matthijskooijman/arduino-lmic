@@ -33,7 +33,7 @@
 // (payload length, frequency, spreading factor), be sure to check if
 // this interval should not also be increased.
 // See this spreadsheet for an easy airtime and duty cycle calculator:
-// https://docs.google.com/spreadsheets/d/1voGAtQAjC1qBmaVuP1ApNKs1ekgUjavHuVQIXyYSvNc 
+// https://docs.google.com/spreadsheets/d/1voGAtQAjC1qBmaVuP1ApNKs1ekgUjavHuVQIXyYSvNc
 #define TX_INTERVAL 2000
 
 // Pin mapping
