@@ -741,7 +741,7 @@ applyAdrRequests(
     LMICbandplan_saveAdrState(&initialState);
 
     // compute the changes
-    if (adrAns == MCMD_LinkADRAns_PowerACK | MCMD_LinkADRAns_DataRateACK | MCMD_LinkADRAns_ChannelACK) {
+    if (adrAns == (MCMD_LinkADRAns_PowerACK | MCMD_LinkADRAns_DataRateACK | MCMD_LinkADRAns_ChannelACK)) {
         for (oidx = 0; oidx < olen; oidx += kAdrReqSize) {
             // can we advance?
             if (olen - oidx < kAdrReqSize) {
@@ -990,7 +990,7 @@ scan_mac_cmds(
                 ans &= ~MCMD_NewChannelAns_DataRateACK;
             }
 
-            if( ans == MCMD_NewChannelAns_DataRateACK|MCMD_NewChannelAns_ChannelACK) {
+            if( ans == (MCMD_NewChannelAns_DataRateACK|MCMD_NewChannelAns_ChannelACK)) {
                 if ( ! LMIC_setupChannel(chidx, freq, DR_RANGE_MAP(MinDR, MaxDR), -1) ) {
                     LMICOS_logEventUint32("NewChannelReq: setupChannel failed", (MaxDR << 24u) | (MinDR << 16u) | (raw_f_not_zero << 8) | (chidx << 0));
                     ans &= ~MCMD_NewChannelAns_ChannelACK;
@@ -1019,7 +1019,7 @@ scan_mac_cmds(
                 ans &= ~MCMD_DlChannelAns_FreqACK;
             }
 
-            if( ans == MCMD_DlChannelAns_FreqACK|MCMD_DlChannelAns_ChannelACK) {
+            if( ans == (MCMD_DlChannelAns_FreqACK|MCMD_DlChannelAns_ChannelACK)) {
                 LMIC.channelDlFreq[chidx] = freq;
             }
 
@@ -1044,7 +1044,7 @@ scan_mac_cmds(
             if (! validDR(dr))
                 ans &= ~MCMD_PingSlotFreqAns_DataRateACK;
 
-            if (ans == MCMD_PingSlotFreqAns_DataRateACK|MCMD_PingSlotFreqAns_ChannelACK) {
+            if (ans == (MCMD_PingSlotFreqAns_DataRateACK|MCMD_PingSlotFreqAns_ChannelACK)) {
                 LMIC.ping.freq = freq;
                 LMIC.ping.dr = dr;
                 DO_DEVDB(LMIC.ping.intvExp, pingIntvExp);
