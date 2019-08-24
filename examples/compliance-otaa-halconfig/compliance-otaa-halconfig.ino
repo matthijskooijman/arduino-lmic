@@ -162,6 +162,16 @@ void LMICOS_logEventUint32(const char *pMessage, uint32_t datum)
     }
 #endif // LMIC_ENABLE_event_logging
 
+hal_failure_handler_t log_assertion;
+
+void log_assertion(const char *pMessage, uint16_t line) {
+    eventQueue.putEvent(ev_t(-3), pMessage, line);
+    eventPrintAll();
+    Serial.println("***HALTED BY ASSERT***");
+    while (true)
+        yield();
+}
+
 uint8_t lastTxChannel;
 bool lastTxStart;
 
@@ -216,6 +226,7 @@ const char *getCrcName(rps_t rps) {
 }
 
 void printFreq(u4_t freq) {
+    Serial.print(F(": freq="));
     Serial.print(freq / 1000000);
     Serial.print(F("."));
     Serial.print((freq % 1000000) / 100000);
@@ -241,6 +252,54 @@ void printTxend(ostime_t txend) {
     Serial.print(F(", txend=")); Serial.print(txend);
 }
 
+void printTxChnl(u1_t txChnl) {
+    Serial.print(F(": ch="));
+    Serial.print(unsigned(txChnl));
+}
+
+void printDatarate(u1_t datarate) {
+    Serial.print(F(", datarate=")); Serial.print(unsigned(datarate));
+}
+
+void printTxrxflags(u2_t txrxFlags) {
+    Serial.print(F(", txrxFlags=0x")); Serial.print(unsigned(txrxFlags), HEX);
+    if (txrxFlags & TXRX_ACK)
+        Serial.print(F("; Received ack"));
+}
+
+void printSaveIrqFlags(u1_t saveIrqFlags) {
+    Serial.print(F(", saveIrqFlags 0x"));
+    Serial.print(unsigned(saveIrqFlags), HEX);
+}
+
+// dump all the registers.
+void printAllRegisters(void) {
+    uint8_t regbuf[0x80];
+    regbuf[0] = 0;
+    hal_spi_read(1, regbuf + 1, sizeof(regbuf) - 1);
+
+    for (unsigned i = 0; i < sizeof(regbuf); ++i) {
+        if (i % 16 == 0) {
+            printf("\r\n%02x:", i);
+        }
+        printf("%s%02x", ((i % 16) == 8) ? " - " : " ", regbuf[i]);
+    }
+
+    // reset the radio, just in case the register dump caused issues.
+    hal_pin_rst(0);
+    delay(2);
+    hal_pin_rst(2);
+    delay(6);
+
+    // restore the radio to idle.
+    const uint8_t opmode = 0x88;    // LoRa and sleep.
+    hal_spi_write(0x81, &opmode, 1);
+}
+
+void printNl(void) {
+    Serial.println("");
+}
+
 void eventPrint(cEventQueue::eventnode_t &e) {
     ev_t ev = e.event;
 
@@ -255,6 +314,17 @@ void eventPrint(cEventQueue::eventnode_t &e) {
             Serial.print(F(", datum=0x")); Serial.print(e.datum, HEX);
         }
         printOpmode(e.opmode, '.');
+    } else if (ev == ev_t(-3)) {
+        Serial.print(e.pMessage);
+        Serial.print(F(", line ")); Serial.print(e.datum);
+        printFreq(e.freq);
+        printTxend(e.txend);
+        printTxChnl(e.txChnl);
+        printRps(e.rps);
+        printOpmode(e.opmode);
+        printTxrxflags(e.opmode);
+        printSaveIrqFlags(e.saveIrqFlags);
+        printAllRegisters();
     } else {
         if (ev < sizeof(evNames) / sizeof(evNames[0])) {
             Serial.print(evNames[ev]);
@@ -275,8 +345,8 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 break;
 
             case EV_JOINED:
-                Serial.print(F(": ch "));
-                Serial.println(unsigned(e.txChnl));
+                printTxChnl(e.txChnl);
+                printNl();
                 do  {
                     u4_t netid = 0;
                     devaddr_t devaddr = 0;
@@ -312,35 +382,12 @@ void eventPrint(cEventQueue::eventnode_t &e) {
             */
             case EV_JOIN_FAILED:
                 // print out rx info
-                Serial.print(F(":  freq=")); printFreq(e.freq);
+                printFreq(e.freq);
                 printRps(e.rps);
                 printOpmode(e.opmode);
                 printf(" irqLevel %u", hal_getIrqLevel());
 
-                // dump all the registers.
-                do {
-                    uint8_t regbuf[0x80];
-                    regbuf[0] = 0;
-                    hal_spi_read(1, regbuf + 1, sizeof(regbuf) - 1);
-
-                    for (unsigned i = 0; i < sizeof(regbuf); ++i) {
-                        if (i % 16 == 0) {
-                            printf("\r\n%02x:", i);
-                        }
-                        printf("%s%02x", ((i % 16) == 8) ? " - " : " ", regbuf[i]);
-                    }
-
-                    // reset the radio, just in case the register dump caused issues.
-                    hal_pin_rst(0);
-                    delay(2);
-                    hal_pin_rst(2);
-                    delay(6);
-
-                    // restore the radio to idle.
-                    const uint8_t opmode = 0x88;    // LoRa and sleep.
-                    hal_spi_write(0x81, &opmode, 1);
-
-                } while (0);
+                printAllRegisters();
                 break;
 
             case EV_REJOIN_FAILED:
@@ -349,12 +396,9 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 break;
 
             case EV_TXCOMPLETE:
-                Serial.print(F(": ch "));
-                Serial.print(e.txChnl);
+                printTxChnl(e.txChnl);
                 printRps(e.rps);
-                Serial.print(F(" txrxflags 0x")); Serial.print(e.txrxFlags, HEX);
-                if (e.txrxFlags & TXRX_ACK)
-                    Serial.print(F("; Received ack"));
+                printTxrxflags(e.txrxFlags);
                 break;
             case EV_LOST_TSYNC:
                 break;
@@ -377,34 +421,31 @@ void eventPrint(cEventQueue::eventnode_t &e) {
             case EV_TXSTART:
                 // this event tells us that a transmit is about to start.
                 // but printing here is bad for timing.
-                Serial.print(F(": ch "));
-                Serial.print(unsigned(e.txChnl));
+                printTxChnl(e.txChnl);
                 printRps(e.rps);
-                Serial.print(F(", datarate ")); Serial.print(unsigned(e.datarate));
+                printDatarate(e.datarate);
                 printOpmode(e.opmode);
                 printTxend(e.txend);
                 break;
 
             case EV_RXSTART:
-                Serial.print(F(": freq="));
                 printFreq(e.freq);
                 printRps(e.rps);
-                Serial.print(F(", datarate ")); Serial.print(unsigned(e.datarate));
+                printDatarate(e.datarate);
                 printOpmode(e.opmode);
                 printTxend(e.txend);
                 Serial.print(F(", delta ms ")); Serial.print(osticks2ms(e.time - e.txend));
                 break;
 
             case EV_JOIN_TXCOMPLETE:
-                Serial.print(F(": saveIrqFlags 0x"));
-                Serial.print(unsigned(e.saveIrqFlags), HEX);
+                printSaveIrqFlags(e.saveIrqFlags);
                 break;
 
             default:
                 break;
         }
     }
-    Serial.println("");
+    printNl();
 }
 
 /*
@@ -534,7 +575,7 @@ void setup() {
     while (! Serial)
         ;
     Serial.begin(115200);
-    Serial.println(F("Starting"));
+    setup_printSignOn();
 
     // LMIC init using the computed target
     const auto pPinMap = Arduino_LMIC::GetPinmap_ThisBoard();
@@ -545,6 +586,7 @@ void setup() {
     }
 
     // now that we have a pinmap, initalize the low levels accordingly.
+    hal_set_failure_handler(log_assertion);
     os_init_ex(pPinMap);
 
     // LMIC_reset() doesn't affect callbacks, so we can do this first.
@@ -564,6 +606,62 @@ void setup() {
     // Start job (sending automatically starts OTAA too)
     do_send(&sendjob);
 }
+
+void setup_printSignOnDashes(void)
+    {
+    Serial.print(F("------------------------------------"));
+    }
+void setup_printSignOnDashLine()
+    {
+    setup_printSignOnDashes();
+    setup_printSignOnDashes();
+    printNl();
+    }
+
+static constexpr const char *filebasename2(const char *s, const char *p) {
+    return p[0] == '\0'                     ? s                             :
+           (p[0] == '/' || p[0] == '\\')    ? filebasename2(p + 1, p + 1)   :
+                                              filebasename2(s, p + 1)       ;
+}
+
+static constexpr const char *filebasename(const char *s)
+    {
+    return filebasename2(s, s);
+    }
+
+void printVersionFragment(char sep, uint8_t v) {
+    if (sep != 0) {
+        Serial.print(sep);
+    }
+    Serial.print(unsigned(v));
+}
+
+void printVersion(uint32_t v) {
+    printVersionFragment(0, uint8_t(v >> 24u));
+    printVersionFragment('.', uint8_t(v >> 16u));
+    printVersionFragment('.', uint8_t(v >> 8u));
+    if (uint8_t(v) != 0) {
+        printVersionFragment('.', uint8_t(v));
+    }
+}
+
+void setup_printSignOn()
+    {
+    printNl();
+
+    setup_printSignOnDashLine();
+
+    Serial.println(filebasename(__FILE__));
+    Serial.print(F("LMIC version "));
+    printVersion(ARDUINO_LMIC_VERSION);
+    Serial.print(F(" configured for region "));
+    Serial.print(CFG_region);
+    Serial.println(F("."));
+    Serial.println(F("Remember to select 'Line Ending: Newline' at the bottom of the monitor window."));
+
+    setup_printSignOnDashLine();
+    printNl();
+    }
 
 void setupForNetwork(bool preJoin) {
 #if defined(CFG_us915)
