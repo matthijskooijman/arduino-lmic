@@ -761,6 +761,17 @@ applyAdrRequests(
 
     if (! map_ok) {
         adrAns &= ~MCMD_LinkADRAns_ChannelACK;
+    }
+
+    // p1 now has txpow + DR. DR must be feasible.
+    dr_t dr = (dr_t)(p1>>MCMD_LinkADRReq_DR_SHIFT);
+
+    if (adrAns == (MCMD_LinkADRAns_PowerACK | MCMD_LinkADRAns_DataRateACK | MCMD_LinkADRAns_ChannelACK) && ! LMICbandplan_isDataRateFeasible(dr)) {
+        adrAns &= ~MCMD_LinkADRAns_DataRateACK;
+        LMICOS_logEventUint32("applyAdrRequests: final DR not feasible", dr);
+    }
+
+    if (adrAns != (MCMD_LinkADRAns_PowerACK | MCMD_LinkADRAns_DataRateACK | MCMD_LinkADRAns_ChannelACK)) {
         LMICbandplan_restoreAdrState(&initialState);
     }
 
@@ -785,8 +796,6 @@ applyAdrRequests(
             LMIC.upRepeat = uprpt;
             changes = 1;
         }
-
-        dr_t dr = (dr_t)(p1>>MCMD_LinkADRReq_DR_SHIFT);
 
         LMICOS_logEventUint32("applyAdrRequests: setDrTxPow", (adrAns << 16)|(dr << 8)|(p1 << 0));
 

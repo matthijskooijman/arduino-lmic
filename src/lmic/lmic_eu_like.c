@@ -108,6 +108,15 @@ bit_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap) {
     return LMIC.channelMap != 0;
 }
 
+bit_t LMICeulike_isDataRateFeasible(dr_t dr) {
+        for (u1_t chnl = 0; chnl < MAX_CHANNELS; ++chnl) {
+                if ((LMIC.channelMap & (1 << chnl)) != 0 &&  // channel enabled
+                        (LMIC.channelDrMap[chnl] & (1 << dr)) != 0)
+                                return 1;
+        }
+        return 0;
+}
+
 #if !defined(DISABLE_JOIN)
 void LMICeulike_initJoinLoop(uint8_t nDefaultChannels, s1_t adrTxPow) {
 #if CFG_TxContinuousMode

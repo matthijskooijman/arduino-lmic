@@ -107,4 +107,8 @@ void LMICeulike_restoreAdrState(const lmic_saved_adr_state_t *pStateBuffer);
 // set Rx1 frequency (might be different than uplink).
 void LMICeulike_setRx1Freq(void);
 
+bit_t LMICeulike_isDataRateFeasible(dr_t dr);
+#define LMICbandplan_isDataRateFeasible(dr) LMICeulike_isDataRateFeasible(dr)
+
+
 #endif // _lmic_eu_like_h_
