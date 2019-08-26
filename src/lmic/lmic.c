@@ -513,8 +513,8 @@ static void reportEventNoUpdate (ev_t ev) {
             LMIC.client.txMessageCb = NULL;
 
             // compute exit status
-            if (ev == EV_TXCANCELED) {
-                // canceled: unsuccessful.
+            if (ev == EV_TXCANCELED || (LMIC.txrxFlags & TXRX_LENERR) != 0) {
+                // canceled, or killed because of length error: unsuccessful.
                 fSuccess = 0;
             } else if (/* ev == EV_TXCOMPLETE  && */ LMIC.pendTxConf) {
                 fSuccess = (LMIC.txrxFlags & TXRX_ACK) != 0;
@@ -1764,7 +1764,7 @@ static void updataDone (xref2osjob_t osjob) {
 // ========================================
 
 
-static void buildDataFrame (void) {
+static bit_t buildDataFrame (void) {
     bit_t txdata = ((LMIC.opmode & (OP_TXDATA|OP_POLL)) != OP_POLL);
     u1_t dlen = txdata ? LMIC.pendTxLen : 0;
 
@@ -1826,7 +1826,10 @@ static void buildDataFrame (void) {
         end += 1;
     }
 #endif
-    ASSERT(end <= OFF_DAT_OPTS+16);
+    if (end > OFF_DAT_OPTS + 16) {
+        LMICOS_logEventUint32("piggyback mac opts too long", end);
+        return 0;
+    }
 
     if( LMIC.adrChanged ) {
         // if ADR is enabled, and we were just counting down the
@@ -1843,6 +1846,14 @@ static void buildDataFrame (void) {
         txdata = 0;
         flen = end+4;
     }
+
+    u1_t maxFlen = LMICbandplan_maxFrameLen(LMIC.datarate);
+
+    if (flen > maxFlen) {
+        LMICOS_logEventUint32("frame too long for this bandplan", (dlen << 16) | (flen << 8) | maxFlen);
+        return 0;
+    }
+
     LMIC.frame[OFF_DAT_HDR] = HDR_FTYPE_DAUP | HDR_MAJOR_V1;
     LMIC.frame[OFF_DAT_FCT] = (LMIC.dnConf | LMIC.adrEnabled
                               | (LMIC.adrAckReq >= LINK_CHECK_CONT ? FCT_ADRACKReq : 0)
@@ -1897,6 +1908,7 @@ static void buildDataFrame (void) {
                        e_.opts.length = end-LORA::OFF_DAT_OPTS,
                        memcpy(&e_.opts[0], LMIC.frame+LORA::OFF_DAT_OPTS, end-LORA::OFF_DAT_OPTS)));
     LMIC.dataLen = flen;
+    return 1;
 }
 
 
@@ -2512,9 +2524,19 @@ static void engineUpdate (void) {
                     // App code might do some stuff after send unaware of RESET.
                     goto reset;
                 }
-                buildDataFrame();
+                if (! buildDataFrame()) {
+                    // can't transmit this message. Report completion.
+                    initTxrxFlags(__func__, TXRX_LENERR);
+                    if (LMIC.pendTxConf || LMIC.txCnt) {
+                        orTxrxFlags(__func__, TXRX_NACK);
+                    }
+                    LMIC.opmode &= ~(OP_POLL|OP_RNDTX|OP_TXDATA|OP_TXRXPEND);
+                    LMIC.dataBeg = LMIC.dataLen = 0;
+                    reportEventNoUpdate(EV_TXCOMPLETE);
+                    return;
+                }
                 LMIC.osjob.func = FUNC_ADDR(updataDone);
-            }
+            } // end of else (not joining)
             LMIC.rps    = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
             LMIC.dndr   = txdr;  // carry TX datarate (can be != LMIC.datarate) over to txDone/setupRx1
             LMIC.opmode = (LMIC.opmode & ~(OP_POLL|OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
@@ -2700,6 +2722,10 @@ int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
     LMIC.pendTxPort = port;
     LMIC.pendTxLen  = dlen;
     LMIC_setTxData();
+    if ( (LMIC.opmode & OP_TXDATA) == 0 ) {
+        // data has already been completed with error for some reason
+        return -3;
+    }
     return 0;
 }
 

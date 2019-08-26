@@ -244,9 +244,12 @@ enum { TXRX_ACK    = 0x80,   // confirmed UP frame was acked
        TXRX_NACK   = 0x40,   // confirmed UP frame was not acked
        TXRX_NOPORT = 0x20,   // set if a frame with a port was RXed, clr if no frame/no port
        TXRX_PORT   = 0x10,   // set if a frame with a port was RXed, LMIC.frame[LMIC.dataBeg-1] => port
-       TXRX_DNW1   = 0x01,   // received in 1st DN slot
+       TXRX_LENERR = 0x08,   // set if frame was discarded due to length error.
+       TXRX_PING   = 0x04,   // received in a scheduled RX slot
        TXRX_DNW2   = 0x02,   // received in 2dn DN slot
-       TXRX_PING   = 0x04 }; // received in a scheduled RX slot
+       TXRX_DNW1   = 0x01,   // received in 1st DN slot
+};
+
 // Event types for event callback
 enum _ev_t { EV_SCAN_TIMEOUT=1, EV_BEACON_FOUND,
              EV_BEACON_MISSED, EV_BEACON_TRACKED, EV_JOINING,
