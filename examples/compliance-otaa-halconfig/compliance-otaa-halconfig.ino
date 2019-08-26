@@ -42,7 +42,8 @@ void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 static const u1_t PROGMEM APPKEY[16] = { 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 2 };
 void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
 
-static uint8_t mydata[] = "Hello, world!";
+// this data must be kept short -- max is 11 bytes for US DR0
+static uint8_t mydata[] = { 0xCA, 0xFE, 0xF0, 0x0D };
 static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
