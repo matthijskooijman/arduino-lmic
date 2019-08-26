@@ -283,6 +283,28 @@ typedef enum _ev_t ev_t;
     "EV_TXSTART\0" "EV_TXCANCELED\0" "EV_RXSTART\0" "EV_JOIN_TXCOMPLETE\0"
 
 enum {
+    LMIC_ERROR_SUCCESS = 0,
+    LMIC_ERROR_TX_BUSY = -1,
+    LMIC_ERROR_TX_TOO_LARGE = -2,
+    LMIC_ERROR_TX_NOT_FEASIBLE = -3,
+    LMIC_ERROR_TX_FAILED = -4,
+};
+
+#define LMIC_ERROR_NAME__INIT                                               \
+    "LMIC_ERROR_SUCCESS",                                                   \
+    "LMIC_ERROR_TX_BUSY",                                                   \
+    "LMIC_ERROR_TX_TOO_LARGE",                                              \
+    "LMIC_ERROR_TX_NOT_FEASIBLE",                                           \
+    "LMIC_ERROR_TX_FAILED"
+
+#define LMIC_ERROR_NAME_MULTISZ__INIT                                       \
+    "LMIC_ERROR_SUCCESS\0"                                                  \
+    "LMIC_ERROR_TX_BUSY\0"                                                  \
+    "LMIC_ERROR_TX_TOO_LARGE\0"                                             \
+    "LMIC_ERROR_TX_NOT_FEASIBLE\0"                                          \
+    "LMIC_ERROR_TX_FAILED"
+
+enum {
         // This value represents 100% error in LMIC.clockError
         MAX_CLOCK_ERROR = 65536,
 };

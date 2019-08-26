@@ -2712,10 +2712,10 @@ void LMIC_setTxData (void) {
 int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
     if ( LMIC.opmode & OP_TXDATA ) {
         // already have a message queued
-        return -1;
+        return LMIC_ERROR_TX_BUSY;
     }
     if( dlen > SIZEOFEXPR(LMIC.pendTxData) )
-        return -2;
+        return LMIC_ERROR_TX_TOO_LARGE;
     if( data != (xref2u1_t)0 )
         os_copyMem(LMIC.pendTxData, data, dlen);
     LMIC.pendTxConf = confirmed;
@@ -2723,8 +2723,12 @@ int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
     LMIC.pendTxLen  = dlen;
     LMIC_setTxData();
     if ( (LMIC.opmode & OP_TXDATA) == 0 ) {
-        // data has already been completed with error for some reason
-        return -3;
+        if (LMIC.txrxFlags & TXRX_LENERR) {
+            return LMIC_ERROR_TX_NOT_FEASIBLE;
+        } else {
+            // data has already been completed with error for some reason
+            return LMIC_ERROR_TX_FAILED;
+        }
     }
     return 0;
 }
