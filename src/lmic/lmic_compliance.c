@@ -716,6 +716,8 @@ static void acSendUplinkBuffer(void) {
         LMIC_COMPLIANCE_PRINTF("%s: queued %u bytes\n", __func__, LMIC_Compliance.uplinkSize);
     } else {
         LMIC_COMPLIANCE_PRINTF("%s: uplink %u bytes failed\n", __func__, LMIC_Compliance.uplinkSize);
+        LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE;
+        fsmEval();
     }
 }
 
