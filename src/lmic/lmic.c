@@ -388,7 +388,7 @@ ostime_t LMICcore_rndDelay (u1_t secSpan) {
     return delay;
 }
 
-// delay reftime ticks, plus a random intervael in [0..secSpan).
+// delay reftime ticks, plus a random interval in [0..secSpan).
 static void txDelay (ostime_t reftime, u1_t secSpan) {
     if (secSpan != 0)
         reftime += LMICcore_rndDelay(secSpan);
@@ -1864,12 +1864,12 @@ static void buildDataFrame (void) {
         LMIC.seqnoUp += 1;
         DO_DEVDB(LMIC.seqnoUp,seqnoUp);
     } else {
-        LMICOS_logEventUint32("retransmit", (LMIC.frame[OFF_DAT_FCT] << 24u) | (LMIC.txCnt << 16u)|(LMIC.upRepeatCount << 8u) | (LMIC.upRepeat<<0u));
+        LMICOS_logEventUint32("retransmit", (LMIC.frame[OFF_DAT_FCT] << 24u) | (LMIC.txCnt << 16u) | (LMIC.upRepeatCount << 8u) | (LMIC.upRepeat<<0u));
         EV(devCond, INFO, (e_.reason = EV::devCond_t::RE_TX,
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = LMIC.seqnoUp-1,
                            e_.info2  = ((LMIC.txCnt+1) |
-                                        (TABLE_GET_U1(DRADJUST, LMIC.txCnt+1) << 8) |
+                                        (LMIC.upRepeatCount << 8) |
                                         ((LMIC.datarate|DR_PAGE)<<16))));
     }
     os_wlsbf2(LMIC.frame+OFF_DAT_SEQNO, LMIC.seqnoUp-1);

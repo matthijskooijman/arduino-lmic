@@ -76,8 +76,8 @@ At time of writing, you need to duplicate some code to copy some settings from `
     ```console
     lmic.c:29: In file included from
 
-    lmic_bandplan.h: 52:3: error: #error "maxFrameLen() not defined by bandplan"
-       # error "maxFrameLen() not defined by bandplan"
+    lmic_bandplan.h: 52:3: error: #error "LMICbandplan_maxFrameLen() not defined by bandplan"
+       # error "LMICbandplan_maxFrameLen() not defined by bandplan"
 
     lmic_bandplan.h: 56:3: error: #error "pow2dBm() not defined by bandplan"
        # error "pow2dBm() not defined by bandplan"

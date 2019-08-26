@@ -33,8 +33,10 @@
 # include "lmic_eu_like.h"
 #endif
 
+// return maximum frame length (including PHY header) for this data rate (eu868); 0 --> not valid dr.
 uint8_t LMICeu868_maxFrameLen(uint8_t dr);
-#define maxFrameLen(dr) LMICeu868_maxFrameLen(dr)
+// return maximum frame length (including PHY header) for this data rate; 0 --> not valid dr.
+#define LMICbandplan_maxFrameLen(dr) LMICeu868_maxFrameLen(dr)
 
 int8_t LMICeu868_pow2dBm(uint8_t mcmd_ladr_p1);
 #define pow2dBm(mcmd_ladr_p1)   LMICeu868_pow2dBm(mcmd_ladr_p1)
