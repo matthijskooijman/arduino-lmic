@@ -612,15 +612,15 @@ static void stateJustJoined (void) {
 
 #if !defined(DISABLE_BEACONS)
 // Decode beacon  - do not overwrite bcninfo unless we have a match!
-static int decodeBeacon (void) {
+static lmic_beacon_error_t decodeBeacon (void) {
     ASSERT(LMIC.dataLen == LEN_BCN); // implicit header RX guarantees this
     xref2u1_t d = LMIC.frame;
     if(! LMICbandplan_isValidBeacon1(d))
-        return 0;   // first (common) part fails CRC check
+        return LMIC_BEACON_ERROR_INVALID;   // first (common) part fails CRC check
     // First set of fields is ok
     u4_t bcnnetid = os_rlsbf4(&d[OFF_BCN_NETID]) & 0xFFFFFF;
     if( bcnnetid != LMIC.netid )
-        return -1;  // not the beacon we're looking for
+        return LMIC_BEACON_ERROR_WRONG_NETWORK;  // not the beacon we're looking for
 
     LMIC.bcninfo.flags &= ~(BCN_PARTIAL|BCN_FULL);
     // Match - update bcninfo structure
@@ -632,13 +632,13 @@ static int decodeBeacon (void) {
 
     // Check 2nd set
     if( os_rlsbf2(&d[OFF_BCN_CRC2]) != os_crc16(d,OFF_BCN_CRC2) )
-        return 1;
+        return LMIC_BEACON_ERROR_SUCCESS_PARTIAL;
     // Second set of fields is ok
     LMIC.bcninfo.lat    = (s4_t)os_rlsbf4(&d[OFF_BCN_LAT-1]) >> 8; // read as signed 24-bit
     LMIC.bcninfo.lon    = (s4_t)os_rlsbf4(&d[OFF_BCN_LON-1]) >> 8; // ditto
     LMIC.bcninfo.info   = d[OFF_BCN_INFO];
     LMIC.bcninfo.flags |= BCN_FULL;
-    return 2;
+    return LMIC_BEACON_ERROR_SUCCESS_FULL;
 }
 #endif // !DISABLE_BEACONS
 
@@ -1926,7 +1926,7 @@ static void onBcnRx (xref2osjob_t osjob) {
         reportEventAndUpdate(EV_SCAN_TIMEOUT);
         return;
     }
-    if( decodeBeacon() <= 0 ) {
+    if( ! LMIC_BEACON_SUCCESSFUL(decodeBeacon()) ) {
         // Something is wrong with the beacon - continue scan
         LMIC.dataLen = 0;
         os_radio(RADIO_RXON);
@@ -2346,7 +2346,7 @@ static void processBeacon (xref2osjob_t osjob) {
     u1_t flags = LMIC.bcninfo.flags;
     ev_t ev;
 
-    if( LMIC.dataLen != 0 && decodeBeacon() >= 1 ) {
+    if( LMIC.dataLen != 0 && LMIC_BEACON_SUCCESSFUL(decodeBeacon()) ) {
         ev = EV_BEACON_TRACKED;
         if( (flags & (BCN_PARTIAL|BCN_FULL)) == 0 ) {
             // We don't have a previous beacon to calc some drift - assume

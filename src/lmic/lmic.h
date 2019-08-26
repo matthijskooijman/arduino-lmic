@@ -305,6 +305,19 @@ enum {
     "LMIC_ERROR_TX_FAILED"
 
 enum {
+    LMIC_BEACON_ERROR_INVALID   = -2,
+    LMIC_BEACON_ERROR_WRONG_NETWORK = -1,
+    LMIC_BEACON_ERROR_SUCCESS_PARTIAL = 0,
+    LMIC_BEACON_ERROR_SUCCESS_FULL = 1,
+};
+
+typedef s1_t lmic_beacon_error_t;
+
+static inline bit_t LMIC_BEACON_SUCCESSFUL(lmic_beacon_error_t e) {
+    return e < 0;
+}
+
+enum {
         // This value represents 100% error in LMIC.clockError
         MAX_CLOCK_ERROR = 65536,
 };
