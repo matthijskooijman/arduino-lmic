@@ -55,15 +55,31 @@ CONST_TABLE(u1_t, _DR2RPS_CRC)[] = {
         ILLEGAL_RPS
 };
 
-static CONST_TABLE(u1_t, maxFrameLens)[] = {
+static CONST_TABLE(u1_t, maxFrameLens_dwell0)[] = {
         59+5,  59+5,  59+5, 123+5, 230+5, 230+5, 230+5, 0,
         41+5, 117+5, 230+5, 230+5, 230+5, 230+5 };
 
+static CONST_TABLE(u1_t, maxFrameLens_dwell1)[] = {
+        0,  0,  19+5, 61+5, 123+5, 242+5, 242+5, 0,
+        61+5, 137+5, 250+5, 250+5, 250+5, 250+5 };
+
+static bit_t
+LMICau921_getUplinkDwellBit() {
+        return (LMIC.txParam & MCMD_TxParam_TxDWELL_MASK) != 0;
+}
+
 uint8_t LMICau921_maxFrameLen(uint8_t dr) {
-        if (dr < LENOF_TABLE(maxFrameLens))
-                return TABLE_GET_U1(maxFrameLens, dr);
-        else
-                return 0;
+        if (LMICau921_getUplinkDwellBit()) {
+                if (dr < LENOF_TABLE(maxFrameLens_dwell0))
+                        return TABLE_GET_U1(maxFrameLens_dwell0, dr);
+                else
+                        return 0;
+        } else {
+                if (dr < LENOF_TABLE(maxFrameLens_dwell1))
+                        return TABLE_GET_U1(maxFrameLens_dwell1, dr);
+                else
+                        return 0;
+        }
 }
 
 int8_t LMICau921_pow2dbm(uint8_t mcmd_ladr_p1) {
