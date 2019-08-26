@@ -284,17 +284,6 @@ ostime_t calcAirTime (rps_t rps, u1_t plen) {
 // ================================================================================
 
 
-// Adjust DR for TX retries
-//  - indexed by retry count
-//  - return steps to lower DR
-static CONST_TABLE(u1_t, DRADJUST)[2+TXCONF_ATTEMPTS] = {
-    // normal frames - 1st try / no retry
-    0,
-    // confirmed frames
-    0,0,1,0,1,0,1,0,0
-};
-
-
 // Table below defines the size of one symbol as
 //   symtime = 256us * 2^T(sf,bw)
 // 256us is called one symunit.
@@ -2184,9 +2173,22 @@ static bit_t processDnData (void) {
 static bit_t processDnData_norx(void) {
     if( LMIC.txCnt != 0 ) {
         if( LMIC.txCnt < TXCONF_ATTEMPTS ) {
+            // Per [1.0.3] section 18.4, it is recommended that the device adjust datarate down.
+            // The spec is not clear about what should happen in case the data size is too large
+            // for the new frame len, but it seems that we should leave theframe len at the new
+            // data size. Therefore, we set the new data rate here, and then check at transmit time
+            // whether the packet is now too large; if so, we abandon the transmission.
             LMIC.txCnt += 1;
+            // becase txCnt was at least 1 when we entered this branch, this if() will be taken
+            // for txCnt == 3, 5, 7.
+            if (LMIC.txCnt & 1) {
+                dr_t adjustedDR;
+                // lower DR
+                adjustedDR = decDR(LMIC.datarate);
+                setDrTxpow(DRCHG_NOACK, adjustedDR, KEEP_TXPOW);
+            }
+
             // TODO(tmm@mcci.com): check feasibility of lower datarate
-            setDrTxpow(DRCHG_NOACK, lowerDR(LMIC.datarate, TABLE_GET_U1(DRADJUST, LMIC.txCnt)), KEEP_TXPOW);
             // Schedule another retransmission
             txDelay(LMIC.rxtime, RETRY_PERIOD_secs);
             LMIC.opmode &= ~OP_TXRXPEND;
