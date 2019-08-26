@@ -95,7 +95,7 @@ uint8_t LMICas923_maxFrameLen(uint8_t dr) {
 		else
 			return TABLE_GET_U1(maxFrameLens_dwell0, dr);
 	} else {
-                return 0xFF;
+                return 0;
 	}
 }
 

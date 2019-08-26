@@ -55,13 +55,16 @@ CONST_TABLE(u1_t, _DR2RPS_CRC)[] = {
         ILLEGAL_RPS				// [14]
 };
 
-static CONST_TABLE(u1_t, maxFrameLens)[] = { 24,66,142,255,255,255,255,255,  66,142 };
+static CONST_TABLE(u1_t, maxFrameLens)[] = {
+        19+5, 61+5, 133+5, 250+5, 250+5, 0, 0,0,
+        61+5, 133+5, 250+5, 250+5, 250+5, 250+5
+        };
 
 uint8_t LMICus915_maxFrameLen(uint8_t dr) {
         if (dr < LENOF_TABLE(maxFrameLens))
                 return TABLE_GET_U1(maxFrameLens, dr);
         else
-                return 0xFF;
+                return 0;
 }
 
 int8_t LMICus915_pow2dbm(uint8_t mcmd_ladr_p1) {
