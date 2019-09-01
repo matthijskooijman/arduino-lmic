@@ -973,9 +973,6 @@ scan_mac_cmds(
         case MCMD_DutyCycleReq: {
 #if !defined(DISABLE_MCMD_DutyCycleReq)
             u1_t cap = opts[oidx+1];
-            // A value cap=0xFF means device is OFF unless enabled again manually.
-            if( cap==0xFF )
-                LMIC.opmode |= OP_SHUTDOWN;  // stop any sending
             LMIC.globalDutyRate  = cap & 0xF;
             LMIC.globalDutyAvail = os_getTime();
             DO_DEVDB(cap,dutyCap);
