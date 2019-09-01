@@ -91,7 +91,7 @@ bit_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap) {
         case MCMD_LinkADRReq_ChMaskCntl_EULIKE_ALL_ON: {
             u2_t new_chmap = 0;
             for (u1_t chnl = 0; chnl<MAX_CHANNELS; chnl++) {
-                    if (LMIC.channelFreq[chnl] != 0) {
+                    if ((LMIC.channelFreq[chnl]&~3) != 0) {
                         new_chmap |= (1 << chnl);
                     }
             }
