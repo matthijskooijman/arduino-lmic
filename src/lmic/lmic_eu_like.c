@@ -63,9 +63,7 @@ bit_t LMIC_enableChannel(u1_t channel) {
 bit_t LMICeulike_canMapChannels(u1_t chpage, u2_t chmap) {
     switch (chpage) {
         case MCMD_LinkADRReq_ChMaskCntl_EULIKE_DIRECT:
-            if ((chmap & ~LMIC.channelMap) != 0 ) {
-                return 0;
-            }
+            // we don't allow any channel to be turned on if its frequency is zero.
             for (u1_t chnl = 0; chnl<MAX_CHANNELS; chnl++) {
                     if ((chmap & (1 << chnl)) != 0 && (LMIC.channelFreq[chnl]&~3) == 0)
                             return 0; // fail - channel is not defined
@@ -93,7 +91,7 @@ bit_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap) {
         case MCMD_LinkADRReq_ChMaskCntl_EULIKE_ALL_ON: {
             u2_t new_chmap = 0;
             for (u1_t chnl = 0; chnl<MAX_CHANNELS; chnl++) {
-                    if (LMIC.channelFreq[chnl] != 0) {
+                    if ((LMIC.channelFreq[chnl]&~3) != 0) {
                         new_chmap |= (1 << chnl);
                     }
             }

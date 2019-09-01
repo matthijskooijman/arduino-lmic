@@ -138,6 +138,9 @@ bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
 }
 
 bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
+        // zero the band bits in freq, just in case.
+        freq &= ~3;
+
         if (chidx < NUM_DEFAULT_CHANNELS) {
                 // can't disable a default channel.
                 if (freq == 0)
@@ -149,13 +152,17 @@ bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
         bit_t fEnable = (freq != 0);
         if (chidx >= MAX_CHANNELS)
                 return 0;
+
         if (band == -1) {
                 if (freq >= 869400000 && freq <= 869650000)
+                        // this is the g2 band
                         freq |= BAND_DECI;   // 10% 27dBm
-                else if ((freq >= 868000000 && freq <= 868600000) ||
-                        (freq >= 869700000 && freq <= 870000000))
+                else if ((865000000 <= freq && freq <= 868600000) ||    // note 9
+                         (freq >= 869700000 && freq <= 870000000))      // g4
+                        // this is the special g, g1 or g4 band
                         freq |= BAND_CENTI;  // 1% 14dBm
                 else
+                        // this is elsewhere in the g band
                         freq |= BAND_MILLI;  // 0.1% 14dBm
         }
         else {

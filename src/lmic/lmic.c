@@ -832,7 +832,8 @@ scan_mac_cmds_link_adr(
 
         // can we advance?
         if (olen - oidx < kAdrReqSize) {
-            // ignore the malformed one at the end
+            // ignore the malformed one at the end; but fail it.
+            adrAns = 0;
             break;
         }
         u1_t p1     = opts[oidx+1];            // txpow + DR
@@ -841,8 +842,10 @@ scan_mac_cmds_link_adr(
         // u1_t uprpt  = opts[oidx+4] & MCMD_LinkADRReq_Redundancy_NbTrans_MASK;     // up repeat count
         dr_t dr = (dr_t)(p1>>MCMD_LinkADRReq_DR_SHIFT);
 
-        if( !LMICbandplan_canMapChannels(chpage, chmap) )
+        if( !LMICbandplan_canMapChannels(chpage, chmap) ) {
             adrAns &= ~MCMD_LinkADRAns_ChannelACK;
+            LMICOS_logEventUint32("scan_mac_cmds_link_adr: failed canMapChannels", (chpage << UINT32_C(16))|(chmap << UINT32_C(0)));
+        }
 
         if( !validDR(dr) ) {
             adrAns &= ~MCMD_LinkADRAns_DataRateACK;
@@ -970,9 +973,6 @@ scan_mac_cmds(
         case MCMD_DutyCycleReq: {
 #if !defined(DISABLE_MCMD_DutyCycleReq)
             u1_t cap = opts[oidx+1];
-            // A value cap=0xFF means device is OFF unless enabled again manually.
-            if( cap==0xFF )
-                LMIC.opmode |= OP_SHUTDOWN;  // stop any sending
             LMIC.globalDutyRate  = cap & 0xF;
             LMIC.globalDutyAvail = os_getTime();
             DO_DEVDB(cap,dutyCap);
