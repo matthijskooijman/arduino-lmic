@@ -138,6 +138,9 @@ bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
 }
 
 bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
+        // zero the band bits in freq, just in case.
+        freq &= ~3;
+
         if (chidx < NUM_DEFAULT_CHANNELS) {
                 // can't disable a default channel.
                 if (freq == 0)
