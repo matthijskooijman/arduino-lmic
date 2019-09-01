@@ -832,7 +832,8 @@ scan_mac_cmds_link_adr(
 
         // can we advance?
         if (olen - oidx < kAdrReqSize) {
-            // ignore the malformed one at the end
+            // ignore the malformed one at the end; but fail it.
+            adrAns = 0;
             break;
         }
         u1_t p1     = opts[oidx+1];            // txpow + DR
