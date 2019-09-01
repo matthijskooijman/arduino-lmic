@@ -1763,6 +1763,23 @@ static void updataDone (xref2osjob_t osjob) {
 
 // ========================================
 
+static bit_t sendAdrAckReq(void) {
+    if (LMIC.adrAckReq < LINK_CHECK_CONT) {
+        return 0;
+    } else if (LMIC.adrAckReq <= LINK_CHECK_DEAD) {
+        return 1;
+    } else if (LMIC.adrAckReq <= LINK_CHECK_DEAD + 32) {
+        // for compliance, though it's not clear why they care, we stop sending requests
+        // when we're right at the DEAD state
+        return 0;
+    } else if (LMIC.adrAckReq <= LINK_CHECK_UNJOIN - 32) {
+        return 0;
+    } else {
+        // otherwise, if our alternative is to unjoin and we have no other info, keep
+        // asking for a downlink.
+        return 1;
+    }
+}
 
 static bit_t buildDataFrame (void) {
     bit_t txdata = ((LMIC.opmode & (OP_TXDATA|OP_POLL)) != OP_POLL);
@@ -1856,7 +1873,7 @@ static bit_t buildDataFrame (void) {
 
     LMIC.frame[OFF_DAT_HDR] = HDR_FTYPE_DAUP | HDR_MAJOR_V1;
     LMIC.frame[OFF_DAT_FCT] = (LMIC.dnConf | LMIC.adrEnabled
-                              | (LMIC.adrAckReq >= LINK_CHECK_CONT ? FCT_ADRACKReq : 0)
+                              | (sendAdrAckReq() ? FCT_ADRACKReq : 0)
                               | (end-OFF_DAT_OPTS));
     os_wlsbf4(LMIC.frame+OFF_DAT_ADDR,  LMIC.devaddr);
 
@@ -2298,9 +2315,13 @@ static bit_t processDnData_txcomplete(void) {
                             e_.eui    = MAIN::CDEV->getEui(),
                             e_.info   = LMIC.adrAckReq));
         dr_t newDr = decDR((dr_t)LMIC.datarate);
-        // TODO(tmm@mcci.com) newDr must be feasible; there must be at least
+        // newDr must be feasible; there must be at least
         // one channel that supports the new datarate. If not, stay
-        // at current datarate.
+        // at current datarate (which finalizes things).
+        if (! LMICbandplan_isDataRateFeasible(newDr)) {
+            LMICOS_logEventUint32("LINK_CHECK_DEAD, new DR not feasible", (newDr << 8) | LMIC.datarate);
+            newDr = LMIC.datarate;
+        }
         if( newDr == (dr_t)LMIC.datarate) {
             // We are already at the minimum datarate
             // if the link is already marked dead, we need to join.
@@ -2309,9 +2330,15 @@ static bit_t processDnData_txcomplete(void) {
                 LMIC.opmode |= OP_UNJOIN;
             }
 #endif // !defined(DISABLE_JOIN)
+        } else if (newDr == LORAWAN_DR0) {
+            // the spec says: the ADRACKReq shall not be set if
+            // the device uses its lowest available data rate.
+            // (1.0.3, 4.3.1.1, line 458)
+            // We let the count continue to increase.
         } else {
-            // not in the dead state... let's wait another 32
-            // uplinks before panicking.
+            // we successfully lowered the data rate...
+            // reset so that we'll lower again after the next
+            // 32 uplinks.
             setAdrAckCount(LINK_CHECK_CONT);
         }
         // Decrease DataRate and restore fullpower.
