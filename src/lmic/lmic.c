@@ -842,8 +842,10 @@ scan_mac_cmds_link_adr(
         // u1_t uprpt  = opts[oidx+4] & MCMD_LinkADRReq_Redundancy_NbTrans_MASK;     // up repeat count
         dr_t dr = (dr_t)(p1>>MCMD_LinkADRReq_DR_SHIFT);
 
-        if( !LMICbandplan_canMapChannels(chpage, chmap) )
+        if( !LMICbandplan_canMapChannels(chpage, chmap) ) {
             adrAns &= ~MCMD_LinkADRAns_ChannelACK;
+            LMICOS_logEventUint32("scan_mac_cmds_link_adr: failed canMapChannels", (chpage << UINT32_C(16))|(chmap << UINT32_C(0)));
+        }
 
         if( !validDR(dr) ) {
             adrAns &= ~MCMD_LinkADRAns_DataRateACK;
