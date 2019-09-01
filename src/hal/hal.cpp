@@ -130,6 +130,7 @@ static void hal_interrupt_init() {
       if (plmic_pins->dio[i] == LMIC_UNUSED_PIN)
           continue;
 
+      pinMode(plmic_pins->dio[i], INPUT);
       attachInterrupt(digitalPinToInterrupt(plmic_pins->dio[i]), interrupt_fns[i], RISING);
   }
 }
