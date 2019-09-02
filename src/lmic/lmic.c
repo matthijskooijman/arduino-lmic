@@ -2736,7 +2736,7 @@ void LMIC_setTxData (void) {
 
 
 // send a message w/o callback
-int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
+lmic_tx_error_t LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
     if ( LMIC.opmode & OP_TXDATA ) {
         // already have a message queued
         return LMIC_ERROR_TX_BUSY;
@@ -2761,11 +2761,11 @@ int LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
 }
 
 // send a message with callback
-int LMIC_sendWithCallback(
+lmic_tx_error_t LMIC_sendWithCallback (
     u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed,
     lmic_txmessage_cb_t *pCb, void *pUserData
 ) {
-    int const result = LMIC_setTxData2(port, data, dlen, confirmed);
+    lmic_tx_error_t const result = LMIC_setTxData2(port, data, dlen, confirmed);
     if (result == 0) {
         LMIC.client.txMessageCb = pCb;
         LMIC.client.txMessageUserData = pUserData;

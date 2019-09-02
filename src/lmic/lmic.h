@@ -291,6 +291,8 @@ enum {
     LMIC_ERROR_TX_FAILED = -4,
 };
 
+typedef int lmic_tx_error_t;
+
 #define LMIC_ERROR_NAME__INIT                                               \
     "LMIC_ERROR_SUCCESS",                                                   \
     "LMIC_ERROR_TX_BUSY",                                                   \
@@ -612,8 +614,8 @@ void  LMIC_init         (void);
 void  LMIC_reset        (void);
 void  LMIC_clrTxData    (void);
 void  LMIC_setTxData    (void);
-int   LMIC_setTxData2   (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
-int   LMIC_sendWithCallback(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed, lmic_txmessage_cb_t *pCb, void *pUserData);
+lmic_tx_error_t LMIC_setTxData2(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
+lmic_tx_error_t LMIC_sendWithCallback(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed, lmic_txmessage_cb_t *pCb, void *pUserData);
 void  LMIC_sendAlive    (void);
 
 #if !defined(DISABLE_BEACONS)
