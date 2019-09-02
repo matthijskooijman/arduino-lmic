@@ -130,6 +130,16 @@ bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
         return 1;
 }
 
+// this table is from highest to lowest
+static CONST_TABLE(u4_t, bandAssignments)[] = {
+  870000000 /* .. and above */    | BAND_MILLI,
+  869700000 /* .. 869700000 */    | BAND_CENTI,
+  869650000 /* .. 869700000 */    | BAND_MILLI,
+  869400000 /* .. 869650000 */    | BAND_DECI,
+  868600000 /* .. 869640000 */    | BAND_MILLI,
+  865000000 /* .. 868400000 */    | BAND_CENTI,
+};
+
 bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
         // zero the band bits in freq, just in case.
         freq &= ~3;
@@ -147,21 +157,26 @@ bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
                 return 0;
 
         if (band == -1) {
-                if (freq >= 869400000 && freq <= 869650000)
-                        // this is the g2 band
-                        freq |= BAND_DECI;   // 10% 27dBm
-                else if ((865000000 <= freq && freq <= 868600000) ||    // note 9
-                         (freq >= 869700000 && freq <= 870000000))      // g4
-                        // this is the special g, g1 or g4 band
-                        freq |= BAND_CENTI;  // 1% 14dBm
-                else
-                        // this is elsewhere in the g band
-                        freq |= BAND_MILLI;  // 0.1% 14dBm
+                for (u1_t i = 0; i < LENOF_TABLE(bandAssignments); ++i) {
+                        const u4_t thisFreqBand = TABLE_GET_U4(bandAssignments, i);
+                        const u4_t thisFreq = thisFreqBand & ~3;
+                        if (freq >= thisFreq) {
+                                band = ((u1_t)thisFreqBand & 3);
+                                break;
+                        }
+                }
+
+                // if we didn't identify a frequency, it's millis.
+                if (band == -1) {
+                        band = BAND_MILLI;
+                }
         }
-        else {
-                if (band > BAND_AUX) return 0;
-                freq = (freq&~3) | band;
-        }
+
+        if ((u1_t)band > BAND_AUX)
+                return 0;
+
+        freq |= band;
+
         LMIC.channelFreq[chidx] = freq;
         LMIC.channelDrMap[chidx] = drmap == 0 ? DR_RANGE_MAP(EU868_DR_SF12, EU868_DR_SF7) : drmap;
         if (fEnable)
