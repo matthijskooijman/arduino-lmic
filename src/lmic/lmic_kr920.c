@@ -48,7 +48,7 @@ CONST_TABLE(u1_t, _DR2RPS_CRC)[] = {
 };
 
 static CONST_TABLE(u1_t, maxFrameLens)[] = {
-        59+5, 59+5, 59+5, 123+5, 230+5, 230+5
+        59+5, 59+5, 59+5, 123+5, 250+5, 250+5
 };
 
 uint8_t LMICkr920_maxFrameLen(uint8_t dr) {
