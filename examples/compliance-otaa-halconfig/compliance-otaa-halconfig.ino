@@ -29,18 +29,18 @@ Author:
 
 // This EUI must be in little-endian format, so least-significant-byte
 // first.  This corresponds to 0x0000000000000001
-static const u1_t PROGMEM APPEUI[8]= { 1, 0, 0, 0, 0, 0, 0, 0 };
-void os_getArtEui (u1_t* buf) { memcpy_P(buf, APPEUI, 8);}
+// static const u1_t PROGMEM APPEUI[8]= { 1, 0, 0, 0, 0, 0, 0, 0 };
+void os_getArtEui (u1_t* buf) { memset(buf, 0, 8); buf[0] = 1; }
 
 // This should also be in little endian format, see above.
 // This corresponds to 0x0000000000000001
-static const u1_t PROGMEM DEVEUI[8]= { 1, 0, 0, 0, 0, 0, 0, 0 };
-void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8);}
+// static const u1_t PROGMEM DEVEUI[8]= { 1, 0, 0, 0, 0, 0, 0, 0 };
+void os_getDevEui (u1_t* buf) { memset(buf, 0, 8); buf[0] = 1; }
 
 // This key should be in big endian format (or, since it is not really a
 // number but a block of memory, endianness does not really apply).
-static const u1_t PROGMEM APPKEY[16] = { 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 2 };
-void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
+// static const u1_t PROGMEM APPKEY[16] = { 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 2 };
+void os_getDevKey (u1_t* buf) { memset(buf, 0, 16); buf[15] = 2; }
 
 // this data must be kept short -- max is 11 bytes for US DR0
 static uint8_t mydata[] = { 0xCA, 0xFE, 0xF0, 0x0D };
