@@ -541,7 +541,7 @@ void do_send(osjob_t* j){
         Serial.println(F("test mode, not sending"));
     } else {
         // Prepare upstream data transmission at the next possible time.
-        if (LMIC_sendWithCallback_strict(1, mydata, sizeof(mydata)-1, 0, sendComplete, j) == 0) {
+        if (LMIC_sendWithCallback_strict(1, mydata, sizeof(mydata), 0, sendComplete, j) == 0) {
             Serial.println(F("Packet queued"));
         } else {
             Serial.println(F("Packet queue failure; sleeping"));
