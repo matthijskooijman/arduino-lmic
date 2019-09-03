@@ -923,8 +923,8 @@ scan_mac_cmds(
             break;
         }
 
-        case MCMD_RXParamSetupReq: {
 #if !defined(DISABLE_MCMD_RXParamSetupReq)
+        case MCMD_RXParamSetupReq: {
             dr_t dr = (dr_t)(opts[oidx+1] & 0x0F);
             u1_t rx1DrOffset = (u1_t)((opts[oidx+1] & 0x70) >> 4);
             u4_t freq = LMICbandplan_convFreq(&opts[oidx+2]);
@@ -946,12 +946,12 @@ scan_mac_cmds(
 
             /* put the first copy of the message */
             response_fit = put_mac_uplink_byte2(MCMD_RXParamSetupAns, LMIC.dn2Ans & ~MCMD_RXParamSetupAns_RFU);
-#endif // !DISABLE_MCMD_RXParamSetupReq
             break;
         }
+#endif // !DISABLE_MCMD_RXParamSetupReq
 
-        case MCMD_RXTimingSetupReq: {
 #if !defined(DISABLE_MCMD_RXTimingSetupReq)
+        case MCMD_RXTimingSetupReq: {
             u1_t delay = opts[oidx+1] & MCMD_RXTimingSetupReq_Delay;
             if (delay == 0)
                 delay = 1;
@@ -959,23 +959,24 @@ scan_mac_cmds(
             LMIC.rxDelay = delay;
             LMIC.macRxTimingSetupAns = 2;
             response_fit = put_mac_uplink_byte(MCMD_RXTimingSetupAns);
-#endif // !DISABLE_MCMD_RXTimingSetupReq
             break;
         }
-        case MCMD_DutyCycleReq: {
+#endif // !DISABLE_MCMD_RXTimingSetupReq
+
 #if !defined(DISABLE_MCMD_DutyCycleReq)
+        case MCMD_DutyCycleReq: {
             u1_t cap = opts[oidx+1];
             LMIC.globalDutyRate  = cap & 0xF;
             LMIC.globalDutyAvail = os_getTime();
             DO_DEVDB(cap,dutyCap);
 
             response_fit = put_mac_uplink_byte(MCMD_DutyCycleAns);
-#endif // !DISABLE_MCMD_DutyCycleReq
             break;
         }
+#endif // !DISABLE_MCMD_DutyCycleReq
 
-        case MCMD_NewChannelReq: {
 #if !defined(DISABLE_MCMD_NewChannelReq) && CFG_LMIC_EU_like
+        case MCMD_NewChannelReq: {
             u1_t chidx = opts[oidx+1];  // channel
             u4_t raw_f_not_zero = opts[oidx+2] | opts[oidx+3] | opts[oidx+4];
             u4_t freq  = LMICbandplan_convFreq(&opts[oidx+2]); // freq
@@ -999,12 +1000,12 @@ scan_mac_cmds(
             }
 
             response_fit = put_mac_uplink_byte2(MCMD_NewChannelAns, ans);
-#endif // !DISABLE_MCMD_NewChannelReq
             break;
         }
+#endif // !DISABLE_MCMD_NewChannelReq
 
-        case MCMD_DlChannelReq: {
 #if !defined(DISABLE_MCMD_DlChannelReq) && CFG_LMIC_EU_like
+        case MCMD_DlChannelReq: {
             u1_t chidx = opts[oidx+1];  // channel
             u4_t freq  = LMICbandplan_convFreq(&opts[oidx+2]); // freq
             u1_t ans   = MCMD_DlChannelAns_FreqACK|MCMD_DlChannelAns_ChannelACK;
@@ -1027,12 +1028,12 @@ scan_mac_cmds(
             response_fit = put_mac_uplink_byte2(MCMD_DlChannelAns, ans);
             // set sticky answer.
             LMIC.macDlChannelAns = ans | 0xC0;
-#endif // !DISABLE_MCMD_DlChannelReq
             break;
         }
+#endif // !DISABLE_MCMD_DlChannelReq
 
-        case MCMD_PingSlotChannelReq: {
 #if !defined(DISABLE_MCMD_PingSlotChannelReq) && !defined(DISABLE_PING)
+        case MCMD_PingSlotChannelReq: {
             u4_t raw_f_not_zero = opts[oidx+1] | opts[oidx+2] | opts[oidx+3];
             u4_t freq = LMICbandplan_convFreq(&opts[oidx+1]);
             u1_t dr = opts[oidx+4] & 0xF;
@@ -1053,12 +1054,12 @@ scan_mac_cmds(
                 DO_DEVDB(LMIC.ping.dr, pingDr);
             }
             response_fit = put_mac_uplink_byte2(MCMD_PingSlotChannelAns, ans);
-#endif // !DISABLE_MCMD_PingSlotChannelReq && !DISABLE_PING
             break;
         }
+#endif // !DISABLE_MCMD_PingSlotChannelReq && !DISABLE_PING
 
-        case MCMD_BeaconTimingAns: {
 #if defined(ENABLE_MCMD_BeaconTimingAns) && !defined(DISABLE_BEACONS)
+        case MCMD_BeaconTimingAns: {
             // Ignore if tracking already enabled
             if( (LMIC.opmode & OP_TRACK) == 0 ) {
                 LMIC.bcnChnl = opts[oidx+3];
@@ -1082,12 +1083,12 @@ scan_mac_cmds(
                                                                - LMIC.bcnRxtime) << 8)),
                                      e_.time    = MAIN::CDEV->ostime2ustime(LMIC.bcninfo.txtime + BCN_INTV_osticks)));
             }
-#endif // !ENABLE_MCMD_BeaconTimingAns && !DISABLE_BEACONS
             break;
         } /* end case */
+#endif // !ENABLE_MCMD_BeaconTimingAns && !DISABLE_BEACONS
 
-        case MCMD_TxParamSetupReq: {
 #if LMIC_ENABLE_TxParamSetupReq
+        case MCMD_TxParamSetupReq: {
             uint8_t txParam;
             txParam = opts[oidx+1];
 
@@ -1097,12 +1098,12 @@ scan_mac_cmds(
                         MCMD_TxParam_MaxEIRP_MASK);
             LMIC.txParam = txParam;
             response_fit = put_mac_uplink_byte(MCMD_TxParamSetupAns);
-#endif // LMIC_ENABLE_TxParamSetupReq
             break;
         } /* end case */
+#endif // LMIC_ENABLE_TxParamSetupReq
 
-        case MCMD_DeviceTimeAns: {
 #if LMIC_ENABLE_DeviceTimeReq
+        case MCMD_DeviceTimeAns: {
             // don't process a spurious downlink.
             if ( LMIC.txDeviceTimeReqState == lmic_RequestTimeState_rx ) {
                 // remember that it's time to notify the client.
@@ -1129,9 +1130,9 @@ scan_mac_cmds(
                 LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": MAC command DeviceTimeAns received: seconds_since_gps_epoch=%"PRIu32", fractional_seconds=%d\n", os_getTime(), LMIC.netDeviceTime, LMIC.netDeviceTimeFrac);
 #endif
             }
-#endif // LMIC_ENABLE_DeviceTimeReq
             break;
         } /* end case */
+#endif // LMIC_ENABLE_DeviceTimeReq
 
         default: {
             // force olen to current oidx so we'll exit the while()
