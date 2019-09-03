@@ -580,6 +580,18 @@ void myFail(const char *pMessage) {
     }
 }
 
+// there's a problem with running 2.5 of the MCCI STM32 BSPs;
+// hack around it.
+#ifdef ARDUINO_ARCH_STM32
+# ifdef _mcci_arduino_version
+#  if _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 0)
+uint32_t USBD_LL_ConnectionState(void) {
+  return 1;
+}
+#  endif // _mcci_arduino_version
+# endif // defined(_mcci_arduino_version)
+#endif // ARDUINO_ARCH_STM32
+
 void setup() {
     delay(5000);
     while (! Serial)
