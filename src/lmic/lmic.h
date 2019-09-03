@@ -178,7 +178,7 @@ struct lmic_saved_adr_state_s {
 typedef struct lmic_saved_adr_state_s   lmic_saved_adr_state_t;
 
 // Keep in sync with evdefs.hpp::drChange
-enum { DRCHG_SET, DRCHG_NOJACC, DRCHG_NOACK, DRCHG_NOADRACK, DRCHG_NWKCMD };
+enum { DRCHG_SET, DRCHG_NOJACC, DRCHG_NOACK, DRCHG_NOADRACK, DRCHG_NWKCMD, DRCHG_FRAMESIZE };
 enum { KEEP_TXPOW = -128 };
 
 
@@ -614,8 +614,11 @@ void  LMIC_init         (void);
 void  LMIC_reset        (void);
 void  LMIC_clrTxData    (void);
 void  LMIC_setTxData    (void);
+void  LMIC_setTxData_strict(void);
 lmic_tx_error_t LMIC_setTxData2(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
+lmic_tx_error_t LMIC_setTxData2_strict(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
 lmic_tx_error_t LMIC_sendWithCallback(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed, lmic_txmessage_cb_t *pCb, void *pUserData);
+lmic_tx_error_t LMIC_sendWithCallback_strict(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed, lmic_txmessage_cb_t *pCb, void *pUserData);
 void  LMIC_sendAlive    (void);
 
 #if !defined(DISABLE_BEACONS)

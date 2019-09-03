@@ -686,7 +686,7 @@ static void acSendUplink(void) {
 
     // don't try to send if busy; might be sending echo message.
     lmic_tx_error_t const eSend =
-        LMIC_sendWithCallback(
+        LMIC_sendWithCallback_strict(
             LORAWAN_PORT_COMPLIANCE,
             payload, sizeof(payload),
             /* confirmed? */
@@ -725,7 +725,7 @@ static void sendUplinkCompleteCb(void *pUserData, int fSuccess) {
 static void acSendUplinkBuffer(void) {
     // send uplink data.
     lmic_tx_error_t const eSend =
-        LMIC_sendWithCallback(
+        LMIC_sendWithCallback_strict(
             LORAWAN_PORT_COMPLIANCE,
             LMIC_Compliance.uplinkMessage, LMIC_Compliance.uplinkSize,
             /* confirmed? */ (LMIC_Compliance.fsmFlags & LMIC_COMPLIANCE_FSM_CONFIRM) != 0,

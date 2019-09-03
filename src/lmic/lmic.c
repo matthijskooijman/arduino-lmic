@@ -2723,9 +2723,49 @@ void LMIC_clrTxData (void) {
     engineUpdate();
 }
 
+dr_t LMIC_feasibleDataRateForFrame(dr_t dr, u1_t payloadSize) {
+    if (payloadSize > MAX_LEN_PAYLOAD) {
+        return dr;
+    }
+
+    const u1_t frameSize = payloadSize + OFF_DAT_OPTS + 5;
+    dr_t trialDr, nextDr;
+
+    for (trialDr = dr; ;) {
+        if (! LMICbandplan_isDataRateFeasible(trialDr))
+            break;
+        u1_t maxSizeThisDr = LMICbandplan_maxFrameLen(trialDr);
+        if (maxSizeThisDr == 0) {
+            break;
+        } else if (frameSize <= maxSizeThisDr) {
+            // we found one that is feasible!
+            return trialDr;
+        }
+        // try the next DR
+        nextDr = incDR(trialDr);
+        if (nextDr == trialDr)
+            break;
+        trialDr = nextDr;
+    }
+
+    // if we get here, we didn't find a working dr.
+    return dr;
+}
+
+static void adjustDrForFrame(u1_t len) {
+    dr_t newDr = LMIC_feasibleDataRateForFrame(LMIC.datarate, len);
+    if (newDr != LMIC.datarate) {
+        setDrTxpow(DRCHG_FRAMESIZE, newDr, KEEP_TXPOW);
+    }
+}
 
 void LMIC_setTxData (void) {
-    LMICOS_logEventUint32("LMIC_setTxData", (LMIC.pendTxPort << 24u) | (LMIC.pendTxConf << 16u) | (LMIC.pendTxLen << 0u));
+    adjustDrForFrame(LMIC.pendTxLen);
+    LMIC_setTxData_strict();
+}
+
+void LMIC_setTxData_strict (void) {
+    LMICOS_logEventUint32(__func__, (LMIC.pendTxPort << 24u) | (LMIC.pendTxConf << 16u) | (LMIC.pendTxLen << 0u));
     LMIC.opmode |= OP_TXDATA;
     if( (LMIC.opmode & OP_JOINING) == 0 ) {
         LMIC.txCnt = 0;             // reset the confirmed uplink FSM
@@ -2735,8 +2775,14 @@ void LMIC_setTxData (void) {
 }
 
 
-// send a message w/o callback
+// send a message, attempting to adjust TX data rate
 lmic_tx_error_t LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
+    adjustDrForFrame(dlen);
+    return LMIC_setTxData2_strict(port, data, dlen, confirmed);
+}
+
+// send a message w/o callback; do not adjust data rate
+lmic_tx_error_t LMIC_setTxData2_strict (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
     if ( LMIC.opmode & OP_TXDATA ) {
         // already have a message queued
         return LMIC_ERROR_TX_BUSY;
@@ -2748,7 +2794,7 @@ lmic_tx_error_t LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t conf
     LMIC.pendTxConf = confirmed;
     LMIC.pendTxPort = port;
     LMIC.pendTxLen  = dlen;
-    LMIC_setTxData();
+    LMIC_setTxData_strict();
     if ( (LMIC.opmode & OP_TXDATA) == 0 ) {
         if (LMIC.txrxFlags & TXRX_LENERR) {
             return LMIC_ERROR_TX_NOT_FEASIBLE;
@@ -2760,8 +2806,17 @@ lmic_tx_error_t LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t conf
     return 0;
 }
 
-// send a message with callback
+// send a message with callback; try to adjust data rate
 lmic_tx_error_t LMIC_sendWithCallback (
+    u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed,
+    lmic_txmessage_cb_t *pCb, void *pUserData
+) {
+    adjustDrForFrame(dlen);
+    return LMIC_sendWithCallback_strict(port, data, dlen, confirmed, pCb, pUserData);
+}
+
+// send a message with callback; do not adjust datarate
+lmic_tx_error_t LMIC_sendWithCallback_strict (
     u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed,
     lmic_txmessage_cb_t *pCb, void *pUserData
 ) {
