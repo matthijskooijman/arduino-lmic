@@ -2824,7 +2824,7 @@ lmic_tx_error_t LMIC_sendWithCallback_strict (
     u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed,
     lmic_txmessage_cb_t *pCb, void *pUserData
 ) {
-    lmic_tx_error_t const result = LMIC_setTxData2(port, data, dlen, confirmed);
+    lmic_tx_error_t const result = LMIC_setTxData2_strict(port, data, dlen, confirmed);
     if (result == 0) {
         LMIC.client.txMessageCb = pCb;
         LMIC.client.txMessageUserData = pUserData;
