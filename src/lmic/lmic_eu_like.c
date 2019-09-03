@@ -107,6 +107,14 @@ bit_t LMICeulike_mapChannels(u1_t chpage, u2_t chmap) {
 }
 
 bit_t LMICeulike_isDataRateFeasible(dr_t dr) {
+    // if the region uses TxpParam, then someone
+    // could have changed TxDwell, which makes some
+    // otherwise-legal DRs infeasible.
+#if LMIC_ENABLE_TxParamSetupReq
+    if (LMICbandplan_maxFrameLen(dr) == 0) {
+        return 0;
+    }
+#endif
         for (u1_t chnl = 0; chnl < MAX_CHANNELS; ++chnl) {
                 if ((LMIC.channelMap & (1 << chnl)) != 0 &&  // channel enabled
                         (LMIC.channelDrMap[chnl] & (1 << dr)) != 0)

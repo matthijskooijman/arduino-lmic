@@ -76,16 +76,18 @@ static CONST_TABLE(u1_t, maxFrameLens_dwell1)[] = {
 
 static uint8_t
 LMICas923_getUplinkDwellBit(uint8_t mcmd_txparam) {
-        LMIC_API_PARAMETER(mcmd_txparam);
+        if (mcmd_txparam == 0xFF)
+                return 0;
 
-        return (LMIC.txParam & MCMD_TxParam_TxDWELL_MASK) != 0;
+        return (mcmd_txparam & MCMD_TxParam_TxDWELL_MASK) != 0;
 }
 
 static uint8_t
 LMICas923_getDownlinkDwellBit(uint8_t mcmd_txparam) {
-        LMIC_API_PARAMETER(mcmd_txparam);
+        if (mcmd_txparam == 0xFF)
+                return 0;
 
-        return (LMIC.txParam & MCMD_TxParam_RxDWELL_MASK) != 0;
+        return (mcmd_txparam & MCMD_TxParam_RxDWELL_MASK) != 0;
 }
 
 uint8_t LMICas923_maxFrameLen(uint8_t dr) {
@@ -118,6 +120,7 @@ static CONST_TABLE(s1_t, TXMAXEIRP)[16] = {
 };
 
 static int8_t LMICas923_getMaxEIRP(uint8_t mcmd_txparam) {
+        // if uninitialized, return default.
 	if (mcmd_txparam == 0xFF)
 		return AS923_TX_EIRP_MAX_DBM;
 	else
@@ -368,7 +371,7 @@ LMICas923_txDoneFSK(ostime_t delay, osjobcb_t func) {
 
 void
 LMICas923_initJoinLoop(void) {
-	LMIC.txParam = 0xFF;
+        // LMIC.txParam is set to 0xFF by the central code at init time.
         LMICeulike_initJoinLoop(NUM_DEFAULT_CHANNELS, /* adr dBm */ AS923_TX_EIRP_MAX_DBM);
 }
 

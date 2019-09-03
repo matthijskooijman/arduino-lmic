@@ -577,6 +577,9 @@ static void resetJoinParams(void) {
     LMIC.rx1DrOffset = 0;
     LMIC.dn2Dr       = DR_DNW2;
     LMIC.dn2Freq     = FREQ_DNW2;
+#if LMIC_ENABLE_TxParamSetupReq
+    LMIC.txParam     = 0xFF;
+#endif
 }
 
 static void stateJustJoined (void) {
@@ -2676,14 +2679,14 @@ void LMIC_reset (void) {
     LMIC.opmode       =  OP_NONE;
     LMIC.errcr        =  CR_4_5;
     LMIC.adrEnabled   =  FCT_ADREN;
-    LMIC.dn2Dr        =  DR_DNW2;   // we need this for 2nd DN window of join accept
-    LMIC.dn2Freq      =  FREQ_DNW2; // ditto
+    resetJoinParams();
     LMIC.rxDelay      =  DELAY_DNW1;
 #if !defined(DISABLE_PING)
     LMIC.ping.freq    =  FREQ_PING; // defaults for ping
     LMIC.ping.dr      =  DR_PING;   // ditto
     LMIC.ping.intvExp =  0xFF;
 #endif // !DISABLE_PING
+
     LMICbandplan_resetDefaultChannels();
     DO_DEVDB(LMIC.devaddr,      devaddr);
     DO_DEVDB(LMIC.devNonce,     devNonce);
