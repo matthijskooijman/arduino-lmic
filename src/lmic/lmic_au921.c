@@ -55,22 +55,60 @@ CONST_TABLE(u1_t, _DR2RPS_CRC)[] = {
         ILLEGAL_RPS
 };
 
-static CONST_TABLE(u1_t, maxFrameLens)[] = {
-        59+5,  59+5,  59+5, 123+5, 230+5, 230+5, 230+5, 255,
-        41+5, 117+5, 230+5, 230+5, 230+5, 230+5 };
+static CONST_TABLE(u1_t, maxFrameLens_dwell0)[] = {
+        59+5,  59+5,  59+5, 123+5, 250+5, 250+5, 250+5, 0,
+        61+5, 137+5, 250+5, 250+5, 250+5, 250+5 };
+
+static CONST_TABLE(u1_t, maxFrameLens_dwell1)[] = {
+        0,        0,  19+5,  61+5, 133+5, 250+5, 250+5, 0,
+        61+5, 137+5, 250+5, 250+5, 250+5, 250+5 };
+
+static bit_t
+LMICau921_getUplinkDwellBit() {
+        // if uninitialized, return default.
+        if (LMIC.txParam == 0xFF) {
+                return 0;
+        }
+        return (LMIC.txParam & MCMD_TxParam_TxDWELL_MASK) != 0;
+}
 
 uint8_t LMICau921_maxFrameLen(uint8_t dr) {
-        if (dr < LENOF_TABLE(maxFrameLens))
-                return TABLE_GET_U1(maxFrameLens, dr);
-        else
-                return 0xFF;
+        if (LMICau921_getUplinkDwellBit()) {
+                if (dr < LENOF_TABLE(maxFrameLens_dwell0))
+                        return TABLE_GET_U1(maxFrameLens_dwell0, dr);
+                else
+                        return 0;
+        } else {
+                if (dr < LENOF_TABLE(maxFrameLens_dwell1))
+                        return TABLE_GET_U1(maxFrameLens_dwell1, dr);
+                else
+                        return 0;
+        }
+}
+
+// from LoRaWAN 5.8: mapping from txParam to MaxEIRP
+static CONST_TABLE(s1_t, TXMAXEIRP)[16] = {
+	8, 10, 12, 13, 14, 16, 18, 20, 21, 24, 26, 27, 29, 30, 33, 36
+};
+
+static int8_t LMICau921_getMaxEIRP(uint8_t mcmd_txparam) {
+        // if uninitialized, return default.
+	if (mcmd_txparam == 0xFF)
+		return AU921_TX_EIRP_MAX_DBM;
+	else
+		return TABLE_GET_S1(
+			TXMAXEIRP,
+			(mcmd_txparam & MCMD_TxParam_MaxEIRP_MASK) >>
+				MCMD_TxParam_MaxEIRP_SHIFT
+			);
 }
 
 int8_t LMICau921_pow2dbm(uint8_t mcmd_ladr_p1) {
         if ((mcmd_ladr_p1 & MCMD_LinkADRReq_POW_MASK) == MCMD_LinkADRReq_POW_MASK)
                 return -128;
-        else
-                return ((s1_t)(30 - (((mcmd_ladr_p1)&MCMD_LinkADRReq_POW_MASK)<<1)));
+        else    {
+                return ((s1_t)(LMICau921_getMaxEIRP(LMIC.txParam) - (((mcmd_ladr_p1)&MCMD_LinkADRReq_POW_MASK)<<1)));
+        }
 }
 
 static CONST_TABLE(ostime_t, DR2HSYM_osticks)[] = {
@@ -193,7 +231,7 @@ bit_t LMIC_selectSubBand(u1_t band) {
 
 void LMICau921_updateTx(ostime_t txbeg) {
         u1_t chnl = LMIC.txChnl;
-        LMIC.txpow = AU921_TX_EIRP_MAX_DBM;
+        LMIC.txpow = LMICau921_getMaxEIRP(LMIC.txParam);
         if (chnl < 64) {
                 LMIC.freq = AU921_125kHz_UPFBASE + chnl*AU921_125kHz_UPFSTEP;
         } else {
@@ -236,10 +274,11 @@ void LMICau921_setRx1Params(void) {
 }
 
 void LMICau921_initJoinLoop(void) {
+        // LMIC.txParam is set to 0xFF by the central code at init time.
         LMICuslike_initJoinLoop();
 
         // initialize the adrTxPower.
-        LMIC.adrTxPow = 30; // dBm
+        LMIC.adrTxPow = LMICau921_getMaxEIRP(LMIC.txParam); // dBm
 
 }
 

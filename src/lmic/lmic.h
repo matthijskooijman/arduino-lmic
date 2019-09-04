@@ -105,7 +105,7 @@ extern "C"{
 #define ARDUINO_LMIC_VERSION_CALC(major, minor, patch, local)	\
 	(((major) << 24u) | ((minor) << 16u) | ((patch) << 8u) | (local))
 
-#define	ARDUINO_LMIC_VERSION	ARDUINO_LMIC_VERSION_CALC(2, 3, 2, 73)	/* v2.3.2.73 */
+#define	ARDUINO_LMIC_VERSION	ARDUINO_LMIC_VERSION_CALC(3, 0, 99, 0)	/* v3.0.99.0 */
 
 #define	ARDUINO_LMIC_VERSION_GET_MAJOR(v)	\
 	(((v) >> 24u) & 0xFFu)
@@ -132,7 +132,8 @@ enum { MAX_RXSYMS         = 100 };   // stop tracking beacon beyond this
 
 enum { LINK_CHECK_CONT    =  0  ,    // continue with this after reported dead link
        LINK_CHECK_DEAD    =  32 ,    // after this UP frames and no response to ack from NWK assume link is dead (ADR_ACK_DELAY)
-       LINK_CHECK_UNJOIN  = 8192,    // after this many UP frames and no response, switch to join.
+       LINK_CHECK_UNJOIN_MIN = LINK_CHECK_DEAD + 4,         // this is the minimum value of LINK_CHECK_UNJOIN if we parameterize
+       LINK_CHECK_UNJOIN  =  LINK_CHECK_DEAD + (3 * 240),   // after this many UP frames and no response, switch to join (by default)
        LINK_CHECK_INIT    = -64 ,    // UP frame count until we ask for ack (ADR_ACK_LIMIT)
        LINK_CHECK_OFF     =-128 };   // link check disabled
 
@@ -177,7 +178,7 @@ struct lmic_saved_adr_state_s {
 typedef struct lmic_saved_adr_state_s   lmic_saved_adr_state_t;
 
 // Keep in sync with evdefs.hpp::drChange
-enum { DRCHG_SET, DRCHG_NOJACC, DRCHG_NOACK, DRCHG_NOADRACK, DRCHG_NWKCMD };
+enum { DRCHG_SET, DRCHG_NOJACC, DRCHG_NOACK, DRCHG_NOADRACK, DRCHG_NWKCMD, DRCHG_FRAMESIZE };
 enum { KEEP_TXPOW = -128 };
 
 
@@ -244,9 +245,12 @@ enum { TXRX_ACK    = 0x80,   // confirmed UP frame was acked
        TXRX_NACK   = 0x40,   // confirmed UP frame was not acked
        TXRX_NOPORT = 0x20,   // set if a frame with a port was RXed, clr if no frame/no port
        TXRX_PORT   = 0x10,   // set if a frame with a port was RXed, LMIC.frame[LMIC.dataBeg-1] => port
-       TXRX_DNW1   = 0x01,   // received in 1st DN slot
+       TXRX_LENERR = 0x08,   // set if frame was discarded due to length error.
+       TXRX_PING   = 0x04,   // received in a scheduled RX slot
        TXRX_DNW2   = 0x02,   // received in 2dn DN slot
-       TXRX_PING   = 0x04 }; // received in a scheduled RX slot
+       TXRX_DNW1   = 0x01,   // received in 1st DN slot
+};
+
 // Event types for event callback
 enum _ev_t { EV_SCAN_TIMEOUT=1, EV_BEACON_FOUND,
              EV_BEACON_MISSED, EV_BEACON_TRACKED, EV_JOINING,
@@ -278,6 +282,43 @@ typedef enum _ev_t ev_t;
     "EV_TXCOMPLETE\0" "EV_LOST_TSYNC\0" "EV_RESET\0"                        \
     "EV_RXCOMPLETE\0" "EV_LINK_DEAD\0" "EV_LINK_ALIVE\0" "EV_SCAN_FOUND\0"  \
     "EV_TXSTART\0" "EV_TXCANCELED\0" "EV_RXSTART\0" "EV_JOIN_TXCOMPLETE\0"
+
+enum {
+    LMIC_ERROR_SUCCESS = 0,
+    LMIC_ERROR_TX_BUSY = -1,
+    LMIC_ERROR_TX_TOO_LARGE = -2,
+    LMIC_ERROR_TX_NOT_FEASIBLE = -3,
+    LMIC_ERROR_TX_FAILED = -4,
+};
+
+typedef int lmic_tx_error_t;
+
+#define LMIC_ERROR_NAME__INIT                                               \
+    "LMIC_ERROR_SUCCESS",                                                   \
+    "LMIC_ERROR_TX_BUSY",                                                   \
+    "LMIC_ERROR_TX_TOO_LARGE",                                              \
+    "LMIC_ERROR_TX_NOT_FEASIBLE",                                           \
+    "LMIC_ERROR_TX_FAILED"
+
+#define LMIC_ERROR_NAME_MULTISZ__INIT                                       \
+    "LMIC_ERROR_SUCCESS\0"                                                  \
+    "LMIC_ERROR_TX_BUSY\0"                                                  \
+    "LMIC_ERROR_TX_TOO_LARGE\0"                                             \
+    "LMIC_ERROR_TX_NOT_FEASIBLE\0"                                          \
+    "LMIC_ERROR_TX_FAILED"
+
+enum {
+    LMIC_BEACON_ERROR_INVALID   = -2,
+    LMIC_BEACON_ERROR_WRONG_NETWORK = -1,
+    LMIC_BEACON_ERROR_SUCCESS_PARTIAL = 0,
+    LMIC_BEACON_ERROR_SUCCESS_FULL = 1,
+};
+
+typedef s1_t lmic_beacon_error_t;
+
+static inline bit_t LMIC_BEACON_SUCCESSFUL(lmic_beacon_error_t e) {
+    return e < 0;
+}
 
 enum {
         // This value represents 100% error in LMIC.clockError
@@ -573,8 +614,11 @@ void  LMIC_init         (void);
 void  LMIC_reset        (void);
 void  LMIC_clrTxData    (void);
 void  LMIC_setTxData    (void);
-int   LMIC_setTxData2   (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
-int   LMIC_sendWithCallback(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed, lmic_txmessage_cb_t *pCb, void *pUserData);
+void  LMIC_setTxData_strict(void);
+lmic_tx_error_t LMIC_setTxData2(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
+lmic_tx_error_t LMIC_setTxData2_strict(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed);
+lmic_tx_error_t LMIC_sendWithCallback(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed, lmic_txmessage_cb_t *pCb, void *pUserData);
+lmic_tx_error_t LMIC_sendWithCallback_strict(u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed, lmic_txmessage_cb_t *pCb, void *pUserData);
 void  LMIC_sendAlive    (void);
 
 #if !defined(DISABLE_BEACONS)

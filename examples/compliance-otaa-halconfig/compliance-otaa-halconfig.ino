@@ -29,20 +29,21 @@ Author:
 
 // This EUI must be in little-endian format, so least-significant-byte
 // first.  This corresponds to 0x0000000000000001
-static const u1_t PROGMEM APPEUI[8]= { 1, 0, 0, 0, 0, 0, 0, 0 };
-void os_getArtEui (u1_t* buf) { memcpy_P(buf, APPEUI, 8);}
+// static const u1_t PROGMEM APPEUI[8]= { 1, 0, 0, 0, 0, 0, 0, 0 };
+void os_getArtEui (u1_t* buf) { memset(buf, 0, 8); buf[0] = 1; }
 
 // This should also be in little endian format, see above.
 // This corresponds to 0x0000000000000001
-static const u1_t PROGMEM DEVEUI[8]= { 1, 0, 0, 0, 0, 0, 0, 0 };
-void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8);}
+// static const u1_t PROGMEM DEVEUI[8]= { 1, 0, 0, 0, 0, 0, 0, 0 };
+void os_getDevEui (u1_t* buf) { memset(buf, 0, 8); buf[0] = 1; }
 
 // This key should be in big endian format (or, since it is not really a
 // number but a block of memory, endianness does not really apply).
-static const u1_t PROGMEM APPKEY[16] = { 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 2 };
-void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
+// static const u1_t PROGMEM APPKEY[16] = { 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 2 };
+void os_getDevKey (u1_t* buf) { memset(buf, 0, 16); buf[15] = 2; }
 
-static uint8_t mydata[] = "Hello, world!";
+// this data must be kept short -- max is 11 bytes for US DR0
+static uint8_t mydata[] = { 0xCA, 0xFE, 0xF0, 0x0D };
 static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
@@ -540,7 +541,7 @@ void do_send(osjob_t* j){
         Serial.println(F("test mode, not sending"));
     } else {
         // Prepare upstream data transmission at the next possible time.
-        if (LMIC_sendWithCallback(1, mydata, sizeof(mydata)-1, 0, sendComplete, j) == 0) {
+        if (LMIC_sendWithCallback_strict(1, mydata, sizeof(mydata), 0, sendComplete, j) == 0) {
             Serial.println(F("Packet queued"));
         } else {
             Serial.println(F("Packet queue failure; sleeping"));
@@ -578,6 +579,18 @@ void myFail(const char *pMessage) {
         }
     }
 }
+
+// there's a problem with running 2.5 of the MCCI STM32 BSPs;
+// hack around it.
+#ifdef ARDUINO_ARCH_STM32
+# ifdef _mcci_arduino_version
+#  if _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 0)
+uint32_t USBD_LL_ConnectionState(void) {
+  return 1;
+}
+#  endif // _mcci_arduino_version
+# endif // defined(_mcci_arduino_version)
+#endif // ARDUINO_ARCH_STM32
 
 void setup() {
     delay(5000);

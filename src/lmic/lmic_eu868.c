@@ -49,13 +49,15 @@ CONST_TABLE(u1_t, _DR2RPS_CRC)[] = {
         ILLEGAL_RPS
 };
 
-static CONST_TABLE(u1_t, maxFrameLens)[] = { 64,64,64,123 };
+static CONST_TABLE(u1_t, maxFrameLens)[] = {
+        59+5, 59+5, 59+5, 123+5, 250+5, 250+5, 250+5, 250+5
+};
 
 uint8_t LMICeu868_maxFrameLen(uint8_t dr) {
         if (dr < LENOF_TABLE(maxFrameLens))
                 return TABLE_GET_U1(maxFrameLens, dr);
         else
-                return 0xFF;
+                return 0;
 }
 
 static CONST_TABLE(s1_t, TXPOWLEVELS)[] = {
@@ -112,18 +114,9 @@ void LMICeu868_initDefaultChannels(bit_t join) {
                 LMIC.channelDrMap[fu] = DR_RANGE_MAP(EU868_DR_SF12, EU868_DR_SF7);
         }
 
-        LMIC.bands[BAND_MILLI].txcap = 1000;  // 0.1%
-        LMIC.bands[BAND_MILLI].txpow = 14;
-        LMIC.bands[BAND_MILLI].lastchnl = os_getRndU1() % MAX_CHANNELS;
-        LMIC.bands[BAND_CENTI].txcap = 100;   // 1%
-        LMIC.bands[BAND_CENTI].txpow = 14;
-        LMIC.bands[BAND_CENTI].lastchnl = os_getRndU1() % MAX_CHANNELS;
-        LMIC.bands[BAND_DECI].txcap = 10;    // 10%
-        LMIC.bands[BAND_DECI].txpow = 27;
-        LMIC.bands[BAND_DECI].lastchnl = os_getRndU1() % MAX_CHANNELS;
-        LMIC.bands[BAND_MILLI].avail =
-                LMIC.bands[BAND_CENTI].avail =
-                LMIC.bands[BAND_DECI].avail = os_getTime();
+        (void) LMIC_setupBand(BAND_MILLI, 14 /* dBm */, 1000 /* 0.1% */);
+        (void) LMIC_setupBand(BAND_CENTI, 14 /* dBm */,  100 /* 1% */);
+        (void) LMIC_setupBand(BAND_DECI,  27 /* dBm */,   10 /* 10% */);
 }
 
 bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
@@ -136,6 +129,16 @@ bit_t LMIC_setupBand(u1_t bandidx, s1_t txpow, u2_t txcap) {
         b->lastchnl = os_getRndU1() % MAX_CHANNELS;
         return 1;
 }
+
+// this table is from highest to lowest
+static CONST_TABLE(u4_t, bandAssignments)[] = {
+  870000000 /* .. and above */    | BAND_MILLI,
+  869700000 /* .. 869700000 */    | BAND_CENTI,
+  869650000 /* .. 869700000 */    | BAND_MILLI,
+  869400000 /* .. 869650000 */    | BAND_DECI,
+  868600000 /* .. 869640000 */    | BAND_MILLI,
+  865000000 /* .. 868400000 */    | BAND_CENTI,
+};
 
 bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
         // zero the band bits in freq, just in case.
@@ -154,21 +157,26 @@ bit_t LMIC_setupChannel(u1_t chidx, u4_t freq, u2_t drmap, s1_t band) {
                 return 0;
 
         if (band == -1) {
-                if (freq >= 869400000 && freq <= 869650000)
-                        // this is the g2 band
-                        freq |= BAND_DECI;   // 10% 27dBm
-                else if ((865000000 <= freq && freq <= 868600000) ||    // note 9
-                         (freq >= 869700000 && freq <= 870000000))      // g4
-                        // this is the special g, g1 or g4 band
-                        freq |= BAND_CENTI;  // 1% 14dBm
-                else
-                        // this is elsewhere in the g band
-                        freq |= BAND_MILLI;  // 0.1% 14dBm
+                for (u1_t i = 0; i < LENOF_TABLE(bandAssignments); ++i) {
+                        const u4_t thisFreqBand = TABLE_GET_U4(bandAssignments, i);
+                        const u4_t thisFreq = thisFreqBand & ~3;
+                        if (freq >= thisFreq) {
+                                band = ((u1_t)thisFreqBand & 3);
+                                break;
+                        }
+                }
+
+                // if we didn't identify a frequency, it's millis.
+                if (band == -1) {
+                        band = BAND_MILLI;
+                }
         }
-        else {
-                if (band > BAND_AUX) return 0;
-                freq = (freq&~3) | band;
-        }
+
+        if ((u1_t)band > BAND_AUX)
+                return 0;
+
+        freq |= band;
+
         LMIC.channelFreq[chidx] = freq;
         LMIC.channelDrMap[chidx] = drmap == 0 ? DR_RANGE_MAP(EU868_DR_SF12, EU868_DR_SF7) : drmap;
         if (fEnable)

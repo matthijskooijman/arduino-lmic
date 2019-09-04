@@ -54,8 +54,8 @@
 # error "DNW2_SAFETY_ZONE not defined by bandplan"
 #endif
 
-#ifndef maxFrameLen
-# error "maxFrameLen() not defined by bandplan"
+#ifndef LMICbandplan_maxFrameLen
+# error "LMICbandplan_maxFrameLen() not defined by bandplan"
 #endif
 
 #ifndef pow2dBm

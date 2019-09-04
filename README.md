@@ -36,7 +36,7 @@ requires C99 mode to be enabled by default.
 - [Features](#features)
 - [Additional Documentation](#additional-documentation)
 	- [PDF/Word Documentation](#pdfword-documentation)
-	- [Adding Bandplans](#adding-bandplans)
+	- [Adding Regions](#adding-regions)
 	- [Known bugs and issues](#known-bugs-and-issues)
 - [Configuration](#configuration)
 	- [Selecting the LoRaWAN Region Configuration](#selecting-the-lorawan-region-configuration)
@@ -144,7 +144,7 @@ us know (creating a GitHub issue is probably the best way for that).
 
 The `doc` directory contains [LMiC-v2.3.pdf](doc/LMiC-v2.3.pdf), which documents the library APIs and use. It's based on the original IBM documentation, but has been adapted for this version of the library. However, as this library is used for more than Arduino, that document is supplemented by practical details in this document.
 
-### Adding Bandplans
+### Adding Regions
 
 There is a general framework for adding new region support. [HOWTO-ADD-REGION.md](./HOWTO-ADD-REGION.md) has step-by-step instructions for adding a region.
 
@@ -656,7 +656,7 @@ This library provides several examples.
    OTAA is the preferred way to work with production LoRaWAN networks.
 
 - [`ttn-otaa-feather-us915.ino`](examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino) is a version of `ttn-otaa.ino` that has
-   been configured for use with the Feather M0 LoRa, on the US915 band plan,
+   been configured for use with the Feather M0 LoRa, in the US915 region,
    with The Things Network. Remember that you may also have to change `config.h`
    from defaults. This sketch also works with the MCCI Catena family of products
    as well as with the Feather 32u4 LoRa.
@@ -691,7 +691,7 @@ This library provides several examples.
    [Catena-Arduino-Platform](https://github.com/mcci-catena/Catena-Arduino-Platform).
 
 - [`ttn-abp-feather-us915-dht22.ino`](examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino)
-   refines `ttn-abp.ino` by configuring for use with the Feather M0 LoRa on the US915 band plan,
+   refines `ttn-abp.ino` by configuring for use with the Feather M0 LoRa in the US915 region,
    with a single-channel gateway on The Things Network; it measures and transmits temperature and relative
    humidity using a DHT22 sensor. It's only been tested with Feather M0-family products.
 
@@ -1096,11 +1096,14 @@ function uflt12f(rawUflt12)
 
 ## Release History
 
-- HEAD adds the following changes.
+- HEAD adds the following changes (this is not an exhaustive list)
 
+  - [#388](https://github.com/mcci-catena/arduino-lmic/issues/388), [#389](https://github.com/mcci-catena/arduino-lmic/issues/390), [#390](https://github.com/mcci-catena/arduino-lmic/issues/390) change the LMIC to honor the maximum frame size for a given DR in the current region. This proves to be a breaking change for many applications, especially in the US, because DR0 in the US supports only an 11-byte payload, and many apps were ignoring this. Additional error codes were defined so that apps can detect and recover from this situation, but they must detect; otherwise they run the risk of being blocked from the network by the LMIC.  Because of this change, the next version of the LMIC will be V3.1 or higher, and the LMIC version for development is bumped to 3.0.99.0.
+  - [#401](https://github.com/mcci-catena/arduino-lmic/issues/401) adds 865 MHz through 868 MHz to the "1%" band for EU.
+  - [#395]((https://github.com/mcci-catena/arduino-lmic/pull/395) corrects pin-mode initialization if using `hal_interrupt_init()`.
   - [#385](https://github.com/mcci-catena/arduino-lmic/issues/385) corrects an error handling data rate selection for `TxParamSetupReq`, found in US-915 certification testing. (v2.3.2.71)
   - [#378](https://github.com/mcci-catena/arduino-lmic/pull/378) completely reworks MAC downlink handling. Resulting code passes the LoRaWAN V1.5 EU certification test. (v2.3.2.70)
-  - [#360](https://github.com/mcci-catena/arduino-lmic/pull/360) adds support for the KR-920 regional plan.
+  - [#360](https://github.com/mcci-catena/arduino-lmic/issues/360) adds support for the KR-920 regional plan.
 
 - v2.3.2 is a patch release. It incorporates two pull requests.
 
@@ -1139,7 +1142,7 @@ function uflt12f(rawUflt12)
 
 - V2.1.0 adds support for the Murata LoRaWAN module.
 
-- V2.0.2 adds support for the extended band plans.
+- V2.0.2 adds support for additional regions.
 
 ## Contributions
 
@@ -1149,7 +1152,7 @@ This library started from the IBM V1.5 open-source code.
 
 - Terry Moore, LeRoy Leslie, Frank Rose, and ChaeHee Won did a lot of work on US support.
 
-- Terry Moore added the AU921, AS923 and IN866 band plans, and created the regionalization framework.
+- Terry Moore added the AU921, AS923, KR920 and IN866 regions, and created the regionalization framework, and did corrections for LoRaWAN 1.0.3 compliance testing.
 
 - [`@tanupoo`](https://github.com/tanupoo) of the WIDE Project debugged AS923JP and LBT support.
 

@@ -556,6 +556,10 @@ fsmDispatch(
         }
 
         case LMIC_COMPLIANCE_FSMSTATE_TESTMODE: {
+            if (LMIC.opmode & OP_TXDATA) {
+                // stay here until we can do something
+                break;
+            }
             if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_DEACTIVATE)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_INACTIVE;
             } else if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_JOIN_CMD)) {
@@ -652,9 +656,11 @@ static void lmicEventCb(
             );
     }
 
-    // if it's a EV_JOINED, we should tell the FSM.
+    // if it's a EV_JOINED, or a TXCMOMPLETE, we should tell the FSM.
     if (ev == EV_JOINED) {
         LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_JOINED;
+        fsmEvalDeferred();
+    } else if (ev == EV_TXCOMPLETE) {
         fsmEvalDeferred();
     }
 }
@@ -679,22 +685,34 @@ static void acSendUplink(void) {
     LMIC_Compliance.eventflags &= ~LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE;
 
     // don't try to send if busy; might be sending echo message.
-    if ((LMIC.opmode & OP_TXRXPEND) == 0 &&
-        LMIC_sendWithCallback(
+    lmic_tx_error_t const eSend =
+        LMIC_sendWithCallback_strict(
             LORAWAN_PORT_COMPLIANCE,
             payload, sizeof(payload),
             /* confirmed? */
             !! (LMIC_Compliance.fsmFlags & LMIC_COMPLIANCE_FSM_CONFIRM),
-            sendUplinkCompleteCb, NULL) == 0) {
+            sendUplinkCompleteCb, NULL
+            );
+
+    if (eSend == LMIC_ERROR_SUCCESS) {
         // queued successfully
         LMIC_COMPLIANCE_PRINTF(
-                "lmic_compliance.acSendUplink: queued uplink message(%u, %p)\n",
+                "lmic_compliance.%s: queued uplink message(%u, %p)\n",
+                __func__,
                 (unsigned) downlink & 0xFFFF,
                 LMIC.client.txMessageCb
                 );
     } else {
         // failed to queue; just skip this cycle.
-        sendUplinkCompleteCb(NULL, false);
+        LMIC_COMPLIANCE_PRINTF(
+                "lmic_compliance.%s: error(%d) sending uplink message(%u), %u bytes\n",
+                __func__,
+                eSend,
+                (unsigned) downlink & 0xFFFF,
+                LMIC.client.txMessageCb
+                );
+        LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE;
+        fsmEval();
     }
 }
 
@@ -706,16 +724,20 @@ static void sendUplinkCompleteCb(void *pUserData, int fSuccess) {
 
 static void acSendUplinkBuffer(void) {
     // send uplink data.
-    if (LMIC_sendWithCallback(
+    lmic_tx_error_t const eSend =
+        LMIC_sendWithCallback_strict(
             LORAWAN_PORT_COMPLIANCE,
             LMIC_Compliance.uplinkMessage, LMIC_Compliance.uplinkSize,
             /* confirmed? */ (LMIC_Compliance.fsmFlags & LMIC_COMPLIANCE_FSM_CONFIRM) != 0,
             sendUplinkCompleteCb,
-            NULL) == 0
-        ) {
+            NULL);
+
+    if (eSend == LMIC_ERROR_SUCCESS) {
         LMIC_COMPLIANCE_PRINTF("%s: queued %u bytes\n", __func__, LMIC_Compliance.uplinkSize);
     } else {
-        LMIC_COMPLIANCE_PRINTF("%s: uplink %u bytes failed\n", __func__, LMIC_Compliance.uplinkSize);
+        LMIC_COMPLIANCE_PRINTF("%s: uplink %u bytes failed (error %d)\n", __func__, LMIC_Compliance.uplinkSize, eSend);
+        LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE;
+        fsmEval();
     }
 }
 

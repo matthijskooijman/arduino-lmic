@@ -230,8 +230,8 @@ enum _dr_configured_t {
 
 #include "lorabase_au921.h"
 
-// per 2.5.3: not implemented
-#define LMIC_ENABLE_TxParamSetupReq	0
+// per 2.5.3: must be implemented
+#define LMIC_ENABLE_TxParamSetupReq	1
 
 enum { DR_DFLTMIN       = AU921_DR_SF7 };  // DR5
 
