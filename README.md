@@ -1,6 +1,6 @@
 # Arduino-LMIC library
 
-This repository contains the IBM LMIC (LoraMAC-in-C) library, slightly
+This repository contains the IBM LMIC (LoRaWAN-MAC-in-C) library, slightly
 modified to run in the Arduino environment, allowing using the SX1272,
 SX1276 transceivers and compatible modules (such as some HopeRF RFM9x
 modules and the Murata LoRa modules).
@@ -38,6 +38,9 @@ requires C99 mode to be enabled by default.
 	- [PDF/Word Documentation](#pdfword-documentation)
 	- [Adding Regions](#adding-regions)
 	- [Known bugs and issues](#known-bugs-and-issues)
+		- [Timing Issues](#timing-issues)
+		- [Working with MCCI Murata-based boards](#working-with-mcci-murata-based-boards)
+		- [Event-Handling Issues](#event-handling-issues)
 - [Configuration](#configuration)
 	- [Selecting the LoRaWAN Region Configuration](#selecting-the-lorawan-region-configuration)
 		- [eu868, as923, in866, kr920](#eu868-as923-in866-kr920)
@@ -127,13 +130,12 @@ What certainly works:
 - Custom frequencies and data rate settings.
 - Over-the-air activation (OTAA / joining).
 - Receiving downlink packets in the RX1 and RX2 windows.
-- Some MAC command processing.
+- MAC command processing.
 
 What has not been tested:
 
-- Receiving and processing all MAC commands.
 - Class B operation.
-- FSK has not been extensively tested.
+- FSK has not been extensively tested. (Testing with the RedwoodComm RWC5020A analyzer in 2019 indicated that FSK downlink is stable but not reliable. This prevents successful completion of LoRaWAN pre-certification in regions that require support for FSK.)
 
 If you try one of these untested features and it works, be sure to let
 us know (creating a GitHub issue is probably the best way for that).
@@ -142,15 +144,39 @@ us know (creating a GitHub issue is probably the best way for that).
 
 ### PDF/Word Documentation
 
-The `doc` directory contains [LMiC-v2.3.pdf](doc/LMiC-v2.3.pdf), which documents the library APIs and use. It's based on the original IBM documentation, but has been adapted for this version of the library. However, as this library is used for more than Arduino, that document is supplemented by practical details in this document.
+The `doc` directory contains [LMIC-v3.0.99.pdf](doc/LMIC-v3.0.99.pdf), which documents the library APIs and use. It's based on the original IBM documentation, but has been adapted for this version of the library. However, as this library is used for more than Arduino, that document is supplemented by practical details in this document.
 
 ### Adding Regions
 
-There is a general framework for adding new region support. [HOWTO-ADD-REGION.md](./HOWTO-ADD-REGION.md) has step-by-step instructions for adding a region.
+There is a general framework for adding support for a new region. [HOWTO-ADD-REGION.md](./HOWTO-ADD-REGION.md) has step-by-step instructions for adding a region.
 
 ### Known bugs and issues
 
-See the list of bugs at [mcci-catena/arduino-lmic](https://github.com/mcci-catena/arduino-lmic/issues).
+See the list of bugs at [`mcci-catena/arduino-lmic`](https://github.com/mcci-catena/arduino-lmic/issues).
+
+#### Timing Issues
+
+The LoRaWAN technology for class A devices requires devices to meet hard real-time deadlines. The Arduino environment doesn't provide built-in support for this, and this port of the LMIC doesn't really ensure it, either. It is your responsibility, when constructing your application, to ensure that you call `os_runloop_once()` "often enough".
+
+How often is often enough?
+
+It depends on what the LMIC is doing. For Class A devices, when the LMIC is idle, `os_runloop_once()` need not be called at all. However, during a message transmit, it's critical to ensure that `os_runloop_once()` is called frequently prior to hard deadlines. The API `os_queryTimeCriticalJobs()` can be used to check whether there are any deadlines due soon. Before doing work that takes `n` milliseconds, call `os_queryTimeCriticalJobs(ms2osticks(n))`, and skip the work if the API indicates that the LMIC needs attention.
+
+However, in the current implementation, the LMIC is tracking the completion of uplink transmits. This is done by checking for transmit-complete indications, which is done by polling. So you must also continually call `os_runloop_once()` while waiting for a transmit to be completed. This is an area for future improvement.
+
+#### Working with MCCI Murata-based boards
+
+The Board Support Package V2.5.0 for the MCCI Murata-based boards ([MCCI Catena 4610](https://mcci.io/catena4610), [MCCI Catena 4612](https://mcci.io/catena4612), etc.) has a defect in clock calibration that prevents the compliance script from being used without modification.  The update to V2.6.0 is expected to solve this issue.
+
+#### Event-Handling Issues
+
+The LMIC has a simple event notification system. When an interesting event occurs, it calls a user-provided function.
+
+This function is sometimes called at time critical moments.
+
+This means that your event function should avoid doing any time-critical work.
+
+Furthermore, the event function may be called in situations where it's not safe to call the LMIC message send APIs. Please be careful to defer all work from your event function to your `loop()` function. See the compliance example sketch for an elaborate version of how this can be done.
 
 ## Configuration
 
@@ -1096,7 +1122,7 @@ function uflt12f(rawUflt12)
 
 ## Release History
 
-- HEAD adds the following changes (this is not an exhaustive list)
+- v3.0.99 (still in pre-release) adds the following changes. (This is not an exhaustive list.) Note that the behavior of the LMIC changes in important ways, as it now enforces the LoRaWAN mandated maximum frame size for a given data rate. For Class A devices, this may cause your device to go silent after join, if you're not able to handle the frame size dictated by the parameters downloaded to the device by the network during join. The library will attempt to find a data rate that will work, but there is no guarantee that the network has provided such a data rate.
 
   - [#388](https://github.com/mcci-catena/arduino-lmic/issues/388), [#389](https://github.com/mcci-catena/arduino-lmic/issues/390), [#390](https://github.com/mcci-catena/arduino-lmic/issues/390) change the LMIC to honor the maximum frame size for a given DR in the current region. This proves to be a breaking change for many applications, especially in the US, because DR0 in the US supports only an 11-byte payload, and many apps were ignoring this. Additional error codes were defined so that apps can detect and recover from this situation, but they must detect; otherwise they run the risk of being blocked from the network by the LMIC.  Because of this change, the next version of the LMIC will be V3.1 or higher, and the LMIC version for development is bumped to 3.0.99.0.
   - [#401](https://github.com/mcci-catena/arduino-lmic/issues/401) adds 865 MHz through 868 MHz to the "1%" band for EU.
