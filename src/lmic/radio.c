@@ -560,7 +560,7 @@ static void configChannel () {
 // 1) using RFO: power is -1 to 13 dBm (datasheet implies max OutputPower value is 14 for 13 dBm)
 // 2) using PA_BOOST, PaDac = 0x84: power is 2 to 17 dBm;
 //	use this for 14..17 if authorized
-// 3) using PA_BOOST, PaDac = 0x87, OutptuPower = 0xF: power is 20dBm
+// 3) using PA_BOOST, PaDac = 0x87, OutputPower = 0xF: power is 20dBm
 //    and duty cycle must be <= 1%
 //
 // The general policy is to use the lowest power variant that will get us where we
@@ -626,6 +626,10 @@ static void configPower () {
     // we have to re-check eff_pw, which might be too small.
     // (And, of course, it might also be too large.)
     case LMICHAL_radio_tx_power_policy_paboost:
+        // It seems that SX127x doesn't like eff_pw 10 when in FSK mode.
+        if (getSf(LMIC.rps) == FSK && eff_pw < 11) {
+            eff_pw = 11;
+        }
         rPaDac = SX127X_PADAC_POWER_NORMAL;
         rOcp = SX127X_OCP_MAtoBITS(100);
         if (eff_pw > 17)
