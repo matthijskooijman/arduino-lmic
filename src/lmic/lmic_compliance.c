@@ -283,7 +283,7 @@ static void evMessage(
             break;
             }
         case LORAWAN_COMPLIANCE_CMD_LINK: {
-            // not clear what theis request does.
+            // not clear what this request does.
             break;
         }
         case LORAWAN_COMPLIANCE_CMD_JOIN: {
