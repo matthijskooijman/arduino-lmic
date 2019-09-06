@@ -673,13 +673,8 @@ void setup_printSignOn()
     }
 
 void setupForNetwork(bool preJoin) {
-#if defined(CFG_us915)
+#if CFG_LMIC_US_like
     LMIC_selectSubBand(0);
-
-    if (! preJoin) {
-//        LMIC_setLinkCheckMode(0);
-//        LMIC_setDrTxpow(DR_SF7, 14);
-    }
 #endif
 }
 
