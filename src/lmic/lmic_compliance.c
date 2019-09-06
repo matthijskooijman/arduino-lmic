@@ -307,6 +307,9 @@ Definition:
 
 Description:
         We report a deactivation event, and re-evaluate the FSM.
+        We also set a flag so that we're return the appropriate
+        status from the compliance entry point to the real
+        application.
 
 Returns:
         No explicit result.
@@ -344,8 +347,10 @@ Definition:
         void evJoinCommand(void);
 
 Description:
-        We report a join-command event, and the kick the FSM. This
-        will cause the FSM to coordinate sending and the other activities.
+        We unjoin from the network, and then report a deactivation
+        of test mode. That will get us out of test mode and back
+        to the compliance app. The next message send will trigger
+        a join.
 
 Returns:
         No explicit result.
@@ -355,8 +360,8 @@ Returns:
 static void evJoinCommand(
     void
 ) {
-    LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_JOIN_CMD;
-    fsmEvalDeferred();
+    LMIC_unjoin();
+    evDeactivate();
 }
 
 /*
@@ -582,22 +587,10 @@ fsmDispatch(
             }
             if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_DEACTIVATE)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_INACTIVE;
-            } else if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_JOIN_CMD)) {
-                newState = LMIC_COMPLIANCE_FSMSTATE_JOINING;
             } else if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_ECHO_REQUEST)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_ECHOING;
             } else {
                 newState = LMIC_COMPLIANCE_FSMSTATE_REPORTING;
-            }
-            break;
-        }
-
-        case LMIC_COMPLIANCE_FSMSTATE_JOINING: {
-            if (fEntry)
-                acDoJoin();
-
-            if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_JOINED)) {
-                newState = LMIC_COMPLIANCE_FSMSTATE_RECOVERY;
             }
             break;
         }
@@ -625,8 +618,7 @@ fsmDispatch(
         case LMIC_COMPLIANCE_FSMSTATE_RECOVERY: {
             if (fEntry) {
                 if (LMIC_Compliance.eventflags & (LMIC_COMPLIANCE_EVENT_DEACTIVATE |
-                                                  LMIC_COMPLIANCE_EVENT_ECHO_REQUEST |
-                                                  LMIC_COMPLIANCE_EVENT_JOIN_CMD)) {
+                                                  LMIC_COMPLIANCE_EVENT_ECHO_REQUEST)) {
                     acSetTimer(sec2osticks(1));
                 } else {
                     acSetTimer(sec2osticks(5));
@@ -677,10 +669,7 @@ static void lmicEventCb(
     }
 
     // if it's a EV_JOINED, or a TXCMOMPLETE, we should tell the FSM.
-    if (ev == EV_JOINED) {
-        LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_JOINED;
-        fsmEvalDeferred();
-    } else if (ev == EV_TXCOMPLETE) {
+    if ((UINT32_C(1) << ev) & (EV_JOINED | EV_TXCOMPLETE)) {
         fsmEvalDeferred();
     }
 }
@@ -763,14 +752,4 @@ static void acSendUplinkBuffer(void) {
 
 static const char *txSuccessToString(int fSuccess) {
     return fSuccess ? "ok" : "failed";
-}
-
-static void acDoJoin(void) {
-    LMIC_COMPLIANCE_PRINTF("acDoJoin\n");
-
-    LMIC_Compliance.eventflags &= ~LMIC_COMPLIANCE_EVENT_JOINED;
-
-    LMIC_unjoin();
-    LMIC_Compliance.downlinkCount = 0;
-    LMIC_startJoining();
 }
