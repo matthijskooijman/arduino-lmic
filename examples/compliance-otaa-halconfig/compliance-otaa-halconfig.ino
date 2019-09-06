@@ -20,6 +20,7 @@ Author:
 #include <arduino_lmic_lorawan_compliance.h>
 
 #include <SPI.h>
+class cEventQueue;
 
 //
 // For compliance tests with the RWC5020A, we use the default addresses
@@ -93,8 +94,10 @@ public:
         ostime_t    time;
         ostime_t    txend;
         u4_t        freq;
-        rps_t       rps;
         u2_t        opmode;
+        u2_t        fcntDn;
+        u2_t        fcntUp;
+        rps_t       rps;
         u1_t        txChnl;
         u1_t        datarate;
         u1_t        txrxFlags;
@@ -125,10 +128,12 @@ public:
             pn->pMessage = pMessage;
             pn->datum = datum;
             pn->freq = LMIC.freq;
-            pn->txChnl = LMIC.txChnl;
-            pn->rps = LMIC.rps;
-            pn->datarate = LMIC.datarate;
             pn->opmode = LMIC.opmode;
+            pn->fcntDn = (u2_t) LMIC.seqnoDn;
+            pn->fcntUp = (u2_t) LMIC.seqnoUp;
+            pn->rps = LMIC.rps;
+            pn->txChnl = LMIC.txChnl;
+            pn->datarate = LMIC.datarate;
             pn->txrxFlags = LMIC.txrxFlags;
             pn->saveIrqFlags = LMIC.saveIrqFlags;
             m_tail = i;
@@ -187,6 +192,8 @@ void myEventCb(void *pUserData, ev_t ev) {
 }
 
 void eventPrint(cEventQueue::eventnode_t &e);
+void printFcnts(cEventQueue::eventnode_t &e);
+
 
 void eventPrintAll(void) {
     while (eventPrintOne())
@@ -231,6 +238,11 @@ void printHex2(unsigned v) {
     if (v < 16)
         Serial.print('0');
     Serial.print(v, HEX);
+}
+
+void printHex4(unsigned v) {
+    printHex2(v >> 8u);
+    printHex2(v);
 }
 
 void printFreq(u4_t freq) {
@@ -278,6 +290,13 @@ void printTxrxflags(u1_t txrxFlags) {
 void printSaveIrqFlags(u1_t saveIrqFlags) {
     Serial.print(F(", saveIrqFlags 0x"));
     printHex2(saveIrqFlags);
+}
+
+void printFcnts(cEventQueue::eventnode_t &e) {
+    Serial.print(F(", FcntUp="));
+    printHex4(e.fcntUp);
+    Serial.print(F(", FcntDn="));
+    printHex4(e.fcntDn);
 }
 
 // dump all the registers.  Must have printf setup.
@@ -409,6 +428,7 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printTxChnl(e.txChnl);
                 printRps(e.rps);
                 printTxrxflags(e.txrxFlags);
+                printFcnts(e);
                 break;
             case EV_LOST_TSYNC:
                 break;
@@ -610,7 +630,7 @@ void setup() {
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
 
-    LMIC_setClockError(5 * MAX_CLOCK_ERROR / 100);
+    LMIC_setClockError(1 * MAX_CLOCK_ERROR / 100);
 
     // do the network-specific setup prior to join.
     setupForNetwork(false);
@@ -680,10 +700,10 @@ void setupForNetwork(bool preJoin) {
 
 void loop() {
     os_runloop_once();
-    while ((LMIC.opmode & OP_TXRXPEND) == 0 &&
-           ! os_queryTimeCriticalJobs(ms2osticks(1000)) &&
-           eventPrintOne())
-        ;
+    if ((LMIC.opmode & OP_TXRXPEND) == 0 &&
+        !os_queryTimeCriticalJobs(ms2osticks(1000))) {
+           eventPrintOne();
+    }
 }
 
 // there's a problem with running 2.5 of the MCCI STM32 BSPs;
