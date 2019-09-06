@@ -184,7 +184,7 @@
 
 // this is probably regional, but for now default can be the same
 #if !defined(LMICbandplan_TX_RECOVERY_ms)
-# define LMICbandplan_TX_RECOVERY_ms    100
+# define LMICbandplan_TX_RECOVERY_ms    500
 #endif
 
 #define BCN_INTV_osticks       sec2osticks(BCN_INTV_sec)
