@@ -212,6 +212,17 @@ static void evActivate(void) {
         LMIC_Compliance.saveEvent.pEventCb = LMIC.client.eventCb;
         LMIC_Compliance.saveEvent.pUserData = LMIC.client.eventUserData;
 
+#if CFG_LMIC_EU_like
+        band_t *b = LMIC.bands;
+        lmic_compliance_band_t *b_save = LMIC_Compliance.saveBands;
+
+        for (; b < &LMIC.bands[MAX_BANDS]; ++b, ++b_save) {
+            b_save->txcap = b->txcap;
+            b->txcap = 1;
+            b->avail = os_getTime();
+        }
+#endif // CFG_LMIC_EU_like
+
         LMIC_registerEventCb(lmicEventCb, NULL);
 
         fsmEvalDeferred();
@@ -309,9 +320,18 @@ static void evDeactivate(void) {
     // restore user's event handler.
     LMIC_registerEventCb(LMIC_Compliance.saveEvent.pEventCb, LMIC_Compliance.saveEvent.pUserData);
 
+    // restore band settings
+#if CFG_LMIC_EU_like
+    band_t *b = LMIC.bands;
+    lmic_compliance_band_t const *b_save = LMIC_Compliance.saveBands;
+
+    for (; b < &LMIC.bands[MAX_BANDS]; ++b, ++b_save) {
+        b->txcap = b_save->txcap;
+    }
+#endif // CFG_LMIC_EU_like
+
     fsmEvalDeferred();
 }
-
 
 /*
 

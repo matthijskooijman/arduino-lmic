@@ -94,6 +94,12 @@ struct lmic_compliance_eventcb_s {
 	void			*pUserData;
 };
 
+// structure for saving band settings during test
+typedef struct lmic_compliance_band_s lmic_compliance_band_t;
+struct lmic_compliance_band_s {
+    u2_t    txcap;  // saved 1/duty cycle
+};
+
 // the state of the compliance engine.
 struct lmic_compliance_s {
         // uint64
@@ -103,7 +109,11 @@ struct lmic_compliance_s {
         lmic_compliance_eventcb_t   saveEvent;      // the user's event handler.
 
         // uint32
+
         // uint16
+#if CFG_LMIC_EU_like
+        lmic_compliance_band_t      saveBands[MAX_BANDS];
+#endif // CFG_LMIC_EU_like
 
         // we are required to maintain a downlink count
         // that is reset on join/test entry and incremented for
