@@ -1091,7 +1091,7 @@ uint32_t Stm32_CalibrateSystemClock(void)
         {
         // Use original value
         Serial.println(
-            "?CatenaStm32L0::CalibrateSystemClock: can't calibrate"
+            "?CalibrateSystemClock: can't calibrate"
             );
         }
 
