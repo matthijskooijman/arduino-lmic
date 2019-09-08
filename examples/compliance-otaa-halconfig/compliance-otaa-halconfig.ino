@@ -706,53 +706,54 @@ void loop() {
     }
 }
 
-// there's a problem with running 2.5 of the MCCI STM32 BSPs;
-// hack around it.
+#define NEED_USBD_LL_ConnectionState    0
 #ifdef ARDUINO_ARCH_STM32
 # ifdef _mcci_arduino_version
-#  if _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 0)
+#  if _mcci_arduino_version < _mcci_arduino_version_calc(2, 5, 0, 10)
+#   undef NEED_USBD_LL_ConnectionState
+#   define NEED_USBD_LL_ConnectionState 1
+#  endif // _mcci_arduino_version < _mcci_arduino_version_calc(2, 5, 0, 10)
+# endif // def _mcci_arduino_version
+#endif // def ARDUINO_ARCH_STM32
+
+#define NEED_STM32_ClockCalibration    0
+#ifdef ARDUINO_ARCH_STM32
+# ifdef _mcci_arduino_version
+#  if _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 10)
+#   undef NEED_STM32_ClockCalibration
+#   define NEED_STM32_ClockCalibration 1
+#  endif // _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 10)
+# endif // def _mcci_arduino_version
+#endif // def ARDUINO_ARCH_STM32
+
+
+// there's a problem with running 2.5 of the MCCI STM32 BSPs;
+// hack around it.
+#if NEED_USBD_LL_ConnectionState
 uint32_t USBD_LL_ConnectionState(void) {
   return 1;
 }
-#  endif // _mcci_arduino_version
-# endif // defined(_mcci_arduino_version)
-#endif // ARDUINO_ARCH_STM32
+#endif // NEED_USBD_LL_ConnectionState
 
-#ifdef ARDUINO_ARCH_STM32
-# if defined(_mcci_arduino_version)
-#  if _mcci_arduino_version >= _mcci_arduino_version_calc(2,4,0,90)
+#if NEED_STM32_ClockCalibration
         static constexpr bool kUsesLSE = true;          // _mcci_arduino_version indicates that LSE clock is used.
-#  else
-        // versions before 2.4.0.90 use LSI clock. Can't calibrate.
-        static constexpr bool kUsesLSE = false;         // _mcci_arduino_version defined, too small
-#  endif
-# else
-        // versions before 2.4.0.90 use LSI clock. Can't calibrate.
-        static constexpr bool kUsesLSE = false;         // _mcci_arduino_version not defined
-# endif
 #else
         static constexpr bool kUsesLSE = false;
 #endif
 
 
 void setup_calibrateSystemClock(void) {
-#ifdef ARDUINO_ARCH_STM32
-# ifdef _mcci_arduino_version
-#  if _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 0)
     if (kUsesLSE) {
         Serial.println("need to calibrate clock");
+#if NEED_STM32_ClockCalibration
         Stm32_CalibrateSystemClock();
+#endif // NEED_STM32_ClockCalibration
     } else {
         Serial.println("calibration not supported");
     }
-#  endif // _mcci_arduino_version
-# endif // defined(_mcci_arduino_version)
-#endif // ARDUINO_ARCH_STM32
 }
 
-#ifdef ARDUINO_ARCH_STM32
-# ifdef _mcci_arduino_version
-#  if _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 0)
+#if NEED_STM32_ClockCalibration
 
 // RTC needs to be initialized before we calibrate the clock.
 bool rtcbegin() {
@@ -1144,6 +1145,4 @@ MeasureMillisPerRtcSecond(
     /* return the delta */
     return end - start;
     }
-#  endif // _mcci_arduino_version
-# endif // defined(_mcci_arduino_version)
-#endif // ARDUINO_ARCH_STM32
+#endif // NEED_STM32_ClockCalibration
