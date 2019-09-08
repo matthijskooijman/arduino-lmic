@@ -2453,8 +2453,9 @@ static void startRxPing (xref2osjob_t osjob) {
 #endif // !DISABLE_PING
 
 
-// Decide what to do next for the MAC layer of a device
-static void engineUpdate (void) {
+// Decide what to do next for the MAC layer of a device. Inner part.
+// Only called from outer part.
+static void engineUpdate_inner (void) {
 #if LMIC_DEBUG_LEVEL > 0
     LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": engineUpdate, opmode=0x%x\n", os_getTime(), LMIC.opmode);
 #endif
@@ -2637,6 +2638,24 @@ static void engineUpdate (void) {
     os_setTimedCallback(&LMIC.osjob, txbeg-TX_RAMPUP, FUNC_ADDR(runEngineUpdate));
 }
 
+// Decide what to do next for the MAC layer of a device.
+// Outer part. Safe to call from anywhere; defers if it
+// detects a recursive call.
+static void engineUpdate (void) {
+    lmic_engine_update_state_t state;
+
+    state = LMIC.engineUpdateState;
+    if (state == lmic_EngineUpdateState_idle) {
+        LMIC.engineUpdateState = lmic_EngineUpdateState_busy;
+        do  {
+            engineUpdate_inner();
+            state = LMIC.engineUpdateState - 1;
+            LMIC.engineUpdateState = state;
+            } while (state != lmic_EngineUpdateState_idle);
+    } else {
+        LMIC.engineUpdateState = lmic_EngineUpdateState_again;
+    }
+}
 
 void LMIC_setAdrMode (bit_t enabled) {
     LMIC.adrEnabled = enabled ? FCT_ADREN : 0;

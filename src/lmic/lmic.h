@@ -360,6 +360,14 @@ enum lmic_request_time_state_e {
 
 typedef u1_t lmic_request_time_state_t;
 
+enum lmic_engine_update_state_e {
+    lmic_EngineUpdateState_idle = 0,    // engineUpdate is idle.
+    lmic_EngineUpdateState_busy = 1,    // engineUpdate is busy, but has not been reentered.
+    lmic_EngineUpdateState_again = 2,   // engineUpdate is busy, and has to be evaluated again.
+};
+
+typedef u1_t lmic_engine_update_state_t;
+
 /*
 
 Structure:  lmic_client_data_t
@@ -480,7 +488,6 @@ struct lmic_t {
 #endif
 
     /* (u)int16_t things */
-
     rps_t       rps;            // radio parameter selections: SF, BW, CodingRate, NoCrc, implicit hdr
     u2_t        opmode;         // engineUpdate() operating mode flags
     u2_t        devNonce;       // last generated nonce
@@ -494,6 +501,7 @@ struct lmic_t {
 #endif
 
     /* (u)int8_t things */
+    lmic_engine_update_state_t engineUpdateState;   // state of the engineUpdate() evaluator.
     s1_t        rssi;
     s1_t        snr;            // LMIC.snr is SNR times 4
     u1_t        rxsyms;
