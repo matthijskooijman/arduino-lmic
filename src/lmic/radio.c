@@ -904,9 +904,9 @@ static void rxlora (u1_t rxmode) {
 
     // Errata 2.3 - receiver spurious reception of a LoRa signal
     bw_t const bw = getBw(LMIC.rps);
-    u1_t const rDetectOptimize = readReg(LORARegDetectOptimize);
+    u1_t const rDetectOptimize = (readReg(LORARegDetectOptimize) & 0x78) | 0x03;
     if (bw < BW500) {
-        writeReg(LORARegDetectOptimize, rDetectOptimize & 0x7F);
+        writeReg(LORARegDetectOptimize, rDetectOptimize);
         writeReg(LORARegIffReq1, 0x40);
         writeReg(LORARegIffReq2, 0x40);
     } else {
