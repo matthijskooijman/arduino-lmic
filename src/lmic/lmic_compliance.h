@@ -77,11 +77,12 @@ enum lmic_compliance_fsmstate_e {
     LMIC_COMPLIANCE_FSMSTATE_ECHOING = 5,
     LMIC_COMPLIANCE_FSMSTATE_REPORTING = 6,
     LMIC_COMPLIANCE_FSMSTATE_RECOVERY = 7,
+    LMIC_COMPLIANCE_FSMSTATE_TXBUSY = 8,
 };
 
 #define LMIC_COMPLIANCE_FSMSTATE__NAMES   \
     "INITIAL", "NOCHANGE", "ACTIVE", "INACTIVE", "TESTMODE",   \
-    "ECHOING", "REPORTING", "RECOVERY"
+    "ECHOING", "REPORTING", "RECOVERY", "TXBUSY"
 
 typedef struct lmic_compliance_eventcb_s lmic_compliance_eventcb_t;
 struct lmic_compliance_eventcb_s {

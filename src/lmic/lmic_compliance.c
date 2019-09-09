@@ -575,15 +575,26 @@ fsmDispatch(
                 acEnterActiveMode();
                 acSetTimer(sec2osticks(1));
             }
-            if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED))
+            if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_TESTMODE;
+            }
+            break;
+        }
+
+        case LMIC_COMPLIANCE_FSMSTATE_TXBUSY: {
+            if (fEntry) {
+                acSetTimer(sec2osticks(1));
+            }
+            if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED)) {
+                newState = LMIC_COMPLIANCE_FSMSTATE_TESTMODE;
+            }
             break;
         }
 
         case LMIC_COMPLIANCE_FSMSTATE_TESTMODE: {
             if (LMIC.opmode & OP_TXDATA) {
-                // stay here until we can do something
-                break;
+                // go back and wait some more.
+                newState = LMIC_COMPLIANCE_FSMSTATE_TXBUSY;
             }
             if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_DEACTIVATE)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_INACTIVE;
@@ -628,6 +639,7 @@ fsmDispatch(
             if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_TESTMODE;
             }
+            break;
         }
 
         default: {
