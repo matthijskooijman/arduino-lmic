@@ -1220,6 +1220,7 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
     if( (readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
         u1_t flags = readReg(LORARegIrqFlags);
         LMIC.saveIrqFlags = flags;
+        LMICOS_logEventUint32("radio_irq_handler_v2: LoRa", flags);
         LMIC_X_DEBUG_PRINTF("IRQ=%02x\n", flags);
         if( flags & IRQ_LORA_TXDONE_MASK ) {
             // save exact tx time
@@ -1258,6 +1259,9 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
     } else { // FSK modem
         u1_t flags1 = readReg(FSKRegIrqFlags1);
         u1_t flags2 = readReg(FSKRegIrqFlags2);
+
+        LMICOS_logEventUint32("radio_irq_handler_v2: FSK", (flags2 << UINT32_C(8)) | flags1);
+
         if( flags2 & IRQ_FSK2_PACKETSENT_MASK ) {
             // save exact tx time
             LMIC.txend = now;
@@ -1275,10 +1279,15 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
             // indicate timeout
             LMIC.dataLen = 0;
         } else {
-            ASSERT(0);
+            // ASSERT(0);
+            // we're not sure why we're here... treat as timeout.
+            LMIC.dataLen = 0;
         }
+
+        // in FSK, we need to put the radio in standby first.
+        opmode(OPMODE_STANDBY);
     }
-    // go from stanby to sleep
+    // go from standby to sleep
     opmode(OPMODE_SLEEP);
     // run os job (use preset func ptr)
     os_setCallback(&LMIC.osjob, LMIC.osjob.func);
