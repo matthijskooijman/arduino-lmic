@@ -212,14 +212,6 @@ ostime_t LMICin866_nextJoinState(void) {
 }
 #endif // !DISABLE_JOIN
 
-// Class A txDone handling for FSK.
-void
-LMICin866_txDoneFSK(ostime_t delay, osjobcb_t func) {
-        LMIC.rxtime = LMIC.txend + delay - PRERX_FSK*us2osticksRound(160);
-        LMIC.rxsyms = RXLEN_FSK;
-        os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
-}
-
 // set the Rx1 dndr, rps.
 void LMICin866_setRx1Params(void) {
     u1_t const txdr = LMIC.dndr;

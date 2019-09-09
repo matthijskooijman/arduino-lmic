@@ -74,13 +74,6 @@ void LMICas923_init(void);
 #undef LMICbandplan_isFSK
 #define LMICbandplan_isFSK()    (/* RX datarate */LMIC.dndr == AS923_DR_FSK)
 
-// txDone handling for FSK.
-void
-LMICas923_txDoneFSK(ostime_t delay, osjobcb_t func);
-
-#undef LMICbandplan_txDoneFSK
-#define LMICbandplan_txDoneFSK(delay, func) LMICas923_txDoneFSK(delay, func)
-
 #define LMICbandplan_getInitialDrJoin() (AS923_DR_SF10)
 
 void LMICas923_setBcnRxParams(void);
