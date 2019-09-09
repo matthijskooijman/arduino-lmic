@@ -254,28 +254,13 @@ void LMICeulike_setRx1Freq(void) {
 // Class A txDone handling for FSK.
 void
 LMICeulike_txDoneFSK(ostime_t delay, osjobcb_t func) {
-        LMIC.rxsyms = RXLEN_FSK;
+        ostime_t const hsym = us2osticksRound(80);
 
-        // If a clock error is specified, compensate for it by extending the
-        // receive window
-        delay -= PRERX_FSK * us2osticksRound(160);
+        // start a little earlier.
+        delay -= LMICbandplan_PRERX_FSK * us2osticksRound(160);
 
-        if (LMIC.client.clockError != 0) {
-                // Calculate how much the clock will drift maximally after delay has
-                // passed. This indicates the amount of time we can be early
-                // _or_ late.
-                ostime_t drift = (int64_t)delay * LMIC.client.clockError / MAX_CLOCK_ERROR;
-
-                // Increase the receive window by twice the maximum drift (to
-                // compensate for a slow or a fast clock).
-                // decrease the rxtime to compensate for. Note that hsym is a
-                // *half* symbol time, so the factor 2 is hidden. First check if
-                // this would overflow (which can happen if the drift is very
-                // high, or the symbol time is low at high datarates).
-                delay -= drift;
-        }
-
-        LMIC.rxtime = LMIC.txend + delay;
+        // set LMIC.rxtime and LMIC.rxsyms:
+        LMIC.rxtime = LMIC.txend + LMICcore_adjustForDrift(delay + LMICcore_RxWindowOffset(hsym, LMICbandplan_RXLEN_FSK), hsym);
         os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
 }
 

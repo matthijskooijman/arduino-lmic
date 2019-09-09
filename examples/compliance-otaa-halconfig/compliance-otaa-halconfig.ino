@@ -310,8 +310,8 @@ void printAllRegisters(void) {
             printNl();
             printHex2(i);
         }
+        Serial.print(((i % 8) == 0) ? F(" - ") : F(" "));
         printHex2(regbuf[i]);
-        Serial.print(((i % 16) == 8) ? F(" - ") : F(" "));
     }
 
     // reset the radio, just in case the register dump caused issues.
@@ -630,7 +630,8 @@ void setup() {
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
 
-    LMIC_setClockError(1 * MAX_CLOCK_ERROR / 100);
+    // set clock rate error to 0.1%
+    LMIC_setClockError(1 * MAX_CLOCK_ERROR / 1000);
 
     // do the network-specific setup prior to join.
     setupForNetwork(false);
