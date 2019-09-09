@@ -2497,6 +2497,7 @@ static void engineUpdate_inner (void) {
             txbeg = LMIC.txend = LMICbandplan_nextTx(now);
             LMIC.opmode &= ~OP_NEXTCHNL;
         } else {
+            // no need to consider anything but LMIC.txend.
             txbeg = LMIC.txend;
         }
         // Delayed TX or waiting for duty cycle?
