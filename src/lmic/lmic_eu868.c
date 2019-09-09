@@ -82,7 +82,7 @@ static CONST_TABLE(ostime_t, DR2HSYM_osticks)[] = {
         us2osticksRound(128 << 3),  // DR_SF8
         us2osticksRound(128 << 2),  // DR_SF7
         us2osticksRound(128 << 1),  // DR_SF7B
-        us2osticksRound(80)       // FSK -- not used (time for 1/2 byte)
+        us2osticksRound(80)         // FSK -- time for 1/2 byte (unused by LMIC)
 };
 
 ostime_t LMICeu868_dr2hsym(uint8_t dr) {
