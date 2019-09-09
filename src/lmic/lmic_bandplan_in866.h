@@ -62,7 +62,8 @@ LMICin866_isValidBeacon1(const uint8_t *d) {
 void
 LMICin866_txDoneFSK(ostime_t delay, osjobcb_t func);
 
-#define LMICbandplan_txDoneFsk(delay, func) LMICin866_txDoneFSK(delay, func)
+#undef LMICbandplan_txDoneFSK
+#define LMICbandplan_txDoneFSK(delay, func) LMICin866_txDoneFSK(delay, func)
 
 #define LMICbandplan_getInitialDrJoin() (IN866_DR_SF7)
 

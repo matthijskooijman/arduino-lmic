@@ -78,7 +78,8 @@ void LMICas923_init(void);
 void
 LMICas923_txDoneFSK(ostime_t delay, osjobcb_t func);
 
-#define LMICbandplan_txDoneFsk(delay, func) LMICas923_txDoneFSK(delay, func)
+#undef LMICbandplan_txDoneFSK
+#define LMICbandplan_txDoneFSK(delay, func) LMICas923_txDoneFSK(delay, func)
 
 #define LMICbandplan_getInitialDrJoin() (AS923_DR_SF10)
 
