@@ -247,7 +247,7 @@ ostime_t LMICeu868_nextJoinState(void) {
 }
 #endif // !DISABLE_JOIN
 
-// txDone handling for FSK.
+// Class A txDone handling for FSK.
 void
 LMICeu868_txDoneFSK(ostime_t delay, osjobcb_t func) {
         LMIC.rxtime = LMIC.txend + delay - PRERX_FSK*us2osticksRound(160);

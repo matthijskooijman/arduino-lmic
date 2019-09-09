@@ -56,7 +56,7 @@ LMICin866_isValidBeacon1(const uint8_t *d) {
 
 // override default for LMICbandplan_isFSK()
 #undef LMICbandplan_isFSK
-#define LMICbandplan_isFSK()    (/* TX datarate */LMIC.rxsyms == IN866_DR_FSK)
+#define LMICbandplan_isFSK()    (/* TX datarate */LMIC.dndr == IN866_DR_FSK)
 
 // txDone handling for FSK.
 void

@@ -72,7 +72,7 @@ void LMICas923_init(void);
 
 // override default for LMICbandplan_isFSK()
 #undef LMICbandplan_isFSK
-#define LMICbandplan_isFSK()    (/* TX datarate */LMIC.rxsyms == AS923_DR_FSK)
+#define LMICbandplan_isFSK()    (/* RX datarate */LMIC.dndr == AS923_DR_FSK)
 
 // txDone handling for FSK.
 void
