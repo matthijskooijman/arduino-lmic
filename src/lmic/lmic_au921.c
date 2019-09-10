@@ -239,10 +239,23 @@ void LMICau921_updateTx(ostime_t txbeg) {
                 LMIC.freq = AU921_500kHz_UPFBASE + (chnl - 64)*AU921_500kHz_UPFSTEP;
         }
 
-        // Update global duty cycle stats
+        // Update global duty cycle stat and deal with dwell time.
+        u4_t dwellDelay;
+        u4_t globalDutyDelay;
+        dwellDelay = globalDutyDelay = 0;
+
         if (LMIC.globalDutyRate != 0) {
                 ostime_t airtime = calcAirTime(LMIC.rps, LMIC.dataLen);
-                LMIC.globalDutyAvail = txbeg + (airtime << LMIC.globalDutyRate);
+                globalDutyDelay = txbeg + (airtime << LMIC.globalDutyRate);
+        }
+        if (LMICau921_getUplinkDwellBit(LMIC.txParam)) {
+                dwellDelay = AS923_UPLINK_DWELL_TIME_osticks;
+        }
+        if (dwellDelay > globalDutyDelay) {
+                globalDutyDelay = dwellDelay;
+        }
+        if (globalDutyDelay != 0) {
+                LMIC.globalDutyAvail = txbeg + globalDutyDelay;
         }
 }
 
