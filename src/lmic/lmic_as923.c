@@ -85,7 +85,7 @@ LMICas923_getUplinkDwellBit(uint8_t mcmd_txparam) {
 static uint8_t
 LMICas923_getDownlinkDwellBit(uint8_t mcmd_txparam) {
         if (mcmd_txparam == 0xFF)
-                return 0;
+                return AS923_INITIAL_TxParam_DownlinkDwellTime;
 
         return (mcmd_txparam & MCMD_TxParam_RxDWELL_MASK) != 0;
 }
