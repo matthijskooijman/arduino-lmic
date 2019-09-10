@@ -631,7 +631,7 @@ void setup() {
     LMIC_reset();
 
     // set clock rate error to 0.1%
-    LMIC_setClockError(1 * MAX_CLOCK_ERROR / 1000);
+    //LMIC_setClockError(1 * MAX_CLOCK_ERROR / 1000);
 
     // do the network-specific setup prior to join.
     setupForNetwork(false);
@@ -967,20 +967,20 @@ uint32_t Stm32_CalibrateSystemClock(void)
     CalibLow = 0;
     CalibHigh = 0;
     mSecondLow = 0;
-    mSecondHigh = 2000;
+    mSecondHigh = 2000000;
     fHaveSeenLow = fHaveSeenHigh = false;
 
     /* loop until we have a new value */
     do	{
         /* meassure the # of millis per RTC second */
-        mSecond = MeasureMillisPerRtcSecond();
+        mSecond = MeasureMicrosPerRtcSecond();
 
         /* invariant: */
         if (Calib == CalibNew)
             mSecondNew = mSecond;
 
         /* if mSecond is low, this meaans we must increase the system clock */
-        if (mSecond <= 1000)
+        if (mSecond <= 1000000)
             {
             Serial.print('-');
             /*
@@ -1098,6 +1098,7 @@ uint32_t Stm32_CalibrateSystemClock(void)
 
     if (CalibNew != Calib)
         {
+        Serial.print(CalibNew < Calib ? '+' : '-');
         if (fCalibrateMSI)
             {
             __HAL_RCC_MSI_CALIBRATIONVALUE_ADJUST(CalibNew);
@@ -1109,11 +1110,13 @@ uint32_t Stm32_CalibrateSystemClock(void)
         delay(500);
         }
 
+    Serial.print(" 0x");
+    Serial.println(CalibNew, HEX);
     return CalibNew;
     }
 
 uint32_t
-MeasureMillisPerRtcSecond(
+MeasureMicrosPerRtcSecond(
     void
     )
     {
@@ -1128,7 +1131,7 @@ MeasureMillisPerRtcSecond(
     /* wait for a new second to start, and capture millis() in start */
     do	{
         now = RTC->TR & (RTC_TR_ST | RTC_TR_SU);
-        start = millis();
+        start = micros();
         } while (second == now);
 
     /* update our second of interest */
@@ -1140,7 +1143,7 @@ MeasureMillisPerRtcSecond(
     /* wait for the next second to start, and capture millis() */
     do	{
         now = RTC->TR & (RTC_TR_ST | RTC_TR_SU);
-        end = millis();
+        end = micros();
         } while (second == now);
 
     /* return the delta */
