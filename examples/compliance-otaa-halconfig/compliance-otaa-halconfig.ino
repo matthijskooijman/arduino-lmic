@@ -93,6 +93,7 @@ public:
         uint32_t    datum;
         ostime_t    time;
         ostime_t    txend;
+        ostime_t    globalDutyAvail;
         u4_t        freq;
         u2_t        opmode;
         u2_t        fcntDn;
@@ -122,8 +123,10 @@ public:
         }
         if (i != m_head) {
             auto const pn = &m_queue[m_tail];
+            pn->job = LMIC.osjob;
             pn->time = os_getTime();
             pn->txend = LMIC.txend;
+            pn->globalDutyAvail = LMIC.globalDutyAvail;
             pn->event = event;
             pn->pMessage = pMessage;
             pn->datum = datum;
@@ -173,17 +176,23 @@ hal_failure_handler_t log_assertion;
 void log_assertion(const char *pMessage, uint16_t line) {
     eventQueue.putEvent(ev_t(-3), pMessage, line);
     eventPrintAll();
-    Serial.println("***HALTED BY ASSERT***");
+    Serial.println(F("***HALTED BY ASSERT***"));
     while (true)
         yield();
 }
 
-uint8_t lastTxChannel;
-bool lastTxStart;
+bool lastWasTxStart;
+uint32_t lastTxStartTime;
 
 void myEventCb(void *pUserData, ev_t ev) {
     eventQueue.putEvent(ev);
 
+    if (ev == EV_TXSTART) {
+        lastWasTxStart = true;
+        lastTxStartTime = millis();
+    } else if (ev == EV_RXSTART) {
+        lastWasTxStart = false;
+    }
     if (ev == EV_JOINING) {
         setupForNetwork(true);
     } else if (ev == EV_JOINED) {
@@ -193,7 +202,7 @@ void myEventCb(void *pUserData, ev_t ev) {
 
 void eventPrint(cEventQueue::eventnode_t &e);
 void printFcnts(cEventQueue::eventnode_t &e);
-
+void printTxend(cEventQueue::eventnode_t &e);
 
 void eventPrintAll(void) {
     while (eventPrintOne())
@@ -245,19 +254,23 @@ void printHex4(unsigned v) {
     printHex2(v);
 }
 
+void printSpace(void) {
+    Serial.print(' ');
+}
+
 void printFreq(u4_t freq) {
     Serial.print(F(": freq="));
     Serial.print(freq / 1000000);
-    Serial.print(F("."));
+    Serial.print('.');
     Serial.print((freq % 1000000) / 100000);
 }
 
 void printRps(rps_t rps) {
     Serial.print(F(" rps=0x")); printHex2(rps);
     Serial.print(F(" (")); Serial.print(getSfName(rps));
-    Serial.print(F(" ")); Serial.print(getBwName(rps));
-    Serial.print(F(" ")); Serial.print(getCrName(rps));
-    Serial.print(F(" ")); Serial.print(getCrcName(rps));
+    printSpace(); Serial.print(getBwName(rps));
+    printSpace(); Serial.print(getCrName(rps));
+    printSpace(); Serial.print(getCrcName(rps));
     Serial.print(F(" IH=")); Serial.print(unsigned(getIh(rps)));
     Serial.print(')');
 }
@@ -268,8 +281,9 @@ void printOpmode(uint16_t opmode, char sep = ',') {
     Serial.print(F(" opmode=")); Serial.print(opmode, HEX);
 }
 
-void printTxend(ostime_t txend) {
-    Serial.print(F(", txend=")); Serial.print(txend);
+void printTxend(cEventQueue::eventnode_t &e) {
+    Serial.print(F(", txend=")); Serial.print(e.txend);
+    Serial.print(F(", avail=")); Serial.print(e.globalDutyAvail);
 }
 
 void printTxChnl(u1_t txChnl) {
@@ -299,6 +313,7 @@ void printFcnts(cEventQueue::eventnode_t &e) {
     printHex4(e.fcntDn);
 }
 
+#if LMIC_ENABLE_event_logging
 // dump all the registers.  Must have printf setup.
 void printAllRegisters(void) {
     uint8_t regbuf[0x80];
@@ -324,6 +339,7 @@ void printAllRegisters(void) {
     const uint8_t opmode = 0x88;    // LoRa and sleep.
     hal_spi_write(0x81, &opmode, 1);
 }
+#endif
 
 void printNl(void) {
     Serial.println();
@@ -347,13 +363,15 @@ void eventPrint(cEventQueue::eventnode_t &e) {
         Serial.print(e.pMessage);
         Serial.print(F(", line ")); Serial.print(e.datum);
         printFreq(e.freq);
-        printTxend(e.txend);
+        printTxend(e);
         printTxChnl(e.txChnl);
         printRps(e.rps);
         printOpmode(e.opmode);
         printTxrxflags(e.txrxFlags);
         printSaveIrqFlags(e.saveIrqFlags);
+#if LMIC_ENABLE_event_logging
         printAllRegisters();
+#endif
     } else {
         if (ev < sizeof(evNames) / sizeof(evNames[0])) {
             Serial.print(evNames[ev]);
@@ -415,8 +433,9 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printRps(e.rps);
                 printOpmode(e.opmode);
                 printf(" irqLevel %u", hal_getIrqLevel());
-
+#if LMIC_ENABLE_event_logging
                 printAllRegisters();
+#endif
                 break;
 
             case EV_REJOIN_FAILED:
@@ -429,6 +448,7 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printRps(e.rps);
                 printTxrxflags(e.txrxFlags);
                 printFcnts(e);
+                printTxend(e);
                 break;
             case EV_LOST_TSYNC:
                 break;
@@ -455,7 +475,7 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printRps(e.rps);
                 printDatarate(e.datarate);
                 printOpmode(e.opmode);
-                printTxend(e.txend);
+                printTxend(e);
                 break;
 
             case EV_RXSTART:
@@ -463,7 +483,7 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printRps(e.rps);
                 printDatarate(e.datarate);
                 printOpmode(e.opmode);
-                printTxend(e.txend);
+                printTxend(e);
                 Serial.print(F(", delta ms ")); Serial.print(osticks2ms(e.time - e.txend));
                 break;
 
@@ -701,9 +721,20 @@ void setupForNetwork(bool preJoin) {
 
 void loop() {
     os_runloop_once();
+
+    if (lastWasTxStart && millis() - lastTxStartTime > 10000) {
+        /* ugh. TX timed out */
+        Serial.println(F("Tx timed out"));
+#if LMIC_ENABLE_event_logging
+        printAllRegisters();
+#endif
+        LMIC_clrTxData();
+        lastWasTxStart = false;
+    }
+
     if ((LMIC.opmode & OP_TXRXPEND) == 0 &&
         !os_queryTimeCriticalJobs(ms2osticks(1000))) {
-           eventPrintOne();
+           eventPrintAll();
     }
 }
 
