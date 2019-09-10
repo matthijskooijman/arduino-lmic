@@ -35,9 +35,7 @@ Description:
 |
 \****************************************************************************/
 
-static void acDoJoin(void);
 static void acEnterActiveMode(void);
-static void acEnterTestMode(void);
 static void acExitActiveMode(void);
 static void acSendUplink(void);
 static void acSetTimer(ostime_t);
@@ -55,7 +53,9 @@ static void evEchoCommand(const uint8_t *pMessage, size_t nMessage);
 static lmic_event_cb_t lmicEventCb;
 static lmic_txmessage_cb_t sendUplinkCompleteCb;
 static osjobcbfn_t timerExpiredCb;
-static const char *txSuccessToString(int fSuccess);
+
+/* this is declared global so the optimizer can chuck it without warnings */
+const char *LMICcompliance_txSuccessToString(int fSuccess);
 
 /****************************************************************************\
 |
@@ -655,9 +655,6 @@ static void acEnterActiveMode(void) {
     LMIC_Compliance.state = LMIC_COMPLIANCE_STATE_ACTIVE;
 }
 
-static void acEnterTestMode(void) {
-}
-
 void acSetTimer(ostime_t delay) {
     os_setTimedCallback(&LMIC_Compliance.timerJob, os_getTime() + delay, timerExpiredCb);
 }
@@ -739,7 +736,7 @@ static void acSendUplink(void) {
 
 static void sendUplinkCompleteCb(void *pUserData, int fSuccess) {
     LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE;
-    LMIC_COMPLIANCE_PRINTF("%s(%s)\n", __func__, txSuccessToString(fSuccess));
+    LMIC_COMPLIANCE_PRINTF("%s(%s)\n", __func__, LMICcompliance_txSuccessToString(fSuccess));
     fsmEvalDeferred();
 }
 
@@ -762,6 +759,6 @@ static void acSendUplinkBuffer(void) {
     }
 }
 
-static const char *txSuccessToString(int fSuccess) {
+const char *LMICcompliance_txSuccessToString(int fSuccess) {
     return fSuccess ? "ok" : "failed";
 }

@@ -803,7 +803,7 @@ applyAdrRequests(
 
 static int
 scan_mac_cmds_link_adr(
-    const char *opts,
+    const uint8_t *opts,
     int olen,
     bit_t *presponse_fit
     )
@@ -868,7 +868,6 @@ scan_mac_cmds(
     int port
     ) {
     int oidx = 0;
-    bit_t fSawAdrReq = 0;
     uint8_t cmd;
 
     LMIC.pendMacLen = 0;
