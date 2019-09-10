@@ -67,7 +67,7 @@ static bit_t
 LMICau921_getUplinkDwellBit() {
         // if uninitialized, return default.
         if (LMIC.txParam == 0xFF) {
-                return 0;
+                return AU921_INITIAL_TxParam_UplinkDwellTime;
         }
         return (LMIC.txParam & MCMD_TxParam_TxDWELL_MASK) != 0;
 }

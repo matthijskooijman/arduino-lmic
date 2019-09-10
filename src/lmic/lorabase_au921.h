@@ -76,6 +76,11 @@ enum {
 enum {
         AU921_TX_EIRP_MAX_DBM = 30      // 30 dBm
 };
+enum {
+        // initial value of UplinkDwellTime before TxParamSetupReq received.
+        AU921_INITIAL_TxParam_UplinkDwellTime = 1,
+        AU921_UPLINK_DWELL_TIME_osticks = sec2osticks(20),
+};
 
 enum { DR_PAGE_AU921 = 0x10 * (LMIC_REGION_au921 - 1) };
 

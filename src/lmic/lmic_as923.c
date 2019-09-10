@@ -77,7 +77,7 @@ static CONST_TABLE(u1_t, maxFrameLens_dwell1)[] = {
 static uint8_t
 LMICas923_getUplinkDwellBit(uint8_t mcmd_txparam) {
         if (mcmd_txparam == 0xFF)
-                return 0;
+                return AS923_INITIAL_TxParam_UplinkDwellTime;
 
         return (mcmd_txparam & MCMD_TxParam_TxDWELL_MASK) != 0;
 }
