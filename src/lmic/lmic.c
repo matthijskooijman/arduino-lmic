@@ -1597,7 +1597,7 @@ static bit_t processJoinAccept (void) {
     ASSERT((LMIC.opmode & (OP_JOINING|OP_REJOIN))!=0);
     //
     // XXX(tmm@mcci.com) OP_REJOIN confuses me, and I'm not sure why we're
-    // adjusting DRs here. We've just recevied a join accept, and the
+    // adjusting DRs here. We've just received a join accept, and the
     // datarate therefore shouldn't be in play.  In effect, we set the
     // initial data rate based on the number of times we tried to rejoin.
     //
@@ -1672,18 +1672,10 @@ static bit_t processJoinAccept_nojoinframe(void) {
         // claimed to return a delay but really returns 0 or 1.
         // Once we update as923 to return failed after dr2, we
         // can take out this #if.
-#if CFG_region != LMIC_REGION_as923
         os_setTimedCallback(&LMIC.osjob, os_getTime()+failed,
                             failed
                             ? FUNC_ADDR(onJoinFailed)      // one JOIN iteration done and failed
                             : FUNC_ADDR(runEngineUpdate)); // next step to be delayed
-#else
-       // in the join of AS923 v1.1 older, only DR2 is used. Therefore,
-       // not much improvement when it handles two different behavior;
-       // onJoinFailed or runEngineUpdate.
-        os_setTimedCallback(&LMIC.osjob, os_getTime()+failed,
-                            FUNC_ADDR(onJoinFailed));
-#endif
         // stop this join process.
         return 1;
 }

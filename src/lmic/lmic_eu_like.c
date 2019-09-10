@@ -174,24 +174,25 @@ ostime_t LMICeulike_nextJoinState(uint8_t nDefaultChannels) {
         if ((++LMIC.txCnt % nDefaultChannels) == 0) {
                 // Lower DR every nth try (having all default channels with same DR)
                 //
-                // TODO(tmm@mcci.com) add new DR_REGIN_JOIN_MIN instead of LORAWAN_DR0;
+                // TODO(tmm@mcci.com) add new DR_REGION_JOIN_MIN instead of LORAWAN_DR0;
                 // then we can eliminate the LMIC_REGION_as923 below because we'll set
                 // the failed flag here. This will cause the outer caller to take the
                 // appropriate join path. Or add new LMICeulike_GetLowestJoinDR()
                 //
+
+// TODO(tmm@mcci.com) - see above; please remove regional dependency from this file.
+#if CFG_region == LMIC_REGION_as923
+                // in the join of AS923 v1.1 or older, only DR2 is used.
+                // no need to change the DR.
+                LMIC.datarate = AS923_DR_SF10;
+                failed = 1;
+#else
                 if (LMIC.datarate == LORAWAN_DR0)
                         failed = 1; // we have tried all DR - signal EV_JOIN_FAILED
-                else
-                {
-// TODO(tmm@mcci.com) - see above; please remove regional dependency from this file.
-#if CFG_region != LMIC_REGION_as923
+                else {
                         LMICcore_setDrJoin(DRCHG_NOJACC, decDR((dr_t)LMIC.datarate));
-#else
-                        // in the join of AS923 v1.1 or older, only DR2 is used.
-                        // no need to change the DR.
-                        LMIC.datarate = AS923_DR_SF10;
-#endif
                 }
+#endif
         }
         // Clear NEXTCHNL because join state engine controls channel hopping
         LMIC.opmode &= ~OP_NEXTCHNL;
