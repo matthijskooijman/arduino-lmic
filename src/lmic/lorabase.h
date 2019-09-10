@@ -33,7 +33,7 @@ TYPEDEF_xref2rps_t;
 
 enum { ILLEGAL_RPS = 0xFF };
 enum { DR_PAGE_EU868 = 0x00 };
-enum { DR_PAGE_US915 = 0x10 };
+enum { DR_PAGE_Us915 = 0x10 };
 
 // Global maximum frame length
 enum { STD_PREAMBLE_LEN  =  8 };
@@ -70,18 +70,18 @@ enum { DR_PAGE = DR_PAGE_EU868 };
 //  g2 : 0.1%  14dBm
 //  g3 :  10%  27dBm
 //                 freq             band     datarates
-enum { EU868_F1 = 868100000,      // g1   SF7-12
-       EU868_F2 = 868300000,      // g1   SF7-12 FSK SF7/250
-       EU868_F3 = 868500000,      // g1   SF7-12
-       EU868_F4 = 868850000,      // g2   SF7-12
-       EU868_F5 = 869050000,      // g2   SF7-12
-       EU868_F6 = 869525000,      // g3   SF7-12
-       EU868_J4 = 864100000,      // g2   SF7-12  used during join
-       EU868_J5 = 864300000,      // g2   SF7-12   ditto
-       EU868_J6 = 864500000,      // g2   SF7-12   ditto
+enum { EU868_F1 = 433175000,      // g1   SF7-12
+       EU868_F2 = 433375000,      // g1   SF7-12 FSK SF7/250
+       EU868_F3 = 433575000,      // g1   SF7-12
+       EU868_F4 = 433775000,      // g2   SF7-12
+       EU868_F5 = 433975000,      // g2   SF7-12
+       EU868_F6 = 434175000,      // g3   SF7-12
+       EU868_J4 = 434375000,      // g2   SF7-12  used during join
+       EU868_J5 = 434575000,      // g2   SF7-12   ditto
+       EU868_J6 = 434775000,      // g2   SF7-12   ditto
 };
-enum { EU868_FREQ_MIN = 863000000,
-       EU868_FREQ_MAX = 870000000 };
+enum { EU868_FREQ_MIN = 433050000,
+       EU868_FREQ_MAX = 434900000 };
 
 enum { CHNL_PING         = 5 };
 enum { FREQ_PING         = EU868_F6 };  // default ping freq
