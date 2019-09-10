@@ -57,9 +57,7 @@ enum lmic_compliance_eventflags_e {
     LMIC_COMPLIANCE_EVENT_DEACTIVATE    = 1u << 1,
     LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED = 1u << 2,
     LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE = 1u << 3,
-    LMIC_COMPLIANCE_EVENT_JOIN_CMD      = 1u << 4,
-    LMIC_COMPLIANCE_EVENT_JOINED        = 1u << 5,
-    LMIC_COMPLIANCE_EVENT_ECHO_REQUEST  = 1u << 6,
+    LMIC_COMPLIANCE_EVENT_ECHO_REQUEST  = 1u << 4,
 };
 
 typedef uint8_t lmic_compliance_fsmflags_t;
@@ -76,15 +74,15 @@ enum lmic_compliance_fsmstate_e {
     LMIC_COMPLIANCE_FSMSTATE_ACTIVE = 2,
     LMIC_COMPLIANCE_FSMSTATE_INACTIVE = 3,
     LMIC_COMPLIANCE_FSMSTATE_TESTMODE = 4,   // sending test uplinks
-    LMIC_COMPLIANCE_FSMSTATE_JOINING = 5,    // joining (under command)
-    LMIC_COMPLIANCE_FSMSTATE_ECHOING = 6,
-    LMIC_COMPLIANCE_FSMSTATE_REPORTING = 7,
-    LMIC_COMPLIANCE_FSMSTATE_RECOVERY = 8,
+    LMIC_COMPLIANCE_FSMSTATE_ECHOING = 5,
+    LMIC_COMPLIANCE_FSMSTATE_REPORTING = 6,
+    LMIC_COMPLIANCE_FSMSTATE_RECOVERY = 7,
+    LMIC_COMPLIANCE_FSMSTATE_TXBUSY = 8,
 };
 
 #define LMIC_COMPLIANCE_FSMSTATE__NAMES   \
-    "INITIAL", "NOCHANGE", "ACTIVE", "INACTIVE", "TESTMODE", "JOINING",  \
-    "ECHOING", "REPORTING", "RECOVERY"
+    "INITIAL", "NOCHANGE", "ACTIVE", "INACTIVE", "TESTMODE",   \
+    "ECHOING", "REPORTING", "RECOVERY", "TXBUSY"
 
 typedef struct lmic_compliance_eventcb_s lmic_compliance_eventcb_t;
 struct lmic_compliance_eventcb_s {
@@ -92,6 +90,12 @@ struct lmic_compliance_eventcb_s {
 	lmic_event_cb_t		*pEventCb;
 	// save the user's event data while active.
 	void			*pUserData;
+};
+
+// structure for saving band settings during test
+typedef struct lmic_compliance_band_s lmic_compliance_band_t;
+struct lmic_compliance_band_s {
+    u2_t    txcap;  // saved 1/duty cycle
 };
 
 // the state of the compliance engine.
@@ -103,7 +107,11 @@ struct lmic_compliance_s {
         lmic_compliance_eventcb_t   saveEvent;      // the user's event handler.
 
         // uint32
+
         // uint16
+#if CFG_LMIC_EU_like
+        lmic_compliance_band_t      saveBands[MAX_BANDS];
+#endif // CFG_LMIC_EU_like
 
         // we are required to maintain a downlink count
         // that is reset on join/test entry and incremented for

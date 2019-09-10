@@ -61,12 +61,6 @@ LMICkr920_isValidBeacon1(const uint8_t *d) {
 #undef LMICbandplan_isFSK
 #define LMICbandplan_isFSK()    (/* always false */ 0)
 
-// txDone handling for FSK.
-void
-LMICkr920_txDoneFSK(ostime_t delay, osjobcb_t func);
-
-#define LMICbandplan_txDoneFsk(delay, func) LMICkr920_txDoneFSK(delay, func)
-
 #define LMICbandplan_getInitialDrJoin() (KR920_DR_SF7)
 
 void LMICkr920_setBcnRxParams(void);

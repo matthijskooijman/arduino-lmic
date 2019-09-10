@@ -35,9 +35,7 @@ Description:
 |
 \****************************************************************************/
 
-static void acDoJoin(void);
 static void acEnterActiveMode(void);
-static void acEnterTestMode(void);
 static void acExitActiveMode(void);
 static void acSendUplink(void);
 static void acSetTimer(ostime_t);
@@ -55,7 +53,9 @@ static void evEchoCommand(const uint8_t *pMessage, size_t nMessage);
 static lmic_event_cb_t lmicEventCb;
 static lmic_txmessage_cb_t sendUplinkCompleteCb;
 static osjobcbfn_t timerExpiredCb;
-static const char *txSuccessToString(int fSuccess);
+
+/* this is declared global so the optimizer can chuck it without warnings */
+const char *LMICcompliance_txSuccessToString(int fSuccess);
 
 /****************************************************************************\
 |
@@ -212,6 +212,17 @@ static void evActivate(void) {
         LMIC_Compliance.saveEvent.pEventCb = LMIC.client.eventCb;
         LMIC_Compliance.saveEvent.pUserData = LMIC.client.eventUserData;
 
+#if CFG_LMIC_EU_like
+        band_t *b = LMIC.bands;
+        lmic_compliance_band_t *b_save = LMIC_Compliance.saveBands;
+
+        for (; b < &LMIC.bands[MAX_BANDS]; ++b, ++b_save) {
+            b_save->txcap = b->txcap;
+            b->txcap = 1;
+            b->avail = os_getTime();
+        }
+#endif // CFG_LMIC_EU_like
+
         LMIC_registerEventCb(lmicEventCb, NULL);
 
         fsmEvalDeferred();
@@ -272,7 +283,7 @@ static void evMessage(
             break;
             }
         case LORAWAN_COMPLIANCE_CMD_LINK: {
-            // not clear what theis request does.
+            // not clear what this request does.
             break;
         }
         case LORAWAN_COMPLIANCE_CMD_JOIN: {
@@ -296,6 +307,9 @@ Definition:
 
 Description:
         We report a deactivation event, and re-evaluate the FSM.
+        We also set a flag so that we're return the appropriate
+        status from the compliance entry point to the real
+        application.
 
 Returns:
         No explicit result.
@@ -309,9 +323,18 @@ static void evDeactivate(void) {
     // restore user's event handler.
     LMIC_registerEventCb(LMIC_Compliance.saveEvent.pEventCb, LMIC_Compliance.saveEvent.pUserData);
 
+    // restore band settings
+#if CFG_LMIC_EU_like
+    band_t *b = LMIC.bands;
+    lmic_compliance_band_t const *b_save = LMIC_Compliance.saveBands;
+
+    for (; b < &LMIC.bands[MAX_BANDS]; ++b, ++b_save) {
+        b->txcap = b_save->txcap;
+    }
+#endif // CFG_LMIC_EU_like
+
     fsmEvalDeferred();
 }
-
 
 /*
 
@@ -324,8 +347,10 @@ Definition:
         void evJoinCommand(void);
 
 Description:
-        We report a join-command event, and the kick the FSM. This
-        will cause the FSM to coordinate sending and the other activities.
+        We unjoin from the network, and then report a deactivation
+        of test mode. That will get us out of test mode and back
+        to the compliance app. The next message send will trigger
+        a join.
 
 Returns:
         No explicit result.
@@ -335,8 +360,8 @@ Returns:
 static void evJoinCommand(
     void
 ) {
-    LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_JOIN_CMD;
-    fsmEvalDeferred();
+    LMIC_unjoin();
+    evDeactivate();
 }
 
 /*
@@ -550,34 +575,33 @@ fsmDispatch(
                 acEnterActiveMode();
                 acSetTimer(sec2osticks(1));
             }
-            if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED))
+            if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_TESTMODE;
+            }
+            break;
+        }
+
+        case LMIC_COMPLIANCE_FSMSTATE_TXBUSY: {
+            if (fEntry) {
+                acSetTimer(sec2osticks(1));
+            }
+            if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED)) {
+                newState = LMIC_COMPLIANCE_FSMSTATE_TESTMODE;
+            }
             break;
         }
 
         case LMIC_COMPLIANCE_FSMSTATE_TESTMODE: {
             if (LMIC.opmode & OP_TXDATA) {
-                // stay here until we can do something
-                break;
+                // go back and wait some more.
+                newState = LMIC_COMPLIANCE_FSMSTATE_TXBUSY;
             }
             if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_DEACTIVATE)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_INACTIVE;
-            } else if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_JOIN_CMD)) {
-                newState = LMIC_COMPLIANCE_FSMSTATE_JOINING;
             } else if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_ECHO_REQUEST)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_ECHOING;
             } else {
                 newState = LMIC_COMPLIANCE_FSMSTATE_REPORTING;
-            }
-            break;
-        }
-
-        case LMIC_COMPLIANCE_FSMSTATE_JOINING: {
-            if (fEntry)
-                acDoJoin();
-
-            if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_JOINED)) {
-                newState = LMIC_COMPLIANCE_FSMSTATE_RECOVERY;
             }
             break;
         }
@@ -605,8 +629,7 @@ fsmDispatch(
         case LMIC_COMPLIANCE_FSMSTATE_RECOVERY: {
             if (fEntry) {
                 if (LMIC_Compliance.eventflags & (LMIC_COMPLIANCE_EVENT_DEACTIVATE |
-                                                  LMIC_COMPLIANCE_EVENT_ECHO_REQUEST |
-                                                  LMIC_COMPLIANCE_EVENT_JOIN_CMD)) {
+                                                  LMIC_COMPLIANCE_EVENT_ECHO_REQUEST)) {
                     acSetTimer(sec2osticks(1));
                 } else {
                     acSetTimer(sec2osticks(5));
@@ -616,6 +639,7 @@ fsmDispatch(
             if (eventflags_TestAndClear(LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED)) {
                 newState = LMIC_COMPLIANCE_FSMSTATE_TESTMODE;
             }
+            break;
         }
 
         default: {
@@ -629,9 +653,6 @@ fsmDispatch(
 static void acEnterActiveMode(void) {
     // indicate to the outer world that we're active.
     LMIC_Compliance.state = LMIC_COMPLIANCE_STATE_ACTIVE;
-}
-
-static void acEnterTestMode(void) {
 }
 
 void acSetTimer(ostime_t delay) {
@@ -657,10 +678,7 @@ static void lmicEventCb(
     }
 
     // if it's a EV_JOINED, or a TXCMOMPLETE, we should tell the FSM.
-    if (ev == EV_JOINED) {
-        LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_JOINED;
-        fsmEvalDeferred();
-    } else if (ev == EV_TXCOMPLETE) {
+    if ((UINT32_C(1) << ev) & (EV_JOINED | EV_TXCOMPLETE)) {
         fsmEvalDeferred();
     }
 }
@@ -718,7 +736,7 @@ static void acSendUplink(void) {
 
 static void sendUplinkCompleteCb(void *pUserData, int fSuccess) {
     LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE;
-    LMIC_COMPLIANCE_PRINTF("%s(%s)\n", __func__, txSuccessToString(fSuccess));
+    LMIC_COMPLIANCE_PRINTF("%s(%s)\n", __func__, LMICcompliance_txSuccessToString(fSuccess));
     fsmEvalDeferred();
 }
 
@@ -741,16 +759,6 @@ static void acSendUplinkBuffer(void) {
     }
 }
 
-static const char *txSuccessToString(int fSuccess) {
+const char *LMICcompliance_txSuccessToString(int fSuccess) {
     return fSuccess ? "ok" : "failed";
-}
-
-static void acDoJoin(void) {
-    LMIC_COMPLIANCE_PRINTF("acDoJoin\n");
-
-    LMIC_Compliance.eventflags &= ~LMIC_COMPLIANCE_EVENT_JOINED;
-
-    LMIC_unjoin();
-    LMIC_Compliance.downlinkCount = 0;
-    LMIC_startJoining();
 }

@@ -306,11 +306,11 @@ static ostime_t calcRxWindow (u1_t secs, dr_t dr) {
         rxoff = (LMIC.drift * (ostime_t)secs) >> BCN_INTV_exp;
         err = (LMIC.lastDriftDiff * (ostime_t)secs) >> BCN_INTV_exp;
     }
-    u1_t rxsyms = MINRX_SYMS;
+    u1_t rxsyms = LMICbandplan_MINRX_SYMS_LoRa_ClassB;
     err += (ostime_t)LMIC.maxDriftDiff * LMIC.missedBcns;
-    LMIC.rxsyms = MINRX_SYMS + (err / dr2hsym(dr));
+    LMIC.rxsyms = LMICbandplan_MINRX_SYMS_LoRa_ClassB + (err / dr2hsym(dr));
 
-    return (rxsyms-PAMBL_SYMS) * dr2hsym(dr) + rxoff;
+    return (rxsyms-LMICbandplan_PAMBL_SYMS) * dr2hsym(dr) + rxoff;
 }
 
 
@@ -323,8 +323,8 @@ static void calcBcnRxWindowFromMillis (u1_t ms, bit_t ini) {
         LMIC.bcninfo.flags |= BCN_NODRIFT|BCN_NODDIFF;
     }
     ostime_t hsym = dr2hsym(DR_BCN);
-    LMIC.bcnRxsyms = MINRX_SYMS + ms2osticksCeil(ms) / hsym;
-    LMIC.bcnRxtime = LMIC.bcninfo.txtime + BCN_INTV_osticks - (LMIC.bcnRxsyms-PAMBL_SYMS) * hsym;
+    LMIC.bcnRxsyms = LMICbandplan_MINRX_SYMS_LoRa_ClassB + ms2osticksCeil(ms) / hsym;
+    LMIC.bcnRxtime = LMIC.bcninfo.txtime + BCN_INTV_osticks - (LMIC.bcnRxsyms-LMICbandplan_PAMBL_SYMS) * hsym;
 }
 #endif // !DISABLE_BEACONS
 
@@ -803,7 +803,7 @@ applyAdrRequests(
 
 static int
 scan_mac_cmds_link_adr(
-    const char *opts,
+    const uint8_t *opts,
     int olen,
     bit_t *presponse_fit
     )
@@ -868,7 +868,6 @@ scan_mac_cmds(
     int port
     ) {
     int oidx = 0;
-    bit_t fSawAdrReq = 0;
     uint8_t cmd;
 
     LMIC.pendMacLen = 0;
@@ -1232,7 +1231,7 @@ static bit_t decodeFrame (void) {
     }
 
     if( !aes_verifyMic(LMIC.nwkKey, LMIC.devaddr, seqno, /*dn*/1, d, pend) ) {
-        LMICOS_logEventUint32("decodeFrame: bad MIC", seqno);
+        LMICOS_logEventUint32("decodeFrame: bad MIC", os_rlsbf4(&d[pend]));
         EV(spe3Cond, ERR, (e_.reason = EV::spe3Cond_t::CORRUPTED_MIC,
                            e_.eui1   = MAIN::CDEV->getEui(),
                            e_.info1  = Base::lsbf4(&d[pend]),
@@ -1421,14 +1420,7 @@ static void setupRx2 (void) {
     radioRx();
 }
 
-
-static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
-    ostime_t hsym = dr2hsym(dr);
-
-    LMIC.rxsyms = MINRX_SYMS;
-
-    // If a clock error is specified, compensate for it by extending the
-    // receive window
+ostime_t LMICcore_adjustForDrift (ostime_t delay, ostime_t hsym) {
     if (LMIC.client.clockError != 0) {
         // Calculate how much the clock will drift maximally after delay has
         // passed. This indicates the amount of time we can be early
@@ -1437,20 +1429,47 @@ static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
 
         // Increase the receive window by twice the maximum drift (to
         // compensate for a slow or a fast clock).
-        // decrease the rxtime to compensate for. Note that hsym is a
-        // *half* symbol time, so the factor 2 is hidden. First check if
-        // this would overflow (which can happen if the drift is very
-        // high, or the symbol time is low at high datarates).
-        if ((255 - LMIC.rxsyms) * hsym < drift)
+        delay -= drift;
+
+        // adjust rxsyms (the size of the window in syms) according to our
+        // uncertainty. do this in a strange order to avoid a divide if we can.
+        // rely on hsym = Tsym / 2
+        if ((255 - LMIC.rxsyms) * hsym < drift) {
             LMIC.rxsyms = 255;
-        else
-            LMIC.rxsyms += drift / hsym;
-
+        } else {
+            LMIC.rxsyms = (u1_t) (LMIC.rxsyms + drift / hsym);
+        }
     }
+    return delay;
+}
 
-    // Center the receive window on the center of the expected preamble
+ostime_t LMICcore_RxWindowOffset (ostime_t hsym, u1_t rxsyms_in) {
+    ostime_t const Tsym = 2 * hsym;
+    ostime_t rxsyms;
+    ostime_t rxoffset;
+
+    rxsyms = ((2 * (int)rxsyms_in - 8) * Tsym + LMICbandplan_RX_ERROR_ABS_osticks * 2 + Tsym - 1) / Tsym;
+    if (rxsyms < rxsyms_in) {
+        rxsyms = rxsyms_in;
+    }
+    LMIC.rxsyms = (u1_t) rxsyms;
+
+    rxoffset = (8 - rxsyms) * hsym - LMICbandplan_RX_EXTRA_MARGIN_osticks;
+
+    return rxoffset;
+}
+
+static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
+    ostime_t hsym = dr2hsym(dr);
+
+    // Center the receive window on the center of the expected preamble and timeout.
     // (again note that hsym is half a sumbol time, so no /2 needed)
-    LMIC.rxtime = LMIC.txend + delay + PAMBL_SYMS * hsym - LMIC.rxsyms * hsym;
+    // we leave RX_RAMPUP unadjusted for the clock drift.  The IBM LMIC generates delays
+    // that are too long for SF12, and too short for other SFs, so we follow the
+    // Semtech reference code.
+    //
+    // This also sets LMIC.rxsyms.
+    LMIC.rxtime = LMIC.txend + LMICcore_adjustForDrift(delay + LMICcore_RxWindowOffset(hsym, LMICbandplan_MINRX_SYMS_LoRa_ClassA), hsym);
 
     LMIC_X_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": sched Rx12 %"LMIC_PRId_ostime_t"\n", os_getTime(), LMIC.rxtime - RX_RAMPUP);
     os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
@@ -2453,8 +2472,9 @@ static void startRxPing (xref2osjob_t osjob) {
 #endif // !DISABLE_PING
 
 
-// Decide what to do next for the MAC layer of a device
-static void engineUpdate (void) {
+// Decide what to do next for the MAC layer of a device. Inner part.
+// Only called from outer part.
+static void engineUpdate_inner (void) {
 #if LMIC_DEBUG_LEVEL > 0
     LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": engineUpdate, opmode=0x%x\n", os_getTime(), LMIC.opmode);
 #endif
@@ -2496,6 +2516,7 @@ static void engineUpdate (void) {
             txbeg = LMIC.txend = LMICbandplan_nextTx(now);
             LMIC.opmode &= ~OP_NEXTCHNL;
         } else {
+            // no need to consider anything but LMIC.txend.
             txbeg = LMIC.txend;
         }
         // Delayed TX or waiting for duty cycle?
@@ -2637,6 +2658,24 @@ static void engineUpdate (void) {
     os_setTimedCallback(&LMIC.osjob, txbeg-TX_RAMPUP, FUNC_ADDR(runEngineUpdate));
 }
 
+// Decide what to do next for the MAC layer of a device.
+// Outer part. Safe to call from anywhere; defers if it
+// detects a recursive call.
+static void engineUpdate (void) {
+    lmic_engine_update_state_t state;
+
+    state = LMIC.engineUpdateState;
+    if (state == lmic_EngineUpdateState_idle) {
+        LMIC.engineUpdateState = lmic_EngineUpdateState_busy;
+        do  {
+            engineUpdate_inner();
+            state = LMIC.engineUpdateState - 1;
+            LMIC.engineUpdateState = state;
+            } while (state != lmic_EngineUpdateState_idle);
+    } else {
+        LMIC.engineUpdateState = lmic_EngineUpdateState_again;
+    }
+}
 
 void LMIC_setAdrMode (bit_t enabled) {
     LMIC.adrEnabled = enabled ? FCT_ADREN : 0;

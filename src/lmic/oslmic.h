@@ -119,11 +119,19 @@ void radio_monitor_rssi(ostime_t n, oslmic_radio_rssi_t *pRssi);
 
 //================================================================================
 
-
 #ifndef RX_RAMPUP
+// RX_RAMPUP specifies the extra time we must allow to set up an RX event due
+// to platform issues. It's specified in units of ostime_t. It must reflect
+// platform jitter and latency, as well as the speed of the LMIC when running
+// on this plaform.
 #define RX_RAMPUP  (us2osticks(2000))
 #endif
+
 #ifndef TX_RAMPUP
+// TX_RAMPUP specifies the extra time we must allow to set up a TX event) due
+// to platform issues. It's specified in units of ostime_t. It must reflect
+// platform jitter and latency, as well as the speed of the LMIC when running
+// on this plaform.
 #define TX_RAMPUP  (us2osticks(2000))
 #endif
 

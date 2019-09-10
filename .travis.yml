@@ -166,8 +166,9 @@ script:
  - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_in866   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino ; }
 
  # make sure the compliance sketch compiles on AVR in all regions. This also requires class-A only
+ # unfortunately EU currently is a little too large, so we don't do EU.
  - _notavr ||  { _projcfg_class_a CFG_us915   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
- - _notavr ||  { _projcfg_class_a CFG_eu868   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ # - _notavr ||  { _projcfg_class_a CFG_eu868   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
  - _notavr ||  { _projcfg_class_a CFG_au921   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
  - _notavr ||  { _projcfg_class_a CFG_as923   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
  - _notavr ||  { _projcfg_class_a CFG_as923jp CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }

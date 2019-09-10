@@ -169,13 +169,35 @@
 //
 // Things common to lmic.c code
 //
+#define	LMICbandplan_MINRX_SYMS_LoRa_ClassA	6
+#define	LMICbandplan_RX_ERROR_ABS_osticks	ms2osticks(10)
+
+// Semtech inherently (by calculating in ms and taking ceilings)
+// rounds up to the next higher ms. It's a lot easier for us
+// to just add margin for things like hardware ramp-up time
+// and clock calibration when running from the LSE and HSI
+// clocks on an STM32.
+#define LMICbandplan_RX_EXTRA_MARGIN_osticks	us2osticks(2000)
+
+// probably this should be the same as the Class-A value, but
+// we have not the means to thoroughly test this. This is the
+// number of rxsyms used in the computations for ping and beacon
+// windows.
+#define	LMICbandplan_MINRX_SYMS_LoRa_ClassB	5
+
+#define LMICbandplan_PAMBL_SYMS 8
+#define LMICbandplan_PAMBL_FSK  5
+#define LMICbandplan_PRERX_FSK  1
+#define LMICbandplan_RXLEN_FSK  (1+5+2)
+
+// Legacy names
 #if !defined(MINRX_SYMS)
-#define MINRX_SYMS 5
+# define MINRX_SYMS	LMICbandplan_MINRX_SYMS_LoRa_ClassB
 #endif // !defined(MINRX_SYMS)
-#define PAMBL_SYMS 8
-#define PAMBL_FSK  5
-#define PRERX_FSK  1
-#define RXLEN_FSK  (1+5+2)
+#define PAMBL_SYMS	LMICbandplan_PAMBL_SYMS
+#define PAMBL_FSK	LMICbandplan_PAMBL_FSK
+#define PRERX_FSK	LMICbandplan_PRERX_FSK
+#define	RXLEN_FSK	LMICbandplan_RXLEN_FSK
 
 // this is regional, but so far all regions are the same
 #if !defined(LMICbandplan_MAX_FCNT_GAP)
@@ -184,7 +206,7 @@
 
 // this is probably regional, but for now default can be the same
 #if !defined(LMICbandplan_TX_RECOVERY_ms)
-# define LMICbandplan_TX_RECOVERY_ms    100
+# define LMICbandplan_TX_RECOVERY_ms    500
 #endif
 
 #define BCN_INTV_osticks       sec2osticks(BCN_INTV_sec)
@@ -204,5 +226,7 @@
 // internal APIs
 ostime_t LMICcore_rndDelay(u1_t secSpan);
 void LMICcore_setDrJoin(u1_t reason, u1_t dr);
+ostime_t LMICcore_adjustForDrift(ostime_t delay, ostime_t hsym);
+ostime_t LMICcore_RxWindowOffset(ostime_t hsym, u1_t rxsyms_in);
 
 #endif // _lmic_bandplan_h_

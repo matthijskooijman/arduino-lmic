@@ -82,7 +82,7 @@ static CONST_TABLE(ostime_t, DR2HSYM_osticks)[] = {
         us2osticksRound(128 << 3),  // DR_SF8
         us2osticksRound(128 << 2),  // DR_SF7
         us2osticksRound(128 << 1),  // DR_SF7B
-        us2osticksRound(80)       // FSK -- not used (time for 1/2 byte)
+        us2osticksRound(80)         // FSK -- time for 1/2 byte (unused by LMIC)
 };
 
 ostime_t LMICeu868_dr2hsym(uint8_t dr) {
@@ -246,14 +246,6 @@ ostime_t LMICeu868_nextJoinState(void) {
         return LMICeulike_nextJoinState(NUM_DEFAULT_CHANNELS);
 }
 #endif // !DISABLE_JOIN
-
-// txDone handling for FSK.
-void
-LMICeu868_txDoneFSK(ostime_t delay, osjobcb_t func) {
-        LMIC.rxtime = LMIC.txend + delay - PRERX_FSK*us2osticksRound(160);
-        LMIC.rxsyms = RXLEN_FSK;
-        os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
-}
 
 // set the Rx1 dndr, rps.
 void LMICeu868_setRx1Params(void) {

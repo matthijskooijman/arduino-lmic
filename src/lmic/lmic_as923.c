@@ -361,14 +361,6 @@ ostime_t LMICas923_nextJoinState(void) {
 }
 #endif // !DISABLE_JOIN
 
-// txDone handling for FSK.
-void
-LMICas923_txDoneFSK(ostime_t delay, osjobcb_t func) {
-        LMIC.rxtime = LMIC.txend + delay - PRERX_FSK*us2osticksRound(160);
-        LMIC.rxsyms = RXLEN_FSK;
-        os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
-}
-
 void
 LMICas923_initJoinLoop(void) {
         // LMIC.txParam is set to 0xFF by the central code at init time.

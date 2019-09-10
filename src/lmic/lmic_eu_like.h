@@ -56,7 +56,8 @@ LMICeulike_isValidBeacon1(const uint8_t *d) {
 #define LMICbandplan_isFSK()    (0)
 
 // provide a default LMICbandplan_txDoneDoFSK()
-#define LMICbandplan_txDoneFSK(delay, func)      do { } while (0)
+void LMICeulike_txDoneFSK(ostime_t delay, osjobcb_t func);
+#define LMICbandplan_txDoneFSK(delay, func)     LMICeulike_txDoneFSK(delay, func)
 
 #define LMICbandplan_joinAcceptChannelClear()   LMICbandplan_initDefaultChannels(/* normal, not join */ 0)
 

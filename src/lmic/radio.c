@@ -560,7 +560,7 @@ static void configChannel () {
 // 1) using RFO: power is -1 to 13 dBm (datasheet implies max OutputPower value is 14 for 13 dBm)
 // 2) using PA_BOOST, PaDac = 0x84: power is 2 to 17 dBm;
 //	use this for 14..17 if authorized
-// 3) using PA_BOOST, PaDac = 0x87, OutptuPower = 0xF: power is 20dBm
+// 3) using PA_BOOST, PaDac = 0x87, OutputPower = 0xF: power is 20dBm
 //    and duty cycle must be <= 1%
 //
 // The general policy is to use the lowest power variant that will get us where we
@@ -626,6 +626,10 @@ static void configPower () {
     // we have to re-check eff_pw, which might be too small.
     // (And, of course, it might also be too large.)
     case LMICHAL_radio_tx_power_policy_paboost:
+        // It seems that SX127x doesn't like eff_pw 10 when in FSK mode.
+        if (getSf(LMIC.rps) == FSK && eff_pw < 11) {
+            eff_pw = 11;
+        }
         rPaDac = SX127X_PADAC_POWER_NORMAL;
         rOcp = SX127X_OCP_MAtoBITS(100);
         if (eff_pw > 17)
@@ -900,9 +904,9 @@ static void rxlora (u1_t rxmode) {
 
     // Errata 2.3 - receiver spurious reception of a LoRa signal
     bw_t const bw = getBw(LMIC.rps);
-    u1_t const rDetectOptimize = readReg(LORARegDetectOptimize);
+    u1_t const rDetectOptimize = (readReg(LORARegDetectOptimize) & 0x78) | 0x03;
     if (bw < BW500) {
-        writeReg(LORARegDetectOptimize, rDetectOptimize & 0x7F);
+        writeReg(LORARegDetectOptimize, rDetectOptimize);
         writeReg(LORARegIffReq1, 0x40);
         writeReg(LORARegIffReq2, 0x40);
     } else {
@@ -1216,6 +1220,7 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
     if( (readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
         u1_t flags = readReg(LORARegIrqFlags);
         LMIC.saveIrqFlags = flags;
+        LMICOS_logEventUint32("radio_irq_handler_v2: LoRa", flags);
         LMIC_X_DEBUG_PRINTF("IRQ=%02x\n", flags);
         if( flags & IRQ_LORA_TXDONE_MASK ) {
             // save exact tx time
@@ -1254,6 +1259,9 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
     } else { // FSK modem
         u1_t flags1 = readReg(FSKRegIrqFlags1);
         u1_t flags2 = readReg(FSKRegIrqFlags2);
+
+        LMICOS_logEventUint32("radio_irq_handler_v2: FSK", (flags2 << UINT32_C(8)) | flags1);
+
         if( flags2 & IRQ_FSK2_PACKETSENT_MASK ) {
             // save exact tx time
             LMIC.txend = now;
@@ -1271,10 +1279,15 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
             // indicate timeout
             LMIC.dataLen = 0;
         } else {
-            ASSERT(0);
+            // ASSERT(0);
+            // we're not sure why we're here... treat as timeout.
+            LMIC.dataLen = 0;
         }
+
+        // in FSK, we need to put the radio in standby first.
+        opmode(OPMODE_STANDBY);
     }
-    // go from stanby to sleep
+    // go from standby to sleep
     opmode(OPMODE_SLEEP);
     // run os job (use preset func ptr)
     os_setCallback(&LMIC.osjob, LMIC.osjob.func);

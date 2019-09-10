@@ -250,4 +250,18 @@ void LMICeulike_setRx1Freq(void) {
                 LMIC.freq = dlFreq;
 #endif // !DISABLE_MCMD_DlChannelReq
 }
+
+// Class A txDone handling for FSK.
+void
+LMICeulike_txDoneFSK(ostime_t delay, osjobcb_t func) {
+        ostime_t const hsym = us2osticksRound(80);
+
+        // start a little earlier.
+        delay -= LMICbandplan_PRERX_FSK * us2osticksRound(160);
+
+        // set LMIC.rxtime and LMIC.rxsyms:
+        LMIC.rxtime = LMIC.txend + LMICcore_adjustForDrift(delay + LMICcore_RxWindowOffset(hsym, LMICbandplan_RXLEN_FSK), hsym);
+        os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
+}
+
 #endif // CFG_LMIC_EU_like

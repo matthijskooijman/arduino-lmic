@@ -20,6 +20,7 @@ Author:
 #include <arduino_lmic_lorawan_compliance.h>
 
 #include <SPI.h>
+class cEventQueue;
 
 //
 // For compliance tests with the RWC5020A, we use the default addresses
@@ -92,9 +93,12 @@ public:
         uint32_t    datum;
         ostime_t    time;
         ostime_t    txend;
+        ostime_t    globalDutyAvail;
         u4_t        freq;
-        rps_t       rps;
         u2_t        opmode;
+        u2_t        fcntDn;
+        u2_t        fcntUp;
+        rps_t       rps;
         u1_t        txChnl;
         u1_t        datarate;
         u1_t        txrxFlags;
@@ -119,16 +123,20 @@ public:
         }
         if (i != m_head) {
             auto const pn = &m_queue[m_tail];
+            pn->job = LMIC.osjob;
             pn->time = os_getTime();
             pn->txend = LMIC.txend;
+            pn->globalDutyAvail = LMIC.globalDutyAvail;
             pn->event = event;
             pn->pMessage = pMessage;
             pn->datum = datum;
             pn->freq = LMIC.freq;
-            pn->txChnl = LMIC.txChnl;
-            pn->rps = LMIC.rps;
-            pn->datarate = LMIC.datarate;
             pn->opmode = LMIC.opmode;
+            pn->fcntDn = (u2_t) LMIC.seqnoDn;
+            pn->fcntUp = (u2_t) LMIC.seqnoUp;
+            pn->rps = LMIC.rps;
+            pn->txChnl = LMIC.txChnl;
+            pn->datarate = LMIC.datarate;
             pn->txrxFlags = LMIC.txrxFlags;
             pn->saveIrqFlags = LMIC.saveIrqFlags;
             m_tail = i;
@@ -168,17 +176,23 @@ hal_failure_handler_t log_assertion;
 void log_assertion(const char *pMessage, uint16_t line) {
     eventQueue.putEvent(ev_t(-3), pMessage, line);
     eventPrintAll();
-    Serial.println("***HALTED BY ASSERT***");
+    Serial.println(F("***HALTED BY ASSERT***"));
     while (true)
         yield();
 }
 
-uint8_t lastTxChannel;
-bool lastTxStart;
+bool lastWasTxStart;
+uint32_t lastTxStartTime;
 
 void myEventCb(void *pUserData, ev_t ev) {
     eventQueue.putEvent(ev);
 
+    if (ev == EV_TXSTART) {
+        lastWasTxStart = true;
+        lastTxStartTime = millis();
+    } else if (ev == EV_RXSTART) {
+        lastWasTxStart = false;
+    }
     if (ev == EV_JOINING) {
         setupForNetwork(true);
     } else if (ev == EV_JOINED) {
@@ -187,6 +201,8 @@ void myEventCb(void *pUserData, ev_t ev) {
 }
 
 void eventPrint(cEventQueue::eventnode_t &e);
+void printFcnts(cEventQueue::eventnode_t &e);
+void printTxend(cEventQueue::eventnode_t &e);
 
 void eventPrintAll(void) {
     while (eventPrintOne())
@@ -233,19 +249,28 @@ void printHex2(unsigned v) {
     Serial.print(v, HEX);
 }
 
+void printHex4(unsigned v) {
+    printHex2(v >> 8u);
+    printHex2(v);
+}
+
+void printSpace(void) {
+    Serial.print(' ');
+}
+
 void printFreq(u4_t freq) {
     Serial.print(F(": freq="));
     Serial.print(freq / 1000000);
-    Serial.print(F("."));
+    Serial.print('.');
     Serial.print((freq % 1000000) / 100000);
 }
 
 void printRps(rps_t rps) {
     Serial.print(F(" rps=0x")); printHex2(rps);
     Serial.print(F(" (")); Serial.print(getSfName(rps));
-    Serial.print(F(" ")); Serial.print(getBwName(rps));
-    Serial.print(F(" ")); Serial.print(getCrName(rps));
-    Serial.print(F(" ")); Serial.print(getCrcName(rps));
+    printSpace(); Serial.print(getBwName(rps));
+    printSpace(); Serial.print(getCrName(rps));
+    printSpace(); Serial.print(getCrcName(rps));
     Serial.print(F(" IH=")); Serial.print(unsigned(getIh(rps)));
     Serial.print(')');
 }
@@ -256,8 +281,9 @@ void printOpmode(uint16_t opmode, char sep = ',') {
     Serial.print(F(" opmode=")); Serial.print(opmode, HEX);
 }
 
-void printTxend(ostime_t txend) {
-    Serial.print(F(", txend=")); Serial.print(txend);
+void printTxend(cEventQueue::eventnode_t &e) {
+    Serial.print(F(", txend=")); Serial.print(e.txend);
+    Serial.print(F(", avail=")); Serial.print(e.globalDutyAvail);
 }
 
 void printTxChnl(u1_t txChnl) {
@@ -280,6 +306,14 @@ void printSaveIrqFlags(u1_t saveIrqFlags) {
     printHex2(saveIrqFlags);
 }
 
+void printFcnts(cEventQueue::eventnode_t &e) {
+    Serial.print(F(", FcntUp="));
+    printHex4(e.fcntUp);
+    Serial.print(F(", FcntDn="));
+    printHex4(e.fcntDn);
+}
+
+#if LMIC_ENABLE_event_logging
 // dump all the registers.  Must have printf setup.
 void printAllRegisters(void) {
     uint8_t regbuf[0x80];
@@ -291,8 +325,8 @@ void printAllRegisters(void) {
             printNl();
             printHex2(i);
         }
+        Serial.print(((i % 8) == 0) ? F(" - ") : F(" "));
         printHex2(regbuf[i]);
-        Serial.print(((i % 16) == 8) ? F(" - ") : F(" "));
     }
 
     // reset the radio, just in case the register dump caused issues.
@@ -305,6 +339,7 @@ void printAllRegisters(void) {
     const uint8_t opmode = 0x88;    // LoRa and sleep.
     hal_spi_write(0x81, &opmode, 1);
 }
+#endif
 
 void printNl(void) {
     Serial.println();
@@ -328,13 +363,15 @@ void eventPrint(cEventQueue::eventnode_t &e) {
         Serial.print(e.pMessage);
         Serial.print(F(", line ")); Serial.print(e.datum);
         printFreq(e.freq);
-        printTxend(e.txend);
+        printTxend(e);
         printTxChnl(e.txChnl);
         printRps(e.rps);
         printOpmode(e.opmode);
         printTxrxflags(e.txrxFlags);
         printSaveIrqFlags(e.saveIrqFlags);
+#if LMIC_ENABLE_event_logging
         printAllRegisters();
+#endif
     } else {
         if (ev < sizeof(evNames) / sizeof(evNames[0])) {
             Serial.print(evNames[ev]);
@@ -396,8 +433,9 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printRps(e.rps);
                 printOpmode(e.opmode);
                 printf(" irqLevel %u", hal_getIrqLevel());
-
+#if LMIC_ENABLE_event_logging
                 printAllRegisters();
+#endif
                 break;
 
             case EV_REJOIN_FAILED:
@@ -409,6 +447,8 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printTxChnl(e.txChnl);
                 printRps(e.rps);
                 printTxrxflags(e.txrxFlags);
+                printFcnts(e);
+                printTxend(e);
                 break;
             case EV_LOST_TSYNC:
                 break;
@@ -435,7 +475,7 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printRps(e.rps);
                 printDatarate(e.datarate);
                 printOpmode(e.opmode);
-                printTxend(e.txend);
+                printTxend(e);
                 break;
 
             case EV_RXSTART:
@@ -443,7 +483,7 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printRps(e.rps);
                 printDatarate(e.datarate);
                 printOpmode(e.opmode);
-                printTxend(e.txend);
+                printTxend(e);
                 Serial.print(F(", delta ms ")); Serial.print(osticks2ms(e.time - e.txend));
                 break;
 
@@ -537,6 +577,7 @@ void do_send(osjob_t* j){
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
         Serial.println(F("OP_TXRXPEND, not sending"));
+        sendComplete(j, 0);
     } else if (g_fTestMode) {
         Serial.println(F("test mode, not sending"));
     } else {
@@ -580,24 +621,13 @@ void myFail(const char *pMessage) {
     }
 }
 
-// there's a problem with running 2.5 of the MCCI STM32 BSPs;
-// hack around it.
-#ifdef ARDUINO_ARCH_STM32
-# ifdef _mcci_arduino_version
-#  if _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 0)
-uint32_t USBD_LL_ConnectionState(void) {
-  return 1;
-}
-#  endif // _mcci_arduino_version
-# endif // defined(_mcci_arduino_version)
-#endif // ARDUINO_ARCH_STM32
-
 void setup() {
     delay(5000);
     while (! Serial)
         ;
     Serial.begin(115200);
     setup_printSignOn();
+    setup_calibrateSystemClock();
 
     // LMIC init using the computed target
     const auto pPinMap = Arduino_LMIC::GetPinmap_ThisBoard();
@@ -620,7 +650,8 @@ void setup() {
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
 
-    LMIC_setClockError(5 * MAX_CLOCK_ERROR / 100);
+    // set clock rate error to 0.1%
+    //LMIC_setClockError(1 * MAX_CLOCK_ERROR / 1000);
 
     // do the network-specific setup prior to join.
     setupForNetwork(false);
@@ -683,20 +714,470 @@ void setup_printSignOn()
     }
 
 void setupForNetwork(bool preJoin) {
-#if defined(CFG_us915)
+#if CFG_LMIC_US_like
     LMIC_selectSubBand(0);
-
-    if (! preJoin) {
-//        LMIC_setLinkCheckMode(0);
-//        LMIC_setDrTxpow(DR_SF7, 14);
-    }
 #endif
 }
 
 void loop() {
     os_runloop_once();
-    while ((LMIC.opmode & OP_TXRXPEND) == 0 &&
-           ! os_queryTimeCriticalJobs(ms2osticks(1000)) &&
-           eventPrintOne())
-        ;
+
+    if (lastWasTxStart && millis() - lastTxStartTime > 10000) {
+        /* ugh. TX timed out */
+        Serial.println(F("Tx timed out"));
+#if LMIC_ENABLE_event_logging
+        printAllRegisters();
+#endif
+        LMIC_clrTxData();
+        lastWasTxStart = false;
+    }
+
+    if ((LMIC.opmode & OP_TXRXPEND) == 0 &&
+        !os_queryTimeCriticalJobs(ms2osticks(1000))) {
+           eventPrintAll();
+    }
 }
+
+#define NEED_USBD_LL_ConnectionState    0
+#ifdef ARDUINO_ARCH_STM32
+# ifdef _mcci_arduino_version
+#  if _mcci_arduino_version < _mcci_arduino_version_calc(2, 5, 0, 10)
+#   undef NEED_USBD_LL_ConnectionState
+#   define NEED_USBD_LL_ConnectionState 1
+#  endif // _mcci_arduino_version < _mcci_arduino_version_calc(2, 5, 0, 10)
+# endif // def _mcci_arduino_version
+#endif // def ARDUINO_ARCH_STM32
+
+#define NEED_STM32_ClockCalibration    0
+#ifdef ARDUINO_ARCH_STM32
+# ifdef _mcci_arduino_version
+#  if _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 10)
+#   undef NEED_STM32_ClockCalibration
+#   define NEED_STM32_ClockCalibration 1
+#  endif // _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 10)
+# endif // def _mcci_arduino_version
+#endif // def ARDUINO_ARCH_STM32
+
+
+// there's a problem with running 2.5 of the MCCI STM32 BSPs;
+// hack around it.
+#if NEED_USBD_LL_ConnectionState
+uint32_t USBD_LL_ConnectionState(void) {
+  return 1;
+}
+#endif // NEED_USBD_LL_ConnectionState
+
+#if NEED_STM32_ClockCalibration
+        static constexpr bool kUsesLSE = true;          // _mcci_arduino_version indicates that LSE clock is used.
+#else
+        static constexpr bool kUsesLSE = false;
+#endif
+
+
+void setup_calibrateSystemClock(void) {
+    if (kUsesLSE) {
+        Serial.println("need to calibrate clock");
+#if NEED_STM32_ClockCalibration
+        Stm32_CalibrateSystemClock();
+#endif // NEED_STM32_ClockCalibration
+    } else {
+        Serial.println("calibration not supported");
+    }
+}
+
+#if NEED_STM32_ClockCalibration
+
+// RTC needs to be initialized before we calibrate the clock.
+bool rtcbegin() {
+    RTC_TimeTypeDef	Time;
+    RTC_DateTypeDef	Date;
+    uint32_t RtcClock;
+    RTC_HandleTypeDef	hRtc;
+
+    memset(&hRtc, 0, sizeof(hRtc));
+
+    hRtc.Instance = RTC;
+    hRtc.Init.HourFormat = RTC_HOURFORMAT_24;
+    RtcClock = __HAL_RCC_GET_RTC_SOURCE();
+    if (RtcClock == RCC_RTCCLKSOURCE_LSI)
+        {
+        hRtc.Init.AsynchPrediv = 37 - 1; /* 37kHz / 37 = 1000Hz */
+        hRtc.Init.SynchPrediv = 1000 - 1; /* 1000Hz / 1000 = 1Hz */
+        }
+    else if (RtcClock == RCC_RTCCLKSOURCE_LSE)
+        {
+        hRtc.Init.AsynchPrediv = 128 - 1; /* 32768Hz / 128 = 256Hz */
+        hRtc.Init.SynchPrediv = 256 - 1; /* 256Hz / 256 = 1Hz */
+        }
+    else
+        {
+        /*
+        || use HSE clock --
+        || we don't support use of HSE as RTC because it's connected to
+        || TCXO_OUT, and that's controlled by the LoRaWAN software.
+        */
+        Serial.println(
+            " HSE can not be used for RTC clock!"
+            );
+        return false;
+        }
+
+
+    hRtc.Init.OutPut = RTC_OUTPUT_DISABLE;
+    hRtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
+    hRtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
+    hRtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+
+    if (HAL_RTC_Init(&hRtc) != HAL_OK)
+        {
+        Serial.println(
+            "HAL_RTC_Init() failed"
+            );
+        return false;
+        }
+
+    /* Initialize RTC and set the Time and Date */
+    if (HAL_RTCEx_BKUPRead(&hRtc, RTC_BKP_DR0) != 0x32F2)
+        {
+        Time.Hours = 0x0;
+        Time.Minutes = 0x0;
+        Time.Seconds = 0x0;
+        Time.SubSeconds = 0x0;
+        Time.TimeFormat = RTC_HOURFORMAT12_AM;
+        Time.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+        Time.StoreOperation = RTC_STOREOPERATION_RESET;
+
+        if (HAL_RTC_SetTime(
+            &hRtc,
+            &Time,
+            RTC_FORMAT_BIN
+            ) != HAL_OK)
+            {
+            Serial.print(
+                "HAL_RTC_SetTime() failed"
+                );
+            return false;
+            }
+
+        /* Sunday 1st January 2017 */
+        Date.WeekDay = RTC_WEEKDAY_SUNDAY;
+        Date.Month = RTC_MONTH_JANUARY;
+        Date.Date = 0x1;
+        Date.Year = 0x0;
+
+        if (HAL_RTC_SetDate(
+            &hRtc,
+            &Date,
+            RTC_FORMAT_BIN
+            ) != HAL_OK)
+            {
+            Serial.print(
+                "HAL_RTC_SetDate() failed"
+                );
+            return false;
+            }
+
+        HAL_RTCEx_BKUPWrite(&hRtc, RTC_BKP_DR0, 0x32F2);
+        }
+
+    /* Enable Direct Read of the calendar registers (not through Shadow) */
+    HAL_RTCEx_EnableBypassShadow(&hRtc);
+
+    HAL_RTC_DeactivateAlarm(&hRtc, RTC_ALARM_A);
+    return true;
+}
+
+extern "C" {
+
+static volatile uint32_t *gs_pAlarm;
+static RTC_HandleTypeDef *gs_phRtc;
+
+void RTC_IRQHandler(void)
+    {
+    HAL_RTC_AlarmIRQHandler(gs_phRtc);
+    }
+
+void HAL_RTC_AlarmAEventCallback(
+    RTC_HandleTypeDef *	hRtc
+    )
+    {
+    if (gs_pAlarm)
+        *gs_pAlarm = 1;
+    }
+
+void HAL_RTC_MspInit(
+    RTC_HandleTypeDef *	hRtc
+    )
+    {
+    if (hRtc->Instance == RTC)
+        {
+        /* USER CODE BEGIN RTC_MspInit 0 */
+
+        /* USER CODE END RTC_MspInit 0 */
+        /* Peripheral clock enable */
+        __HAL_RCC_RTC_ENABLE();
+        /* USER CODE BEGIN RTC_MspInit 1 */
+        HAL_NVIC_SetPriority(RTC_IRQn, TICK_INT_PRIORITY, 0U);
+        HAL_NVIC_EnableIRQ(RTC_IRQn);
+        /* USER CODE END RTC_MspInit 1 */
+        }
+    }
+
+void HAL_RTC_MspDeInit(
+    RTC_HandleTypeDef *	hRtc
+    )
+    {
+    if (hRtc->Instance == RTC)
+        {
+        /* USER CODE BEGIN RTC_MspDeInit 0 */
+        HAL_NVIC_DisableIRQ(RTC_IRQn);
+        /* USER CODE END RTC_MspDeInit 0 */
+        /* Peripheral clock disable */
+        __HAL_RCC_RTC_DISABLE();
+        /* USER CODE BEGIN RTC_MspDeInit 1 */
+
+        /* USER CODE END RTC_MspDeInit 1 */
+        }
+    }
+
+uint32_t HAL_AddTick(
+    uint32_t delta
+    )
+    {
+    extern __IO uint32_t uwTick;
+    // copy old interrupt-enable state to flags.
+    uint32_t const flags = __get_PRIMASK();
+
+    // disable interrupts
+    __set_PRIMASK(1);
+
+    // observe uwTick, and advance it.
+    uint32_t const tickCount = uwTick + delta;
+
+    // save uwTick
+    uwTick = tickCount;
+
+    // restore interrupts (does nothing if ints were disabled on entry)
+    __set_PRIMASK(flags);
+
+    // return the new value of uwTick.
+    return tickCount;
+    }
+
+} /* extern "C" */
+
+uint32_t Stm32_CalibrateSystemClock(void)
+    {
+    uint32_t Calib;
+    uint32_t CalibNew;
+    uint32_t CalibLow;
+    uint32_t CalibHigh;
+    uint32_t mSecond;
+    uint32_t mSecondNew;
+    uint32_t mSecondLow;
+    uint32_t mSecondHigh;
+    bool fHaveSeenLow;
+    bool fHaveSeenHigh;
+    const bool fCalibrateMSI =  HAL_RCC_GetHCLKFreq() < 16000000;
+
+    if (! rtcbegin()) {
+        return 0;
+    }
+
+    if (fCalibrateMSI)
+        {
+        Calib = (RCC->ICSCR & RCC_ICSCR_MSITRIM) >> 24;
+        }
+    else
+        {
+        Calib = (RCC->ICSCR & RCC_ICSCR_HSITRIM) >> 8;
+        }
+
+    /* preapre to loop, setting suitable defaults */
+    CalibNew = Calib;
+    CalibLow = 0;
+    CalibHigh = 0;
+    mSecondLow = 0;
+    mSecondHigh = 2000000;
+    fHaveSeenLow = fHaveSeenHigh = false;
+
+    /* loop until we have a new value */
+    do	{
+        /* meassure the # of millis per RTC second */
+        mSecond = MeasureMicrosPerRtcSecond();
+
+        /* invariant: */
+        if (Calib == CalibNew)
+            mSecondNew = mSecond;
+
+        /* if mSecond is low, this meaans we must increase the system clock */
+        if (mSecond <= 1000000)
+            {
+            Serial.print('-');
+            /*
+            || the following condition establishes that we're
+            || below the target frequency, but closer than we've been
+            || before (mSecondLow is the previous "low" limit). If
+            || so, we reduce the limit, and capture the "low" calibration
+            || value.
+            */
+            if (mSecond > mSecondLow)
+                {
+                mSecondLow = mSecond;
+                CalibLow = Calib; /* save previous calibration value */
+                fHaveSeenLow = true;
+                }
+
+            /*
+            || if we are low, and we have never exceeded the high limit,
+            || we can  increase the clock.
+            */
+            if (! fHaveSeenHigh)
+                {
+                if (fCalibrateMSI)
+                    {
+                    if (Calib < 0xFF)
+                        {
+                        ++Calib;
+                        __HAL_RCC_MSI_CALIBRATIONVALUE_ADJUST(Calib);
+                        }
+                    else
+                        break;
+                    }
+                else
+                    {
+                    if (Calib < 0x1F)
+                        {
+                        ++Calib;
+                        __HAL_RCC_HSI_CALIBRATIONVALUE_ADJUST(Calib);
+                        }
+                    else
+                        {
+                        break;
+                        }
+                    }
+
+                /* let the clock settle */
+                delay(500);
+                }
+            }
+
+        /* if mSecond is high, we must reduce the system clock */
+        else
+            {
+            Serial.print('+');
+            /*
+            || the following condition establishes that we're
+            || above the target frequency, but closer than we've been
+            || before (mSecondHigh is the previous "high" limit). If
+            || so, we reduce the limit, and capture the calibration
+            || value.
+            */
+            if (mSecond < mSecondHigh)
+                {
+                mSecondHigh = mSecond;
+                CalibHigh = Calib;
+                fHaveSeenHigh = true;
+                }
+
+            /*
+            || if we are above the target frequency, and we have
+            || never raised the frequence, we can lower the
+            || frequency
+            */
+            if (! fHaveSeenLow)
+                {
+                if (Calib == 0)
+                    break;
+
+                --Calib;
+                if (fCalibrateMSI)
+                    {
+                    __HAL_RCC_MSI_CALIBRATIONVALUE_ADJUST(Calib);
+                    }
+                else
+                    {
+                    __HAL_RCC_HSI_CALIBRATIONVALUE_ADJUST(Calib);
+                    }
+                delay(500);
+                }
+            }
+        } while ((Calib != CalibNew) &&
+                (! fHaveSeenLow || !fHaveSeenHigh));
+
+    //
+    // We are going to take higher calibration value first and
+    // it allows us not to call LMIC_setClockError().
+    //
+    if (fHaveSeenHigh)
+        {
+        mSecondNew = mSecondHigh;
+        CalibNew = CalibHigh;
+        }
+    else if (fHaveSeenLow)
+        {
+        mSecondNew = mSecondLow;
+        CalibNew = CalibLow;
+        }
+    else
+        {
+        // Use original value
+        Serial.println(
+            "?CalibrateSystemClock: can't calibrate"
+            );
+        }
+
+    if (CalibNew != Calib)
+        {
+        Serial.print(CalibNew < Calib ? '+' : '-');
+        if (fCalibrateMSI)
+            {
+            __HAL_RCC_MSI_CALIBRATIONVALUE_ADJUST(CalibNew);
+            }
+        else
+            {
+            __HAL_RCC_HSI_CALIBRATIONVALUE_ADJUST(CalibNew);
+            }
+        delay(500);
+        }
+
+    Serial.print(" 0x");
+    Serial.println(CalibNew, HEX);
+    return CalibNew;
+    }
+
+uint32_t
+MeasureMicrosPerRtcSecond(
+    void
+    )
+    {
+    uint32_t second;
+    uint32_t now;
+    uint32_t start;
+    uint32_t end;
+
+    /* get the starting time */
+    second = RTC->TR & (RTC_TR_ST | RTC_TR_SU);
+
+    /* wait for a new second to start, and capture millis() in start */
+    do	{
+        now = RTC->TR & (RTC_TR_ST | RTC_TR_SU);
+        start = micros();
+        } while (second == now);
+
+    /* update our second of interest */
+    second = now;
+
+    /* no point in watching the register until we get close */
+    delay(500);
+
+    /* wait for the next second to start, and capture millis() */
+    do	{
+        now = RTC->TR & (RTC_TR_ST | RTC_TR_SU);
+        end = micros();
+        } while (second == now);
+
+    /* return the delta */
+    return end - start;
+    }
+#endif // NEED_STM32_ClockCalibration
