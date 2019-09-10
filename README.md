@@ -10,7 +10,7 @@ attempt to wrap them in a higher level API that is more in the Arduino
 style. To find out how to use the library itself, see the examples, or
 see the PDF file in the doc subdirectory.
 
-The [MCCI arduino-lorawan](https://github.com/mcci-catena/arduino-lorawan) library provides a higher level, more Arduino-like wrapper which may be useful.
+The [MCCI `arduino-lorawan`](https://github.com/mcci-catena/arduino-lorawan) library provides a higher level, more Arduino-like wrapper which may be useful.
 
 This library requires Arduino IDE version 1.6.6 or above, since it
 requires C99 mode to be enabled by default.
@@ -176,7 +176,7 @@ This function is sometimes called at time critical moments.
 
 This means that your event function should avoid doing any time-critical work.
 
-Furthermore, the event function may be called in situations where it's not safe to call the LMIC message send APIs. Please be careful to defer all work from your event function to your `loop()` function. See the compliance example sketch for an elaborate version of how this can be done.
+Furthermore, in versions of the LMIC prior to v3.0.99.3, the event function may be called in situations where it's not safe to call the general LMIC APIs. In those older LMIC versions, please be careful to defer all work from your event function to your `loop()` function. See the compliance example sketch for an elaborate version of how this can be done.
 
 ## Configuration
 
@@ -355,7 +355,9 @@ Code to handle registered callbacks for transmit, receive, and events can be sup
 
 #### Disabling external reference to `onEvent()`
 
-In some embedded systems, `onEvent()` may be defined for some other purpose; so the weak reference to the function `onEvent` will be satisfied, causing the LMIC to try to call that function. All reference to `onEvent()` can be suppressed by setting `LMIC_ENABLE_onEvent` to 0.   This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, a weak reference to `onEvent()` will be used; if zero, the user `onEvent()` function is not supported, and the client must register an event handler explicitly.
+In V3 of the LMIC, you do not need to define a function named `onEvent`. The LMIC will notice that there's no such function, and will suppress the call. However, be cautious -- in a large software package, `onEvent()` may be defined for some other purpose. The LMIC has no way of knowing that this is not the LMIC's `onEvent`, so it will call the function, and this may cause problems.
+
+All reference to `onEvent()` can be suppressed by setting `LMIC_ENABLE_onEvent` to 0. This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, a weak reference to `onEvent()` will be used; if zero, the user `onEvent()` function is not supported, and the client must register an event handler explicitly.  See the PDF documentation for details on `LMIC_registerEventCb()`.
 
 #### Enabling long messages
 
@@ -1124,9 +1126,10 @@ function uflt12f(rawUflt12)
 
 - v3.0.99 (still in pre-release) adds the following changes. (This is not an exhaustive list.) Note that the behavior of the LMIC changes in important ways, as it now enforces the LoRaWAN mandated maximum frame size for a given data rate. For Class A devices, this may cause your device to go silent after join, if you're not able to handle the frame size dictated by the parameters downloaded to the device by the network during join. The library will attempt to find a data rate that will work, but there is no guarantee that the network has provided such a data rate.
 
+  - [#443](https://github.com/mcci-catena/arduino-lmic/pull/443) addresses a number of problems found in cooperation with [RedwoodComm](https://redwoodcomm.com). They suggested a timing improvement to speed testing; this lead to the discovery of a number of problems. Some were in the compliance framework, but one corrects timing for very high spreading factors, several ([#442](https://github.com/mcci-catena/arduino-lmic/issues/442), [#436](https://github.com/mcci-catena/arduino-lmic/issues/438), [#435](https://github.com/mcci-catena/arduino-lmic/issues/435), [#434](https://github.com/mcci-catena/arduino-lmic/issues/434) fix glaring problems in FSK support; [#249](https://github.com/mcci-catena/arduino-lmic/issues/249) greatly enhances stability by making API calls much less likely to crash the LMIC if it's active. Version is v3.0.99.3.
   - [#388](https://github.com/mcci-catena/arduino-lmic/issues/388), [#389](https://github.com/mcci-catena/arduino-lmic/issues/390), [#390](https://github.com/mcci-catena/arduino-lmic/issues/390) change the LMIC to honor the maximum frame size for a given DR in the current region. This proves to be a breaking change for many applications, especially in the US, because DR0 in the US supports only an 11-byte payload, and many apps were ignoring this. Additional error codes were defined so that apps can detect and recover from this situation, but they must detect; otherwise they run the risk of being blocked from the network by the LMIC.  Because of this change, the next version of the LMIC will be V3.1 or higher, and the LMIC version for development is bumped to 3.0.99.0.
   - [#401](https://github.com/mcci-catena/arduino-lmic/issues/401) adds 865 MHz through 868 MHz to the "1%" band for EU.
-  - [#395]((https://github.com/mcci-catena/arduino-lmic/pull/395) corrects pin-mode initialization if using `hal_interrupt_init()`.
+  - [#395](https://github.com/mcci-catena/arduino-lmic/pull/395) corrects pin-mode initialization if using `hal_interrupt_init()`.
   - [#385](https://github.com/mcci-catena/arduino-lmic/issues/385) corrects an error handling data rate selection for `TxParamSetupReq`, found in US-915 certification testing. (v2.3.2.71)
   - [#378](https://github.com/mcci-catena/arduino-lmic/pull/378) completely reworks MAC downlink handling. Resulting code passes the LoRaWAN V1.5 EU certification test. (v2.3.2.70)
   - [#360](https://github.com/mcci-catena/arduino-lmic/issues/360) adds support for the KR-920 regional plan.
