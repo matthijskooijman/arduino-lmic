@@ -2744,9 +2744,20 @@ void LMIC_init (void) {
 
 
 void LMIC_clrTxData (void) {
-    bit_t const txActive = LMIC.opmode & OP_TXDATA;
-    LMIC.opmode &= ~(OP_TXDATA|OP_TXRXPEND|OP_POLL);
+    u2_t opmode = LMIC.opmode;
+    bit_t const txActive = opmode & OP_TXDATA;
+    if (! txActive) {
+        return;
+    }
     LMIC.pendTxLen = 0;
+    opmode &= ~(OP_TXDATA | OP_POLL);
+    if (! (opmode & OP_JOINING)) {
+        // in this case, we are joining, and the TX data
+        // is just pending.
+        opmode &= ~(OP_TXRXPEND);
+    }
+
+    LMIC.opmode = opmode;
 
     if (txActive)
         reportEventNoUpdate(EV_TXCANCELED);
@@ -2787,15 +2798,23 @@ dr_t LMIC_feasibleDataRateForFrame(dr_t dr, u1_t payloadSize) {
     return dr;
 }
 
-static void adjustDrForFrame(u1_t len) {
+static bit_t isTxPathBusy(void) {
+    return (LMIC.opmode & (OP_TXDATA|OP_JOINING)) != 0;
+}
+
+static bit_t adjustDrForFrameIfNotBusy(u1_t len) {
+    if (isTxPathBusy()) {
+        return 0;
+    }
     dr_t newDr = LMIC_feasibleDataRateForFrame(LMIC.datarate, len);
     if (newDr != LMIC.datarate) {
         setDrTxpow(DRCHG_FRAMESIZE, newDr, KEEP_TXPOW);
     }
+    return 1;
 }
 
 void LMIC_setTxData (void) {
-    adjustDrForFrame(LMIC.pendTxLen);
+    adjustDrForFrameIfNotBusy(LMIC.pendTxLen);
     LMIC_setTxData_strict();
 }
 
@@ -2812,7 +2831,7 @@ void LMIC_setTxData_strict (void) {
 
 // send a message, attempting to adjust TX data rate
 lmic_tx_error_t LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
-    adjustDrForFrame(dlen);
+    adjustDrForFrameIfNotBusy(dlen);
     return LMIC_setTxData2_strict(port, data, dlen, confirmed);
 }
 
@@ -2846,7 +2865,7 @@ lmic_tx_error_t LMIC_sendWithCallback (
     u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed,
     lmic_txmessage_cb_t *pCb, void *pUserData
 ) {
-    adjustDrForFrame(dlen);
+    adjustDrForFrameIfNotBusy(dlen);
     return LMIC_sendWithCallback_strict(port, data, dlen, confirmed, pCb, pUserData);
 }
 
