@@ -120,13 +120,12 @@ The LMIC library provides a fairly complete LoRaWAN Class A and Class B
 implementation, supporting the EU-868, US-915, AU-921, AS-923, and IN-866 bands. Only a limited
 number of features was tested using this port on Arduino hardware, so be careful when using any of the untested features.
 
-The library has only been tested with LoRaWAN 1.0.2 networks and does not have the separated key structure defined by LoRaWAN 1.1.
+The library has only been tested with LoRaWAN 1.0.2/1.03 networks and does not have the separated key structure defined by LoRaWAN 1.1.
 
 What certainly works:
 
 - Sending packets uplink, taking into account duty cycling.
 - Encryption and message integrity checking.
-- Receiving downlink packets in the RX2 window.
 - Custom frequencies and data rate settings.
 - Over-the-air activation (OTAA / joining).
 - Receiving downlink packets in the RX1 and RX2 windows.
@@ -207,9 +206,11 @@ The library supports the following regions:
 `-D CFG_kr920` | `LMIC_REGION_kr920` | 8 | 2.9 | Korea 920-923 MHz ISM
 `-D CFG_in866` | `LMIC_REGION_in866` | 9 | 2.10 | India 865-867 MHz ISM
 
-You should define exactly one of `CFG_...` variables. If you don't,
-the library assumes `CFG_eu868`. The library changes configuration pretty substantially
-according to the region. Some of the differences are listed below.
+The library requires that the compile environment or the project config file define exactly one of `CFG_...` variables. As released, `project_config/lmic_project_config.h` defines `CFG_us915`.  If you build with PlatformIO or other environments, and you do not provide a pointer to the platform config file, `src/lmic/config.h` will define `CFG_eu868`.
+
+MCCI BSPs add menu entries to the Arduino IDE so you can select the target region interactively.
+
+The library changes configuration pretty substantially according to the region selected, and this affects the symbols in-scope in your sketches and cpp files. Some of the differences are listed below. This list is not comprehensive, and is subject to change in future major releases.
 
 #### eu868, as923, in866, kr920
 
@@ -1126,6 +1127,7 @@ function uflt12f(rawUflt12)
 
 - v3.0.99 (still in pre-release) adds the following changes. (This is not an exhaustive list.) Note that the behavior of the LMIC changes in important ways, as it now enforces the LoRaWAN mandated maximum frame size for a given data rate. For Class A devices, this may cause your device to go silent after join, if you're not able to handle the frame size dictated by the parameters downloaded to the device by the network during join. The library will attempt to find a data rate that will work, but there is no guarantee that the network has provided such a data rate.
 
+  - [#452](https://github.com/mcci-catena/arduino-lmic/pull/452) fixes a bug [#450](https://github.com/mcci-catena/arduino-lmic/issues/450) in `LMIC_clrTxData()` that would cause join hiccups if called while (1) a join was in progress and (2) a regular data packet was waiting to be uplinked after the join completes. Also fixes AS923- and AU915-specific bugs [#446](https://github.com/mcci-catena/arduino-lmic/issues/446), [#447](https://github.com/mcci-catena/arduino-lmic/issues/447), [#448](https://github.com/mcci-catena/arduino-lmic/issues/448). Version is `v3.0.99.5`.
   - [#443](https://github.com/mcci-catena/arduino-lmic/pull/443) addresses a number of problems found in cooperation with [RedwoodComm](https://redwoodcomm.com). They suggested a timing improvement to speed testing; this lead to the discovery of a number of problems. Some were in the compliance framework, but one corrects timing for very high spreading factors, several ([#442](https://github.com/mcci-catena/arduino-lmic/issues/442), [#436](https://github.com/mcci-catena/arduino-lmic/issues/438), [#435](https://github.com/mcci-catena/arduino-lmic/issues/435), [#434](https://github.com/mcci-catena/arduino-lmic/issues/434) fix glaring problems in FSK support; [#249](https://github.com/mcci-catena/arduino-lmic/issues/249) greatly enhances stability by making API calls much less likely to crash the LMIC if it's active. Version is v3.0.99.3.
   - [#388](https://github.com/mcci-catena/arduino-lmic/issues/388), [#389](https://github.com/mcci-catena/arduino-lmic/issues/390), [#390](https://github.com/mcci-catena/arduino-lmic/issues/390) change the LMIC to honor the maximum frame size for a given DR in the current region. This proves to be a breaking change for many applications, especially in the US, because DR0 in the US supports only an 11-byte payload, and many apps were ignoring this. Additional error codes were defined so that apps can detect and recover from this situation, but they must detect; otherwise they run the risk of being blocked from the network by the LMIC.  Because of this change, the next version of the LMIC will be V3.1 or higher, and the LMIC version for development is bumped to 3.0.99.0.
   - [#401](https://github.com/mcci-catena/arduino-lmic/issues/401) adds 865 MHz through 868 MHz to the "1%" band for EU.
