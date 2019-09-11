@@ -77,7 +77,7 @@ static CONST_TABLE(u1_t, maxFrameLens_dwell1)[] = {
 static uint8_t
 LMICas923_getUplinkDwellBit(uint8_t mcmd_txparam) {
         if (mcmd_txparam == 0xFF)
-                return 0;
+                return AS923_INITIAL_TxParam_UplinkDwellTime;
 
         return (mcmd_txparam & MCMD_TxParam_TxDWELL_MASK) != 0;
 }
@@ -85,7 +85,7 @@ LMICas923_getUplinkDwellBit(uint8_t mcmd_txparam) {
 static uint8_t
 LMICas923_getDownlinkDwellBit(uint8_t mcmd_txparam) {
         if (mcmd_txparam == 0xFF)
-                return 0;
+                return AS923_INITIAL_TxParam_DownlinkDwellTime;
 
         return (mcmd_txparam & MCMD_TxParam_RxDWELL_MASK) != 0;
 }
@@ -370,6 +370,9 @@ LMICas923_initJoinLoop(void) {
 void
 LMICas923_updateTx(ostime_t txbeg) {
         u4_t freq = LMIC.channelFreq[LMIC.txChnl];
+        u4_t dwellDelay;
+        u4_t globalDutyDelay;
+
         // Update global/band specific duty cycle stats
         ostime_t airtime = calcAirTime(LMIC.rps, LMIC.dataLen);
         // Update channel/global duty cycle stats
@@ -377,8 +380,18 @@ LMICas923_updateTx(ostime_t txbeg) {
         LMIC.freq = freq & ~(u4_t)3;
         LMIC.txpow = LMICas923_getMaxEIRP(LMIC.txParam);
         band->avail = txbeg + airtime * band->txcap;
-        if (LMIC.globalDutyRate != 0)
-                LMIC.globalDutyAvail = txbeg + (airtime << LMIC.globalDutyRate);
+        dwellDelay = globalDutyDelay = 0;
+        if (LMIC.globalDutyRate != 0) {
+                globalDutyDelay = (airtime << LMIC.globalDutyRate);
+        }
+        if (LMICas923_getUplinkDwellBit(LMIC.txParam)) {
+                dwellDelay = AS923_UPLINK_DWELL_TIME_osticks;
+        }
+        if (dwellDelay > globalDutyDelay) {
+                globalDutyDelay = dwellDelay;
+        }
+        if (globalDutyDelay != 0)
+                LMIC.globalDutyAvail = txbeg + globalDutyDelay;
 }
 
 

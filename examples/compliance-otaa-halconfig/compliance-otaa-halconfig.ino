@@ -314,7 +314,7 @@ void printFcnts(cEventQueue::eventnode_t &e) {
 }
 
 #if LMIC_ENABLE_event_logging
-// dump all the registers.  Must have printf setup.
+// dump all the registers.
 void printAllRegisters(void) {
     uint8_t regbuf[0x80];
     regbuf[0] = 0;
@@ -400,21 +400,21 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                     u1_t nwkKey[16];
                     u1_t artKey[16];
                     LMIC_getSessionKeys(&netid, &devaddr, nwkKey, artKey);
-                    Serial.print("netid: ");
+                    Serial.print(F("netid: "));
                     Serial.println(netid, DEC);
-                    Serial.print("devaddr: ");
+                    Serial.print(F("devaddr: "));
                     Serial.println(devaddr, HEX);
-                    Serial.print("artKey: ");
-                    for (int i=0; i<sizeof(artKey); ++i) {
+                    Serial.print(F("artKey: "));
+                    for (size_t i=0; i<sizeof(artKey); ++i) {
                         if (i != 0)
-                            Serial.print("-");
+                            Serial.print('-');
                         printHex2(artKey[i]);
                     }
-                    Serial.println("");
-                    Serial.print("nwkKey: ");
-                    for (int i=0; i<sizeof(nwkKey); ++i) {
+                    printNl();
+                    Serial.print(F("nwkKey: "));
+                    for (size_t i=0; i<sizeof(nwkKey); ++i) {
                             if (i != 0)
-                                    Serial.print("-");
+                                    Serial.print('-');
                             printHex2(nwkKey[i]);
                     }
                 } while (0);
@@ -432,7 +432,6 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printFreq(e.freq);
                 printRps(e.rps);
                 printOpmode(e.opmode);
-                printf(" irqLevel %u", hal_getIrqLevel());
 #if LMIC_ENABLE_event_logging
                 printAllRegisters();
 #endif

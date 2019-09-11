@@ -1597,7 +1597,7 @@ static bit_t processJoinAccept (void) {
     ASSERT((LMIC.opmode & (OP_JOINING|OP_REJOIN))!=0);
     //
     // XXX(tmm@mcci.com) OP_REJOIN confuses me, and I'm not sure why we're
-    // adjusting DRs here. We've just recevied a join accept, and the
+    // adjusting DRs here. We've just received a join accept, and the
     // datarate therefore shouldn't be in play.  In effect, we set the
     // initial data rate based on the number of times we tried to rejoin.
     //
@@ -1672,18 +1672,10 @@ static bit_t processJoinAccept_nojoinframe(void) {
         // claimed to return a delay but really returns 0 or 1.
         // Once we update as923 to return failed after dr2, we
         // can take out this #if.
-#if CFG_region != LMIC_REGION_as923
         os_setTimedCallback(&LMIC.osjob, os_getTime()+failed,
                             failed
                             ? FUNC_ADDR(onJoinFailed)      // one JOIN iteration done and failed
                             : FUNC_ADDR(runEngineUpdate)); // next step to be delayed
-#else
-       // in the join of AS923 v1.1 older, only DR2 is used. Therefore,
-       // not much improvement when it handles two different behavior;
-       // onJoinFailed or runEngineUpdate.
-        os_setTimedCallback(&LMIC.osjob, os_getTime()+failed,
-                            FUNC_ADDR(onJoinFailed));
-#endif
         // stop this join process.
         return 1;
 }
@@ -2752,9 +2744,20 @@ void LMIC_init (void) {
 
 
 void LMIC_clrTxData (void) {
-    bit_t const txActive = LMIC.opmode & OP_TXDATA;
-    LMIC.opmode &= ~(OP_TXDATA|OP_TXRXPEND|OP_POLL);
+    u2_t opmode = LMIC.opmode;
+    bit_t const txActive = opmode & OP_TXDATA;
+    if (! txActive) {
+        return;
+    }
     LMIC.pendTxLen = 0;
+    opmode &= ~(OP_TXDATA | OP_POLL);
+    if (! (opmode & OP_JOINING)) {
+        // in this case, we are joining, and the TX data
+        // is just pending.
+        opmode &= ~(OP_TXRXPEND);
+    }
+
+    LMIC.opmode = opmode;
 
     if (txActive)
         reportEventNoUpdate(EV_TXCANCELED);
@@ -2795,15 +2798,23 @@ dr_t LMIC_feasibleDataRateForFrame(dr_t dr, u1_t payloadSize) {
     return dr;
 }
 
-static void adjustDrForFrame(u1_t len) {
+static bit_t isTxPathBusy(void) {
+    return (LMIC.opmode & (OP_TXDATA|OP_JOINING)) != 0;
+}
+
+static bit_t adjustDrForFrameIfNotBusy(u1_t len) {
+    if (isTxPathBusy()) {
+        return 0;
+    }
     dr_t newDr = LMIC_feasibleDataRateForFrame(LMIC.datarate, len);
     if (newDr != LMIC.datarate) {
         setDrTxpow(DRCHG_FRAMESIZE, newDr, KEEP_TXPOW);
     }
+    return 1;
 }
 
 void LMIC_setTxData (void) {
-    adjustDrForFrame(LMIC.pendTxLen);
+    adjustDrForFrameIfNotBusy(LMIC.pendTxLen);
     LMIC_setTxData_strict();
 }
 
@@ -2820,7 +2831,7 @@ void LMIC_setTxData_strict (void) {
 
 // send a message, attempting to adjust TX data rate
 lmic_tx_error_t LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
-    adjustDrForFrame(dlen);
+    adjustDrForFrameIfNotBusy(dlen);
     return LMIC_setTxData2_strict(port, data, dlen, confirmed);
 }
 
@@ -2854,7 +2865,7 @@ lmic_tx_error_t LMIC_sendWithCallback (
     u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed,
     lmic_txmessage_cb_t *pCb, void *pUserData
 ) {
-    adjustDrForFrame(dlen);
+    adjustDrForFrameIfNotBusy(dlen);
     return LMIC_sendWithCallback_strict(port, data, dlen, confirmed, pCb, pUserData);
 }
 

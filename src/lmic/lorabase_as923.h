@@ -93,4 +93,13 @@ enum { AS923_V102_TX_CAP = 100 };		// v1.0.2 allows 100%
 # define AS923_TX_CAP	AS923_V102_TX_CAP
 #endif
 
+// TxParam defaults
+enum {
+        // initial value of UplinkDwellTime before TxParamSetupReq received.
+        AS923_INITIAL_TxParam_UplinkDwellTime = 1,
+        // initial value of DownlinkDwellTime before TxParamSetupReq received.
+        AS923_INITIAL_TxParam_DownlinkDwellTime = 1,
+        AS923_UPLINK_DWELL_TIME_osticks = sec2osticks(20),
+};
+
 #endif /* _lorabase_as923_h_ */

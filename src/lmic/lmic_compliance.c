@@ -54,8 +54,9 @@ static lmic_event_cb_t lmicEventCb;
 static lmic_txmessage_cb_t sendUplinkCompleteCb;
 static osjobcbfn_t timerExpiredCb;
 
-/* this is declared global so the optimizer can chuck it without warnings */
+/* these are declared global so the optimizer can chuck them without warnings */
 const char *LMICcompliance_txSuccessToString(int fSuccess);
+const char * LMICcompliance_fsmstate_getName(lmic_compliance_fsmstate_t state);
 
 /****************************************************************************\
 |
@@ -386,8 +387,6 @@ Returns:
 
 */
 
-static lmic_txmessage_cb_t evEchoCommandCb;
-
 static void evEchoCommand(
     const uint8_t *pMessage,
     size_t nMessage
@@ -439,7 +438,7 @@ Returns:
 
 */
 
-static const char * lmic_compliance_fsmstate_Getname(lmic_compliance_fsmstate_t state) {
+const char * LMICcompliance_fsmstate_getName(lmic_compliance_fsmstate_t state) {
     const char * const names[] = { LMIC_COMPLIANCE_FSMSTATE__NAMES };
 
     if ((unsigned) state >= sizeof(names)/sizeof(names[0]))
@@ -497,8 +496,8 @@ static void fsmEval(void) {
             // state change!
             LMIC_COMPLIANCE_PRINTF("%s: change state %s(%u) => %s(%u)\n",
                 __func__,
-                lmic_compliance_fsmstate_Getname(oldState), (unsigned) oldState,
-                lmic_compliance_fsmstate_Getname(newState), (unsigned) newState
+                LMICcompliance_fsmstate_getName(oldState), (unsigned) oldState,
+                LMICcompliance_fsmstate_getName(newState), (unsigned) newState
                 );
             fNewState = true;
             LMIC_Compliance.fsmState = newState;
