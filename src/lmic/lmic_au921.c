@@ -249,7 +249,7 @@ void LMICau921_updateTx(ostime_t txbeg) {
                 globalDutyDelay = txbeg + (airtime << LMIC.globalDutyRate);
         }
         if (LMICau921_getUplinkDwellBit(LMIC.txParam)) {
-                dwellDelay = AS923_UPLINK_DWELL_TIME_osticks;
+                dwellDelay = AU921_UPLINK_DWELL_TIME_osticks;
         }
         if (dwellDelay > globalDutyDelay) {
                 globalDutyDelay = dwellDelay;
