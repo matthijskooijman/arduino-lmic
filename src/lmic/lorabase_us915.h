@@ -77,6 +77,12 @@ enum {
                                         // on an 64-channel bandplan. See code
                                         // that computes tx power.
 };
+
+enum {
+        US915_LinkAdrReq_POW_MAX_1_0_2 = 0xA,
+        US915_LinkAdrReq_POW_MAX_1_0_3 = 0xE,
+};
+
 enum { DR_PAGE_US915 = 0x10 * (LMIC_REGION_us915 - 1) };
 
 enum { US915_LMIC_REGION_EIRP = 0 };         // region doesn't use EIRP, uses tx power

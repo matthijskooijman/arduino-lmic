@@ -199,4 +199,9 @@
 # define LMIC_ENABLE_event_logging 0        /* PARAM */
 #endif
 
+// LMIC_LORAWAN_SPEC_VERSION
+#if !defined(LMIC_LORAWAN_SPEC_VERSION)
+# define LMIC_LORAWAN_SPEC_VERSION	LMIC_LORAWAN_SPEC_VERSION_1_0_3
+#endif
+
 #endif // _lmic_config_h_

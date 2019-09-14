@@ -203,4 +203,13 @@ Revision history:
 #define CFG_LMIC_EU_like        (!!(CFG_LMIC_REGION_MASK & CFG_LMIC_EU_like_MASK))
 #define CFG_LMIC_US_like        (!!(CFG_LMIC_REGION_MASK & CFG_LMIC_US_like_MASK))
 
+//
+// The supported LMIC LoRaWAAN spec versions. These need to be numerically ordered,
+// so that we can (for example) compare
+//
+//    LMIC_LORAWAN_SPEC_VERSION < LMIC_LORAWAN_SPEC_VERSION_1_0_3.
+//
+#define LMIC_LORAWAN_SPEC_VERSION_1_0_2  0x01000200u
+#define LMIC_LORAWAN_SPEC_VERSION_1_0_3  0x01000300u
+
 #endif /* _LMIC_CONFIG_PRECONDITIONS_H_ */
