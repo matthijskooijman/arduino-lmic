@@ -753,6 +753,11 @@ static void acSendUplinkBuffer(void) {
         LMIC_COMPLIANCE_PRINTF("%s: queued %u bytes\n", __func__, LMIC_Compliance.uplinkSize);
     } else {
         LMIC_COMPLIANCE_PRINTF("%s: uplink %u bytes failed (error %d)\n", __func__, LMIC_Compliance.uplinkSize, eSend);
+        if (eSend == LMIC_ERROR_TX_NOT_FEASIBLE) {
+            // Reverse the increment of the downlink count. Needed for US compliance.
+            if (CFG_region == LMIC_REGION_us915)
+                --LMIC_Compliance.downlinkCount;
+        }
         LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE;
         fsmEval();
     }
