@@ -98,6 +98,7 @@ public:
         u2_t        opmode;
         u2_t        fcntDn;
         u2_t        fcntUp;
+        u2_t        rxsyms;
         rps_t       rps;
         u1_t        txChnl;
         u1_t        datarate;
@@ -134,6 +135,7 @@ public:
             pn->opmode = LMIC.opmode;
             pn->fcntDn = (u2_t) LMIC.seqnoDn;
             pn->fcntUp = (u2_t) LMIC.seqnoUp;
+            pn->rxsyms = LMIC.rxsyms;
             pn->rps = LMIC.rps;
             pn->txChnl = LMIC.txChnl;
             pn->datarate = LMIC.datarate;
@@ -484,6 +486,7 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printOpmode(e.opmode);
                 printTxend(e);
                 Serial.print(F(", delta ms ")); Serial.print(osticks2ms(e.time - e.txend));
+                Serial.print(F(", rxsyms=")); Serial.print(unsigned(e.rxsyms));
                 break;
 
             case EV_JOIN_TXCOMPLETE:
