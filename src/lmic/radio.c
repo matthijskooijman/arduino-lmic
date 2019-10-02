@@ -467,7 +467,7 @@ static void configLoraModem () {
         // set ModemConfig1
         writeReg(LORARegModemConfig1, mc1);
 
-        mc2 = (SX1272_MC2_SF7 + ((sf-1)<<4));
+        mc2 = (SX1272_MC2_SF7 + ((sf-1)<<4) + ((LMIC.rxsyms >> 8) & 0x3) );
         if (getNocrc(LMIC.rps) == 0) {
             mc2 |= SX1276_MC2_RX_PAYLOAD_CRCON;
         }
