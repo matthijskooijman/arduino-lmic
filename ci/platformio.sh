@@ -139,6 +139,9 @@ then
 
     # Make sure debug prints work
     PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D LED_BUILTIN=13 -D LMIC_DEBUG_LEVEL=2 -D LMIC_PRINTF_TO=Serial' platformio ci --lib . --board feather32u4 'examples/raw/raw.ino'
+
+    # Check build with deprecated CFG_au921 flag
+    PLATFORMIO_BUILD_FLAGS='-D COMPILE_REGRESSION_TEST -D ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -D CFG_au921   -D CFG_sx1276_radio' platformio ci --lib . --board feather32u4 'examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino'
 elif [ "$TARGET" == "samd" ]
 then
     echo "WARNING: target '$TARGET' is not configured yet."

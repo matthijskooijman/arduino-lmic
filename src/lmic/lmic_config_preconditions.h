@@ -92,6 +92,11 @@ Revision history:
 # include CFG_TEXT_1(ARDUINO_LMIC_PROJECT_CONFIG_H)
 #endif /* ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS */
 
+#ifdef CFG_au921
+#   warning "CFG_au921 was deprecated in favour of CFG_au915. Support for CFG_au921 might be removed in the future."
+#   define CFG_au915
+#endif
+
 // a mask of the supported regions
 // TODO(tmm@mcci.com) consider moving this block to a central file as it's not
 // user-editable.
