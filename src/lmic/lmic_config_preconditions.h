@@ -66,7 +66,7 @@ Revision history:
 #define LMIC_REGION_us915    2
 #define LMIC_REGION_cn783    3
 #define LMIC_REGION_eu433    4
-#define LMIC_REGION_au921    5
+#define LMIC_REGION_au915    5
 #define LMIC_REGION_cn490    6
 #define LMIC_REGION_as923    7
 #define LMIC_REGION_kr920    8
@@ -100,7 +100,7 @@ Revision history:
                                 (1 << LMIC_REGION_us915) |      \
                              /* (1 << LMIC_REGION_cn783) | */   \
                              /* (1 << LMIC_REGION_eu433) | */   \
-                                (1 << LMIC_REGION_au921) |      \
+                                (1 << LMIC_REGION_au915) |      \
                              /* (1 << LMIC_REGION_cn490) | */   \
                                 (1 << LMIC_REGION_as923) |      \
                                 (1 << LMIC_REGION_kr920) |      \
@@ -124,7 +124,7 @@ Revision history:
                          (defined(CFG_us915) << LMIC_REGION_us915) | \
                          (defined(CFG_cn783) << LMIC_REGION_cn783) | \
                          (defined(CFG_eu433) << LMIC_REGION_eu433) | \
-                         (defined(CFG_au921) << LMIC_REGION_au921) | \
+                         (defined(CFG_au915) << LMIC_REGION_au915) | \
                          (defined(CFG_cn490) << LMIC_REGION_cn490) | \
                          (defined(CFG_as923) << LMIC_REGION_as923) | \
                          (defined(CFG_kr920) << LMIC_REGION_kr920) | \
@@ -142,8 +142,8 @@ Revision history:
 # define CFG_region     LMIC_REGION_cn783
 #elif defined(CFG_eu433)
 # define CFG_region     LMIC_REGION_eu433
-#elif defined(CFG_au921)
-# define CFG_region     LMIC_REGION_au921
+#elif defined(CFG_au915)
+# define CFG_region     LMIC_REGION_au915
 #elif defined(CFG_cn490)
 # define CFG_region     LMIC_REGION_cn490
 #elif defined(CFG_as923jp)
@@ -170,7 +170,7 @@ Revision history:
                              /* (1 << LMIC_REGION_us915) | */   \
                                 (1 << LMIC_REGION_cn783) |      \
                                 (1 << LMIC_REGION_eu433) |      \
-                             /* (1 << LMIC_REGION_au921) | */   \
+                             /* (1 << LMIC_REGION_au915) | */   \
                              /* (1 << LMIC_REGION_cn490) | */   \
                                 (1 << LMIC_REGION_as923) |      \
                                 (1 << LMIC_REGION_kr920) |      \
@@ -188,7 +188,7 @@ Revision history:
                                 (1 << LMIC_REGION_us915) |      \
                              /* (1 << LMIC_REGION_cn783) | */   \
                              /* (1 << LMIC_REGION_eu433) | */   \
-                                (1 << LMIC_REGION_au921) |      \
+                                (1 << LMIC_REGION_au915) |      \
                              /* (1 << LMIC_REGION_cn490) | */   \
                              /* (1 << LMIC_REGION_as923) | */   \
                              /* (1 << LMIC_REGION_kr920) | */   \

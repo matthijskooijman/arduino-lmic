@@ -226,28 +226,28 @@ enum _dr_configured_t {
 };
 # endif // LMIC_DR_LEGACY
 
-#elif defined(CFG_au921)  // =========================================
+#elif defined(CFG_au915)  // =========================================
 
-#include "lorabase_au921.h"
+#include "lorabase_au915.h"
 
 // per 2.5.3: must be implemented
 #define LMIC_ENABLE_TxParamSetupReq	1
 
-enum { DR_DFLTMIN       = AU921_DR_SF7 };  // DR5
+enum { DR_DFLTMIN       = AU915_DR_SF7 };  // DR5
 
                                 // DR_PAGE is a debugging parameter; it must be defined but it has no use in arduino-lmic
-enum { DR_PAGE          = DR_PAGE_AU921 };
+enum { DR_PAGE          = DR_PAGE_AU915 };
 
 //enum { CHNL_PING        = 0 }; // used only for default init of state (follows beacon - rotating)
-enum { FREQ_PING        = AU921_500kHz_DNFBASE + 0*AU921_500kHz_DNFSTEP };  // default ping freq
-enum { DR_PING          = AU921_DR_SF10CR };       // default ping DR
+enum { FREQ_PING        = AU915_500kHz_DNFBASE + 0*AU915_500kHz_DNFSTEP };  // default ping freq
+enum { DR_PING          = AU915_DR_SF10CR };       // default ping DR
 //enum { CHNL_DNW2        = 0 };
-enum { FREQ_DNW2        = AU921_500kHz_DNFBASE + 0*AU921_500kHz_DNFSTEP };
-enum { DR_DNW2          = AU921_DR_SF12CR };                  // DR8
+enum { FREQ_DNW2        = AU915_500kHz_DNFBASE + 0*AU915_500kHz_DNFSTEP };
+enum { DR_DNW2          = AU915_DR_SF12CR };                  // DR8
 enum { CHNL_BCN         = 0 }; // used only for default init of state (rotating beacon scheme)
-enum { DR_BCN           = AU921_DR_SF10CR };
+enum { DR_BCN           = AU915_DR_SF10CR };
 enum { AIRTIME_BCN      = 72192 };  // micros ... TODO(tmm@mcci.com) check.
-enum { LMIC_REGION_EIRP = AU921_LMIC_REGION_EIRP };         // region uses EIRP
+enum { LMIC_REGION_EIRP = AU915_LMIC_REGION_EIRP };         // region uses EIRP
 
 enum {
         // Beacon frame format AU DR10/SF10 500kHz
@@ -264,20 +264,20 @@ enum {
 
 # if LMIC_DR_LEGACY
 enum _dr_configured_t {
-        DR_SF12    = AU921_DR_SF12,
-        DR_SF11    = AU921_DR_SF11,
-        DR_SF10    = AU921_DR_SF10,
-        DR_SF9     = AU921_DR_SF9,
-        DR_SF8     = AU921_DR_SF8,
-        DR_SF7     = AU921_DR_SF7,
-        DR_SF8C    = AU921_DR_SF8C,
-        DR_NONE    = AU921_DR_NONE,
-        DR_SF12CR  = AU921_DR_SF12CR,
-        DR_SF11CR  = AU921_DR_SF11CR,
-        DR_SF10CR  = AU921_DR_SF10CR,
-        DR_SF9CR   = AU921_DR_SF9CR,
-        DR_SF8CR   = AU921_DR_SF8CR,
-        DR_SF7CR   = AU921_DR_SF7CR
+        DR_SF12    = AU915_DR_SF12,
+        DR_SF11    = AU915_DR_SF11,
+        DR_SF10    = AU915_DR_SF10,
+        DR_SF9     = AU915_DR_SF9,
+        DR_SF8     = AU915_DR_SF8,
+        DR_SF7     = AU915_DR_SF7,
+        DR_SF8C    = AU915_DR_SF8C,
+        DR_NONE    = AU915_DR_NONE,
+        DR_SF12CR  = AU915_DR_SF12CR,
+        DR_SF11CR  = AU915_DR_SF11CR,
+        DR_SF10CR  = AU915_DR_SF10CR,
+        DR_SF9CR   = AU915_DR_SF9CR,
+        DR_SF8CR   = AU915_DR_SF8CR,
+        DR_SF7CR   = AU915_DR_SF7CR
 };
 # endif // LMIC_DR_LEGACY
 

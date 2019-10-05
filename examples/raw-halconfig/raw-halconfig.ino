@@ -275,7 +275,7 @@ void setup() {
 
   // default tx power for US: 21 dBm
   LMIC.txpow = 21;
-#elif defined(CFG_au921)
+#elif defined(CFG_au915)
   // make it easier for test, by pull the parameters up to the top of the
   // block. Ideally, we'd use the serial port to drive this; or have
   // a voting protocol where one side is elected the controller and
@@ -306,30 +306,30 @@ void setup() {
         {
         if (kUplinkChannel < 64)
                 {
-                LMIC.freq = AU921_125kHz_UPFBASE +
-                            kUplinkChannel * AU921_125kHz_UPFSTEP;
+                LMIC.freq = AU915_125kHz_UPFBASE +
+                            kUplinkChannel * AU915_125kHz_UPFSTEP;
                 uBandwidth = 125;
                 }
         else
                 {
-                LMIC.freq = AU921_500kHz_UPFBASE +
-                            (kUplinkChannel - 64) * AU921_500kHz_UPFSTEP;
+                LMIC.freq = AU915_500kHz_UPFBASE +
+                            (kUplinkChannel - 64) * AU915_500kHz_UPFSTEP;
                 uBandwidth = 500;
                 }
         }
   else
         {
         // downlink channel
-        LMIC.freq = AU921_500kHz_DNFBASE +
-                    kDownlinkChannel * AU921_500kHz_DNFSTEP;
+        LMIC.freq = AU915_500kHz_DNFBASE +
+                    kDownlinkChannel * AU915_500kHz_DNFSTEP;
         uBandwidth = 500;
         }
 
   // Use a suitable spreading factor
   if (uBandwidth < 500)
-        LMIC.datarate = AU921_DR_SF7;         // DR4
+        LMIC.datarate = AU915_DR_SF7;         // DR4
   else
-        LMIC.datarate = AU921_DR_SF12CR;      // DR8
+        LMIC.datarate = AU915_DR_SF12CR;      // DR8
 
   // default tx power for AU: 30 dBm
   LMIC.txpow = 30;

@@ -139,7 +139,7 @@ script:
  # make sure the compliance sketch compiles on AVR in all regions.
  - _notesp32 ||  { _projcfg CFG_us915   CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
  - _notesp32 ||  { _projcfg CFG_eu868   CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
- - _notesp32 ||  { _projcfg CFG_au921   CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notesp32 ||  { _projcfg CFG_au915   CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
  - _notesp32 ||  { _projcfg CFG_as923   CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
  - _notesp32 ||  { _projcfg CFG_as923jp CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
  - _notesp32 ||  { _projcfg CFG_kr920   CFG_sx1276_radio && arduino --verify --board $(_esp32opts '' projcfg) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
@@ -151,7 +151,7 @@ script:
  #
  - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
 #- _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
- - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
+ - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_au915   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
 #- _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
 #- _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
 #- _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_kr920   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
@@ -159,7 +159,7 @@ script:
 
  - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino ; }
  - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino ; }
- - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino ; }
+ - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_au915   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino ; }
  - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino ; }
  - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino ; }
  - _notavr ||  { _projcfg COMPILE_REGRESSION_TEST CFG_kr920   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/raw-feather/raw-feather.ino ; }
@@ -169,7 +169,7 @@ script:
  # unfortunately EU currently is a little too large, so we don't do EU.
  - _notavr ||  { _projcfg_class_a CFG_us915   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
  # - _notavr ||  { _projcfg_class_a CFG_eu868   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
- - _notavr ||  { _projcfg_class_a CFG_au921   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
+ - _notavr ||  { _projcfg_class_a CFG_au915   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
  - _notavr ||  { _projcfg_class_a CFG_as923   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
  - _notavr ||  { _projcfg_class_a CFG_as923jp CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
  - _notavr ||  { _projcfg_class_a CFG_kr920   CFG_sx1276_radio && arduino --verify --board $(_avropts) $PWD/examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino ; }
@@ -192,7 +192,7 @@ script:
  - _notsamd || arduino --verify --board $(_samdopts '' eu868) $PWD/examples/raw-feather/raw-feather.ino
 # V1.1.0 of the samd bsp doesn't support au915 correctly -- test with projcfg
 #- arduino --verify --board $(_samdopts '' au915) $PWD/examples/raw-feather/raw-feather.ino
- - _notsamd || { _projcfg CFG_au921 CFG_sx1276_radio && arduino --verify --board $(_samdopts '' projcfg) $PWD/examples/raw-feather/raw-feather.ino ; }
+ - _notsamd || { _projcfg CFG_au915 CFG_sx1276_radio && arduino --verify --board $(_samdopts '' projcfg) $PWD/examples/raw-feather/raw-feather.ino ; }
  - _notsamd || arduino --verify --board $(_samdopts '' as923) $PWD/examples/raw-feather/raw-feather.ino
  - _notsamd || arduino --verify --board $(_samdopts '' as923jp) $PWD/examples/raw-feather/raw-feather.ino
 # V2.0.0 of the samd bsp doesn't include kr920 support in menus, use projcfg
@@ -210,7 +210,7 @@ script:
 # test ttn-otaa-feather-us915 in all relevant regions with sx1276
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
- - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
+ - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_kr920   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915/ttn-otaa-feather-us915.ino ; }
@@ -229,7 +229,7 @@ script:
 # test ttn-otaa with all regions
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
- - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
+ - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_kr920   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa/ttn-otaa.ino ; }
@@ -238,7 +238,7 @@ script:
 # test ttn-abp with all regions
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp/ttn-abp.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp/ttn-abp.ino ; }
- - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp/ttn-abp.ino ; }
+ - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp/ttn-abp.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp/ttn-abp.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp/ttn-abp.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_kr920   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp/ttn-abp.ino ; }
@@ -247,7 +247,7 @@ script:
 # test ttn-otaa-feather-us915-dht22 in all relevant regions with sx1276
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino ; }
- - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino ; }
+ - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_kr920   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino ; }
@@ -256,7 +256,7 @@ script:
 # test ttn-abp-feather-us915-dht22 in all relevant regions with sx1276
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino ; }
- - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino ; }
+ - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino ; }
 #- _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_kr920   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-abp-feather-us915-dht22/ttn-abp-feather-us915-dht22.ino ; }
@@ -265,7 +265,7 @@ script:
 # test ttn-otaa-network-time in all regions
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_us915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_eu868   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino ; }
- - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au921   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino ; }
+ - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_au915   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_as923jp CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino ; }
  - _notsamd || { _projcfg COMPILE_REGRESSION_TEST CFG_kr920   CFG_sx1276_radio && arduino --verify --board mcci:samd:mcci_catena_4450:lorawan_region=projcfg $PWD/examples/ttn-otaa-network-time/ttn-otaa-network-time.ino ; }
