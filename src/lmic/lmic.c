@@ -1872,7 +1872,7 @@ static bit_t buildDataFrame (void) {
         LMIC.adrChanged = 0;
     }
 
-    u1_t flen = end + (txdata ? 5+dlen : 4);
+    unsigned int flen = end + (txdata ? 5+dlen : 4);
     if( flen > MAX_LEN_FRAME ) {
         // Options and payload too big - delay payload
         txdata = 0;
