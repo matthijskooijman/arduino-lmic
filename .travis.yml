@@ -19,7 +19,7 @@ sudo: true
 
 env:
  global:
-  - IDE_VERSION=1.8.9
+  - IDE_VERSION=1.8.10
  matrix:
   - TARGET=samd
   - TARGET=stm32l0
