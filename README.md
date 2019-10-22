@@ -428,6 +428,7 @@ The following boards are pre-integrated.
 
 For use with PlatformIO, the `lmic_project_config.h` has to be disabled with the flag `ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS`.  
 The settings are defined in PlatformIO by `build_flags`.  
+
 ```ini
 lib_deps =
     MCCI LoRaWAN LMIC library
@@ -437,6 +438,7 @@ build_flags =
     -D CFG_eu868=1
     -D CFG_sx1276_radio=1
 ```
+
 ## Manual configuration
 
 If your desired transceiver board is not pre-integrated, you need to provide the library with the required information.
