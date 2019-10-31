@@ -190,8 +190,8 @@ script:
 # test raw-feather in each of the regions.
  - _notsamd || arduino --verify --board $(_samdopts '' us915) $PWD/examples/raw-feather/raw-feather.ino
  - _notsamd || arduino --verify --board $(_samdopts '' eu868) $PWD/examples/raw-feather/raw-feather.ino
-# V1.1.0 of the samd bsp doesn't support au921 correctly -- test with projcfg
-#- arduino --verify --board $(_samdopts '' au921) $PWD/examples/raw-feather/raw-feather.ino
+# V1.1.0 of the samd bsp doesn't support au915 correctly -- test with projcfg
+#- arduino --verify --board $(_samdopts '' au915) $PWD/examples/raw-feather/raw-feather.ino
  - _notsamd || { _projcfg CFG_au921 CFG_sx1276_radio && arduino --verify --board $(_samdopts '' projcfg) $PWD/examples/raw-feather/raw-feather.ino ; }
  - _notsamd || arduino --verify --board $(_samdopts '' as923) $PWD/examples/raw-feather/raw-feather.ino
  - _notsamd || arduino --verify --board $(_samdopts '' as923jp) $PWD/examples/raw-feather/raw-feather.ino
@@ -304,7 +304,7 @@ script:
 #
  - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' us915  ) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
  - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' eu868  ) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
- - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' au921  ) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
+ - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' au915  ) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
  - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' as923  ) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
  - _notstm32l0 ||  arduino --verify --board $(_stm32l0opts '' as923jp) $MCCI_STM32_OPTS $PWD/examples/raw-feather/raw-feather.ino
 # V2.4.0 of the stm bsp doesn't include kr920 support in menus, use projcfg
