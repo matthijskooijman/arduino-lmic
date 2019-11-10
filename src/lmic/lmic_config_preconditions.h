@@ -97,6 +97,11 @@ Revision history:
 #   define CFG_au915
 #endif
 
+// for backwards compatibility to legacy code, define CFG_au921 if we see CFG_au915.
+#if defined(CFG_au915) && !defined(CFG_au921)
+#   define CFG_au921
+#endif
+
 // a mask of the supported regions
 // TODO(tmm@mcci.com) consider moving this block to a central file as it's not
 // user-editable.
