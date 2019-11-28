@@ -75,6 +75,12 @@ static osjob_t sendjob;
 // cycle limitations).
 const unsigned TX_INTERVAL = 60;
 
+void printHex2(unsigned v) {
+    v &= 0xff;
+    if (v < 16)
+        Serial.print('0');
+    Serial.print(v, HEX);
+}
 
 void onEvent (ev_t ev) {
     Serial.print(os_getTime());
@@ -107,20 +113,20 @@ void onEvent (ev_t ev) {
               Serial.println(netid, DEC);
               Serial.print("devaddr: ");
               Serial.println(devaddr, HEX);
-              Serial.print("artKey: ");
+              Serial.print("AppSKey: ");
               for (size_t i=0; i<sizeof(artKey); ++i) {
                 if (i != 0)
                   Serial.print("-");
-                Serial.print(artKey[i], HEX);
+                printHex2(artKey[i]);
               }
               Serial.println("");
-              Serial.print("nwkKey: ");
+              Serial.print("NwkSKey: ");
               for (size_t i=0; i<sizeof(nwkKey); ++i) {
                       if (i != 0)
                               Serial.print("-");
-                      Serial.print(nwkKey[i], HEX);
+                      printHex2(nwkKey[i]);
               }
-              Serial.println("");
+              Serial.println();
             }
             // Disable link check validation (automatically enabled
             // during join, but because slow data rates change max TX
