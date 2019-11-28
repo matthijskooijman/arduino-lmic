@@ -249,6 +249,14 @@
 #define SX1276_RSSI_ADJUST_LF   -164            // add to rssi value to get dB (LF)
 #define SX1276_RSSI_ADJUST_HF   -157            // add to rssi value to get dB (HF)
 
+#ifdef CFG_sx1276_radio
+# define SX127X_RSSI_ADJUST_LF  SX1276_RSSI_ADJUST_LF
+# define SX127X_RSSI_ADJUST_HF  SX1276_RSSI_ADJUST_HF
+#else
+# define SX127X_RSSI_ADJUST_LF  SX1272_RSSI_ADJUST
+# define SX127X_RSSI_ADJUST_HF  SX1272_RSSI_ADJUST
+#endif
+
 // per datasheet 2.5.2 (but note that we ought to ask Semtech to confirm, because
 // datasheet is unclear).
 #define SX127X_RX_POWER_UP      us2osticks(500) // delay this long to let the receiver power up.
@@ -1240,9 +1248,21 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
             readBuf(RegFifo, LMIC.frame, LMIC.dataLen);
             // read rx quality parameters
             LMIC.snr  = readReg(LORARegPktSnrValue); // SNR [dB] * 4
-            LMIC.rssi = readReg(LORARegPktRssiValue);
-            LMIC_X_DEBUG_PRINTF("RX snr=%u rssi=%d\n", LMIC.snr/4, SX127X_RSSI_ADJUST_HF + LMIC.rssi);
-            LMIC.rssi = LMIC.rssi - 125 + 64; // RSSI [dBm] (-196...+63)
+            s2_t rssi = readReg(LORARegPktRssiValue);
+            if (LMIC.freq > SX127X_FREQ_LF_MAX)
+                rssi -= SX127X_RSSI_ADJUST_HF;
+            else
+                rssi -= SX127X_RSSI_ADJUST_LF;
+            if (LMIC.snr < 0)
+                rssi = rssi - (-LMIC.snr >> 2);
+            else if (rssi > -100) {
+                s2_t rssiadj = (rssi * 16 + 7) / 15;
+                rssi += rssiadj;
+            }
+
+            LMIC_X_DEBUG_PRINTF("RX snr=%u rssi=%d\n", LMIC.snr/4, rssi);
+            // ugh compatibility requires a biased range. RSSI
+            LMIC.rssi = (s1_t) (RSSI_OFF + (rssi < -196 ? -196 : rssi > 63 ? 63 : rssi)); // RSSI [dBm] (-196...+63)
         } else if( flags & IRQ_LORA_RXTOUT_MASK ) {
             // indicate timeout
             LMIC.dataLen = 0;
@@ -1273,8 +1293,9 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
             // now read the FIFO
             readBuf(RegFifo, LMIC.frame, LMIC.dataLen);
             // read rx quality parameters
-            LMIC.snr  = 0; // determine snr
-            LMIC.rssi = 0; // determine rssi
+            LMIC.snr  = 0;              // SX127x doesn't give SNR for FSK.
+            LMIC.rssi = -64 + RSSI_OFF; // SX127x doesn't give packet RSSI for FSK,
+                                        // so substitute a dummy value.
         } else if( flags1 & IRQ_FSK1_TIMEOUT_MASK ) {
             // indicate timeout
             LMIC.dataLen = 0;
