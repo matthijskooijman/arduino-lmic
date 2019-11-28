@@ -82,6 +82,13 @@ const lmic_pinmap lmic_pins = {
     .dio = {2, 3, 4},
 };
 
+void printHex2(unsigned v) {
+    v &= 0xff;
+    if (v < 16)
+        Serial.print('0');
+    Serial.print(v, HEX);
+}
+
 void onEvent (ev_t ev) {
     Serial.print(os_getTime());
     Serial.print(": ");
@@ -113,16 +120,20 @@ void onEvent (ev_t ev) {
               Serial.println(netid, DEC);
               Serial.print("devaddr: ");
               Serial.println(devaddr, HEX);
-              Serial.print("artKey: ");
+              Serial.print("AppSKey: ");
               for (size_t i=0; i<sizeof(artKey); ++i) {
-                Serial.print(artKey[i], HEX);
+                if (i != 0)
+                  Serial.print("-");
+                printHex2(artKey[i]);
               }
               Serial.println("");
-              Serial.print("nwkKey: ");
+              Serial.print("NwkSKey: ");
               for (size_t i=0; i<sizeof(nwkKey); ++i) {
-                Serial.print(nwkKey[i], HEX);
+                      if (i != 0)
+                              Serial.print("-");
+                      printHex2(nwkKey[i]);
               }
-              Serial.println("");
+              Serial.println();
             }
             // Disable link check validation (automatically enabled
             // during join, but because slow data rates change max TX
@@ -181,6 +192,15 @@ void onEvent (ev_t ev) {
         */
         case EV_TXSTART:
             Serial.println(F("EV_TXSTART"));
+            break;
+        case EV_TXCANCELED:
+            Serial.println(F("EV_TXCANCELED"));
+            break;
+        case EV_RXSTART:
+            /* do not print anything -- it wrecks timing */
+            break;
+        case EV_JOIN_TXCOMPLETE:
+            Serial.println(F("EV_JOIN_TXCOMPLETE: no JoinAccept"));
             break;
         default:
             Serial.print(F("Unknown event: "));
