@@ -773,6 +773,7 @@ static void txfsk () {
     hal_pin_rxtx(1);
 
     // now we actually start the transmission
+    LMICOS_logEventUint32("+Tx FSK", LMIC.dataLen);
     opmode(OPMODE_TX);
 }
 
@@ -817,6 +818,7 @@ static void txlora () {
     hal_pin_rxtx(1);
 
     // now we actually start the transmission
+    LMICOS_logEventUint32("+Tx LoRa", LMIC.dataLen);
     opmode(OPMODE_TX);
 
 #if LMIC_DEBUG_LEVEL > 0
@@ -942,12 +944,14 @@ static void rxlora (u1_t rxmode) {
     // now instruct the radio to receive
     if (rxmode == RXMODE_SINGLE) { // single rx
         hal_waitUntil(LMIC.rxtime); // busy wait until exact rx time
+        LMICOS_logEvent("+Rx LoRa Single");
         opmode(OPMODE_RX_SINGLE);
 #if LMIC_DEBUG_LEVEL > 0
         ostime_t now = os_getTime();
         LMIC_DEBUG_PRINTF("start single rx: now-rxtime: %"LMIC_PRId_ostime_t"\n", now - LMIC.rxtime);
 #endif
     } else { // continous rx (scan or rssi)
+        LMICOS_logEvent("+Rx LoRa Continuous");
         opmode(OPMODE_RX);
     }
 
@@ -1011,8 +1015,10 @@ static void rxfsk (u1_t rxmode) {
     // now instruct the radio to receive
     if (rxmode == RXMODE_SINGLE) {
         hal_waitUntil(LMIC.rxtime); // busy wait until exact rx time
+        LMICOS_logEvent("+Rx FSK");
         opmode(OPMODE_RX); // no single rx mode available in FSK
     } else {
+        LMICOS_logEvent("+Rx FSK Continuous");
         opmode(OPMODE_RX);
     }
 }
@@ -1228,6 +1234,7 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
     writeReg(LORARegFifoAddrPtr, 0x00);
     u1_t s = readReg(RegOpMode);
     u1_t c = readReg(LORARegModemConfig2);
+    LMICOS_logEventUint32("+Tx LoRa Continuous", (r << 8) + c);
     opmode(OPMODE_TX);
     return;
 #else /* ! CFG_TxContinuousMode */
@@ -1290,7 +1297,7 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
         u1_t flags1 = readReg(FSKRegIrqFlags1);
         u1_t flags2 = readReg(FSKRegIrqFlags2);
 
-        LMICOS_logEventUint32("radio_irq_handler_v2: FSK", (flags2 << UINT32_C(8)) | flags1);
+        LMICOS_logEventUint32("*radio_irq_handler_v2: FSK", (flags2 << UINT32_C(8)) | flags1);
 
         if( flags2 & IRQ_FSK2_PACKETSENT_MASK ) {
             // save exact tx time
