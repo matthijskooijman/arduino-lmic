@@ -971,8 +971,14 @@ static void rxlora (u1_t rxmode) {
 }
 
 static void rxfsk (u1_t rxmode) {
-    // only single rx (no continuous scanning, no noise sampling)
-    ASSERT( rxmode == RXMODE_SINGLE );
+    // only single or continuous rx (no noise sampling)
+    if (rxmode == RXMODE_SCAN) {
+        // indicate no bytes received.
+        LMIC.dataLen = 0;
+        // complete the request by scheduling the job.
+        os_setCallback(&LMIC.osjob, LMIC.osjob.func);
+    }
+
     // select FSK modem (from sleep mode)
     //writeReg(RegOpMode, 0x00); // (not LoRa)
     opmodeFSK();
@@ -1003,8 +1009,12 @@ static void rxfsk (u1_t rxmode) {
     hal_pin_rxtx(0);
 
     // now instruct the radio to receive
-    hal_waitUntil(LMIC.rxtime); // busy wait until exact rx time
-    opmode(OPMODE_RX); // no single rx mode available in FSK
+    if (rxmode == RXMODE_SINGLE) {
+        hal_waitUntil(LMIC.rxtime); // busy wait until exact rx time
+        opmode(OPMODE_RX); // no single rx mode available in FSK
+    } else {
+        opmode(OPMODE_RX);
+    }
 }
 
 static void startrx (u1_t rxmode) {
