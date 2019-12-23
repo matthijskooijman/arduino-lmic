@@ -44,6 +44,7 @@ typedef u1_t cr_t;
 typedef u1_t sf_t;
 typedef u1_t bw_t;
 typedef u1_t dr_t;
+typedef u2_t rxsyms_t;
 
 // Radio parameter set (encodes SF/BW/CR/IH/NOCRC)
 // 2..0:    Spreading factor

@@ -316,7 +316,7 @@ static ostime_t calcRxWindow (u1_t secs, dr_t dr) {
         rxoff = (LMIC.drift * (ostime_t)secs) >> BCN_INTV_exp;
         err = (LMIC.lastDriftDiff * (ostime_t)secs) >> BCN_INTV_exp;
     }
-    u2_t rxsyms = LMICbandplan_MINRX_SYMS_LoRa_ClassB;
+    rxsyms_t rxsyms = LMICbandplan_MINRX_SYMS_LoRa_ClassB;
     err += (ostime_t)LMIC.maxDriftDiff * LMIC.missedBcns;
     setRxsyms(LMICbandplan_MINRX_SYMS_LoRa_ClassB + (err / dr2hsym(dr)));
 
@@ -1447,13 +1447,13 @@ ostime_t LMICcore_adjustForDrift (ostime_t delay, ostime_t hsym) {
         if ((1023 - LMIC.rxsyms) * hsym < drift) {
             LMIC.rxsyms = 1023;
         } else {
-            LMIC.rxsyms = (u2_t) (LMIC.rxsyms + drift / hsym);
+            LMIC.rxsyms = (rxsyms_t) (LMIC.rxsyms + drift / hsym);
         }
     }
     return delay;
 }
 
-ostime_t LMICcore_RxWindowOffset (ostime_t hsym, u2_t rxsyms_in) {
+ostime_t LMICcore_RxWindowOffset (ostime_t hsym, rxsyms_t rxsyms_in) {
     ostime_t const Tsym = 2 * hsym;
     ostime_t rxsyms;
     ostime_t rxoffset;

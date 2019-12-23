@@ -185,10 +185,10 @@ enum { KEEP_TXPOW = -128 };
 #if !defined(DISABLE_PING)
 //! \internal
 struct rxsched_t {
-    u1_t     dr;
+    dr_t     dr;
     u1_t     intvExp;   // 0..7
     u1_t     slot;      // runs from 0 to 128
-    u2_t     rxsyms;
+    rxsyms_t rxsyms;
     ostime_t rxbase;
     ostime_t rxtime;    // start of next spot
     u4_t     freq;
@@ -498,14 +498,14 @@ struct lmic_t {
     s2_t        drift;          // last measured drift
     s2_t        lastDriftDiff;
     s2_t        maxDriftDiff;
-    u2_t        bcnRxsyms;      //
+    rxsyms_t    bcnRxsyms;      //
 #endif
 
     /* (u)int8_t things */
     lmic_engine_update_state_t engineUpdateState;   // state of the engineUpdate() evaluator.
     s1_t        rssi;
     s1_t        snr;            // LMIC.snr is SNR times 4
-    u2_t        rxsyms;         // symbols for receive timeout.
+    rxsyms_t    rxsyms;         // symbols for receive timeout.
     u1_t        dndr;
     s1_t        txpow;          // transmit dBm (administrative)
     s1_t        radio_txpow;    // the radio driver's copy of txpow, in dB limited by adrTxPow, and

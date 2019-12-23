@@ -98,7 +98,7 @@ public:
         u2_t        opmode;
         u2_t        fcntDn;
         u2_t        fcntUp;
-        u2_t        rxsyms;
+        rxsyms_t    rxsyms;
         rps_t       rps;
         u1_t        txChnl;
         u1_t        datarate;
