@@ -471,6 +471,11 @@ static void configLoraModem () {
         if (getNocrc(LMIC.rps) == 0) {
             mc2 |= SX1276_MC2_RX_PAYLOAD_CRCON;
         }
+#if CFG_TxContinuousMode
+        // Only for testing
+        // set ModemConfig2 (sf, TxContinuousMode=1, AgcAutoOn=1 SymbTimeoutHi=00)
+        mc2 |= 0x8;
+#endif
         writeReg(LORARegModemConfig2, mc2);
 
         mc3 = SX1276_MC3_AGCAUTO;
@@ -527,14 +532,17 @@ static void configLoraModem () {
         // set ModemConfig1
         writeReg(LORARegModemConfig1, mc1);
 
-        // set ModemConfig2 (sf, AgcAutoOn=1 SymbTimeoutHi=00)
-        writeReg(LORARegModemConfig2, (SX1272_MC2_SF7 + ((sf-1)<<4)) | 0x04);
+        // set ModemConfig2 (sf, AgcAutoOn=1 SymbTimeoutHi)
+        u1_t mc2;
+        mc2 = (SX1272_MC2_SF7 + ((sf-1)<<4)) | 0x04 | ((LMIC.rxsyms >> 8) & 0x3));
 
 #if CFG_TxContinuousMode
         // Only for testing
         // set ModemConfig2 (sf, TxContinuousMode=1, AgcAutoOn=1 SymbTimeoutHi=00)
-        writeReg(LORARegModemConfig2, (SX1272_MC2_SF7 + ((sf-1)<<4)) | 0x06);
+        mc2 |= 0x8;
 #endif
+
+        writeReg(LORARegModemConfig2, mc2);
 
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
@@ -924,7 +932,7 @@ static void rxlora (u1_t rxmode) {
     }
 
     // set symbol timeout (for single rx)
-    writeReg(LORARegSymbTimeoutLsb, LMIC.rxsyms);
+    writeReg(LORARegSymbTimeoutLsb, (uint8_t) LMIC.rxsyms);
     // set sync word
     writeReg(LORARegSyncWord, LORA_MAC_PREAMBLE);
 

@@ -294,6 +294,16 @@ ostime_t calcAirTime (rps_t rps, u1_t plen) {
 //      500kHz   |  0   1   2   3   4   5
 //
 
+static void setRxsyms (ostime_t rxsyms) {
+    if (rxsyms >= (1u << 10u)) {
+        LMIC.rxsyms = (1u << 10u) - 1;
+    } else if (rxsyms < 0) {
+        LMIC.rxsyms = 0;
+    } else {
+        LMIC.rxsyms = rxsyms;
+    }
+}
+
 #if !defined(DISABLE_BEACONS)
 static ostime_t calcRxWindow (u1_t secs, dr_t dr) {
     ostime_t rxoff, err;
@@ -306,9 +316,9 @@ static ostime_t calcRxWindow (u1_t secs, dr_t dr) {
         rxoff = (LMIC.drift * (ostime_t)secs) >> BCN_INTV_exp;
         err = (LMIC.lastDriftDiff * (ostime_t)secs) >> BCN_INTV_exp;
     }
-    u1_t rxsyms = LMICbandplan_MINRX_SYMS_LoRa_ClassB;
+    u2_t rxsyms = LMICbandplan_MINRX_SYMS_LoRa_ClassB;
     err += (ostime_t)LMIC.maxDriftDiff * LMIC.missedBcns;
-    LMIC.rxsyms = LMICbandplan_MINRX_SYMS_LoRa_ClassB + (err / dr2hsym(dr));
+    setRxsyms(LMICbandplan_MINRX_SYMS_LoRa_ClassB + (err / dr2hsym(dr)));
 
     return (rxsyms-LMICbandplan_PAMBL_SYMS) * dr2hsym(dr) + rxoff;
 }
@@ -1434,16 +1444,16 @@ ostime_t LMICcore_adjustForDrift (ostime_t delay, ostime_t hsym) {
         // adjust rxsyms (the size of the window in syms) according to our
         // uncertainty. do this in a strange order to avoid a divide if we can.
         // rely on hsym = Tsym / 2
-        if ((255 - LMIC.rxsyms) * hsym < drift) {
-            LMIC.rxsyms = 255;
+        if ((1023 - LMIC.rxsyms) * hsym < drift) {
+            LMIC.rxsyms = 1023;
         } else {
-            LMIC.rxsyms = (u1_t) (LMIC.rxsyms + drift / hsym);
+            LMIC.rxsyms = (u2_t) (LMIC.rxsyms + drift / hsym);
         }
     }
     return delay;
 }
 
-ostime_t LMICcore_RxWindowOffset (ostime_t hsym, u1_t rxsyms_in) {
+ostime_t LMICcore_RxWindowOffset (ostime_t hsym, u2_t rxsyms_in) {
     ostime_t const Tsym = 2 * hsym;
     ostime_t rxsyms;
     ostime_t rxoffset;
@@ -1452,7 +1462,7 @@ ostime_t LMICcore_RxWindowOffset (ostime_t hsym, u1_t rxsyms_in) {
     if (rxsyms < rxsyms_in) {
         rxsyms = rxsyms_in;
     }
-    LMIC.rxsyms = (u1_t) rxsyms;
+    setRxsyms(rxsyms);
 
     rxoffset = (8 - rxsyms) * hsym - LMICbandplan_RX_EXTRA_MARGIN_osticks;
 
@@ -1498,9 +1508,9 @@ static void txDone (ostime_t delay, osjobcb_t func) {
     // change params and rps (US only) before we increment txChnl
     LMICbandplan_setRx1Params();
 
-    // LMIC.rxsyms carries the TX datarate (can be != LMIC.datarate [confirm retries etc.])
+    // LMIC.dndr carries the TX datarate (can be != LMIC.datarate [confirm retries etc.])
     // Setup receive - LMIC.rxtime is preloaded with 1.5 symbols offset to tune
-    // into the middle of the 8 symbols preamble.
+    // into the middle of the 8 symbols preamble. 
     if( LMICbandplan_isFSK() ) {
         LMICbandplan_txDoneFSK(delay, func);
     }
