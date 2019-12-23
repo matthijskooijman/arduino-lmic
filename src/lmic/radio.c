@@ -959,7 +959,7 @@ static void rxlora (u1_t rxmode) {
         LMIC_DEBUG_PRINTF("start single rx: now-rxtime: %"LMIC_PRId_ostime_t"\n", now - LMIC.rxtime);
 #endif
     } else { // continous rx (scan or rssi)
-        LMICOS_logEvent("+Rx LoRa Continuous");
+        LMICOS_logEventUint32("+Rx LoRa Continuous", rxmode);
         opmode(OPMODE_RX);
     }
 
