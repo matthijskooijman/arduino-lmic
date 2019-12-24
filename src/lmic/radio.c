@@ -781,6 +781,8 @@ static void txfsk () {
     hal_pin_rxtx(1);
 
     // now we actually start the transmission
+    if (LMIC.txend)
+        hal_waitUntil(LMIC.txend); // busy wait until exact rx time
     LMICOS_logEventUint32("+Tx FSK", LMIC.dataLen);
     opmode(OPMODE_TX);
 }
@@ -826,6 +828,8 @@ static void txlora () {
     hal_pin_rxtx(1);
 
     // now we actually start the transmission
+    if (LMIC.txend)
+        hal_waitUntil(LMIC.txend); // busy wait until exact rx time
     LMICOS_logEventUint32("+Tx LoRa", LMIC.dataLen);
     opmode(OPMODE_TX);
 
@@ -1350,7 +1354,14 @@ void os_radio (u1_t mode) {
 
       case RADIO_TX:
         // transmit frame now
+        LMIC.txend = 0;
         starttx(); // buf=LMIC.frame, len=LMIC.dataLen
+        break;
+
+      case RADIO_TX_AT:
+        if (LMIC.txend == 0)
+            LMIC.txend = 1;
+        starttx();
         break;
 
       case RADIO_RX:

@@ -71,6 +71,10 @@ The radio is placed in continuous receive mode. If a frame is received, `LMIC.os
 
 This operation is not supported in FSK mode.
 
+### `os_radio(RADIO_TX_AT)`
+
+This is like `os_radio(RADIO_TX)`, but the transmission is scheduled at `LMIC.txend`.
+
 ## Common parameters
 
 ### `LMIC.rps` (IN)
@@ -109,9 +113,11 @@ The array of data to be sent.
 
 The length of the array to be sent.
 
-### `LMIC.txend` (OUT)
+### `LMIC.txend` (IN, OUT)
 
-The OS time at which the TX end interrupt was recognized.
+For `RADIO_TX_AT`, an input parameter, for the scheduled TX time.
+
+For all transmissions, updated to the OS time at which the TX end interrupt was recognized.
 
 ## Receive parameters
 
