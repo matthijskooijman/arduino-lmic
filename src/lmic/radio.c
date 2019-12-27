@@ -1277,16 +1277,17 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
             readBuf(RegFifo, LMIC.frame, LMIC.dataLen);
             // read rx quality parameters
             LMIC.snr  = readReg(LORARegPktSnrValue); // SNR [dB] * 4
-            s2_t rssi = readReg(LORARegPktRssiValue);
+            u1_t const rRssi = readReg(LORARegPktRssiValue);
+            s2_t rssi = rRssi;
             if (LMIC.freq > SX127X_FREQ_LF_MAX)
-                rssi -= SX127X_RSSI_ADJUST_HF;
+                rssi += SX127X_RSSI_ADJUST_HF;
             else
-                rssi -= SX127X_RSSI_ADJUST_LF;
+                rssi += SX127X_RSSI_ADJUST_LF;
             if (LMIC.snr < 0)
                 rssi = rssi - (-LMIC.snr >> 2);
             else if (rssi > -100) {
-                s2_t rssiadj = (rssi * 16 + 7) / 15;
-                rssi += rssiadj;
+                // correct nonlinearity -- this is the same as multiplying rRssi * 16/15 initially.
+                rssi += (rRssi / 15);
             }
 
             LMIC_X_DEBUG_PRINTF("RX snr=%u rssi=%d\n", LMIC.snr/4, rssi);
