@@ -757,7 +757,7 @@ applyAdrRequests(
             u1_t chpage = p4 & MCMD_LinkADRReq_Redundancy_ChMaskCntl_MASK;     // channel page
 
             map_ok = LMICbandplan_mapChannels(chpage, chmap);
-            LMICOS_logEventUint32("applyAdrRequests: mapChannels", (chpage << 16)|(chmap << 0));
+            LMICOS_logEventUint32("applyAdrRequests: mapChannels", ((u4_t)chpage << 16)|(chmap << 0));
         }
     }
 
@@ -799,7 +799,7 @@ applyAdrRequests(
             changes = 1;
         }
 
-        LMICOS_logEventUint32("applyAdrRequests: setDrTxPow", (adrAns << 16)|(dr << 8)|(p1 << 0));
+        LMICOS_logEventUint32("applyAdrRequests: setDrTxPow", ((u4_t)adrAns << 16)|(dr << 8)|(p1 << 0));
 
         // handle power changes here, too.
         changes |= setDrTxpow(DRCHG_NWKCMD, dr, pow2dBm(p1));
@@ -846,7 +846,7 @@ scan_mac_cmds_link_adr(
 
         if( !LMICbandplan_canMapChannels(chpage, chmap) ) {
             adrAns &= ~MCMD_LinkADRAns_ChannelACK;
-            LMICOS_logEventUint32("scan_mac_cmds_link_adr: failed canMapChannels", (chpage << UINT32_C(16))|(chmap << UINT32_C(0)));
+            LMICOS_logEventUint32("scan_mac_cmds_link_adr: failed canMapChannels", ((u4_t)chpage << 16)|((u4_t)chmap << 0));
         }
 
         if( !validDR(dr) ) {
@@ -1003,7 +1003,7 @@ scan_mac_cmds(
 
             if( ans == (MCMD_NewChannelAns_DataRateACK|MCMD_NewChannelAns_ChannelACK)) {
                 if ( ! LMIC_setupChannel(chidx, freq, DR_RANGE_MAP(MinDR, MaxDR), -1) ) {
-                    LMICOS_logEventUint32("NewChannelReq: setupChannel failed", (MaxDR << 24u) | (MinDR << 16u) | (raw_f_not_zero << 8) | (chidx << 0));
+                    LMICOS_logEventUint32("NewChannelReq: setupChannel failed", ((u4_t)MaxDR << 24u) | ((u4_t)MinDR << 16u) | (raw_f_not_zero << 8) | (chidx << 0));
                     ans &= ~MCMD_NewChannelAns_ChannelACK;
                 }
             }
@@ -1214,7 +1214,7 @@ static bit_t decodeFrame (void) {
         goto norx;
     }
     if( poff > pend ) {
-        LMICOS_logEventUint32("decodeFrame: corrupted frame", (dlen << 16) | (fct << 8) | (poff - pend));
+        LMICOS_logEventUint32("decodeFrame: corrupted frame", ((u4_t)dlen << 16) | (fct << 8) | (poff - pend));
         EV(specCond, ERR, (e_.reason = EV::specCond_t::CORRUPTED_FRAME,
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = 0x1000000 + (poff-pend) + (fct<<8) + (dlen<<16)));
@@ -1255,7 +1255,7 @@ static bit_t decodeFrame (void) {
                                 e_.eui    = MAIN::CDEV->getEui(),
                                 e_.info   = LMIC.seqnoDn,
                                 e_.info2  = seqno));
-            LMICOS_logEventUint32("decodeFrame: rollover discarded", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+            LMICOS_logEventUint32("decodeFrame: rollover discarded", ((u4_t)seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
             goto norx;
         }
         if( seqno != LMIC.seqnoDn-1 || !LMIC.lastDnConf || ftype != HDR_FTYPE_DCDN ) {
@@ -1263,19 +1263,19 @@ static bit_t decodeFrame (void) {
                                 e_.eui    = MAIN::CDEV->getEui(),
                                 e_.info   = LMIC.seqnoDn,
                                 e_.info2  = seqno));
-            LMICOS_logEventUint32("decodeFrame: Retransmit confimed discarded", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+            LMICOS_logEventUint32("decodeFrame: Retransmit confimed discarded", ((u4_t)seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
             goto norx;
         }
         // Replay of previous sequence number allowed only if
         // previous frame and repeated both requested confirmation
         // but set a flag, so we don't actually process the message.
-        LMICOS_logEventUint32("decodeFrame: Retransmit confimed accepted", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+        LMICOS_logEventUint32("decodeFrame: Retransmit confimed accepted", ((u4_t)seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
         replayConf = 1;
         LMIC.dnConf = FCT_ACK;
     }
     else {
         if( seqnoDiff > LMICbandplan_MAX_FCNT_GAP) {
-            LMICOS_logEventUint32("decodeFrame: gap too big", (seqnoDiff << 16) | (seqno & 0xFFFFu));
+            LMICOS_logEventUint32("decodeFrame: gap too big", ((u4_t)seqnoDiff << 16) | (seqno & 0xFFFFu));
             goto norx;
         }
         if( seqno > LMIC.seqnoDn ) {
@@ -1289,7 +1289,7 @@ static bit_t decodeFrame (void) {
         // DN frame requested confirmation - provide ACK once with next UP frame
         LMIC.dnConf = LMIC.lastDnConf = (ftype == HDR_FTYPE_DCDN ? FCT_ACK : 0);
         if (LMIC.dnConf)
-            LMICOS_logEventUint32("decodeFrame: Confirmed downlink", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+            LMICOS_logEventUint32("decodeFrame: Confirmed downlink", ((u4_t)seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
     }
 
     if (port == 0 && olen != 0 && pend > poff) {
@@ -1374,7 +1374,7 @@ static bit_t decodeFrame (void) {
                             e_.info   = Base::lsbf4(&d[pend]),
                             e_.info2  = seqno));
         // discard the data
-        LMICOS_logEventUint32("decodeFrame: discarding replay", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+        LMICOS_logEventUint32("decodeFrame: discarding replay", ((u4_t)seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
         goto norx;
     }
 
@@ -1911,7 +1911,7 @@ static bit_t buildDataFrame (void) {
     u1_t maxFlen = LMICbandplan_maxFrameLen(LMIC.datarate);
 
     if (flen > maxFlen) {
-        LMICOS_logEventUint32("frame too long for this bandplan", (dlen << 16) | (flen << 8) | maxFlen);
+        LMICOS_logEventUint32("frame too long for this bandplan", ((u4_t)dlen << 16) | (flen << 8) | maxFlen);
         return 0;
     }
 
@@ -1925,7 +1925,7 @@ static bit_t buildDataFrame (void) {
         LMIC.seqnoUp += 1;
         DO_DEVDB(LMIC.seqnoUp,seqnoUp);
     } else {
-        LMICOS_logEventUint32("retransmit", (LMIC.frame[OFF_DAT_FCT] << 24u) | (LMIC.txCnt << 16u) | (LMIC.upRepeatCount << 8u) | (LMIC.upRepeat<<0u));
+        LMICOS_logEventUint32("retransmit", ((u4_t)LMIC.frame[OFF_DAT_FCT] << 24u) | ((u4_t)LMIC.txCnt << 16u) | (LMIC.upRepeatCount << 8u) | (LMIC.upRepeat<<0u));
         EV(devCond, INFO, (e_.reason = EV::devCond_t::RE_TX,
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = LMIC.seqnoUp-1,
@@ -2848,7 +2848,7 @@ void LMIC_setTxData (void) {
 }
 
 void LMIC_setTxData_strict (void) {
-    LMICOS_logEventUint32(__func__, (LMIC.pendTxPort << 24u) | (LMIC.pendTxConf << 16u) | (LMIC.pendTxLen << 0u));
+    LMICOS_logEventUint32(__func__, ((u4_t)LMIC.pendTxPort << 24u) | ((u4_t)LMIC.pendTxConf << 16u) | (LMIC.pendTxLen << 0u));
     LMIC.opmode |= OP_TXDATA;
     if( (LMIC.opmode & OP_JOINING) == 0 ) {
         LMIC.txCnt = 0;             // reset the confirmed uplink FSM

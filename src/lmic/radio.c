@@ -1329,7 +1329,7 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
         u1_t flags1 = readReg(FSKRegIrqFlags1);
         u1_t flags2 = readReg(FSKRegIrqFlags2);
 
-        LMICOS_logEventUint32("*radio_irq_handler_v2: FSK", (flags2 << UINT32_C(8)) | flags1);
+        LMICOS_logEventUint32("*radio_irq_handler_v2: FSK", ((u2_t)flags2 << 8) | flags1);
 
         if( flags2 & IRQ_FSK2_PACKETSENT_MASK ) {
             // save exact tx time

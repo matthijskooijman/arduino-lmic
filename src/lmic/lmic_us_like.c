@@ -186,7 +186,7 @@ bit_t LMICuslike_mapChannels(u1_t chpage, u2_t chmap) {
                 }
         }
 
-        LMICOS_logEventUint32("LMICuslike_mapChannels", (LMIC.activeChannels125khz << 16u)|(LMIC.activeChannels500khz << 0u));
+        LMICOS_logEventUint32("LMICuslike_mapChannels", ((u4_t)LMIC.activeChannels125khz << 16u)|(LMIC.activeChannels500khz << 0u));
 	return (LMIC.activeChannels125khz > 0) || (LMIC.activeChannels500khz > 0);
 }
 

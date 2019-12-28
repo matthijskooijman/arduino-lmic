@@ -103,18 +103,18 @@ extern "C"{
 
 // Arduino LMIC version
 #define ARDUINO_LMIC_VERSION_CALC(major, minor, patch, local)	\
-	(((major) << 24ul) | ((minor) << 16ul) | ((patch) << 8ul) | ((local) << 0ul))
+	((((major)*UINT32_C(1)) << 24) | (((minor)*UINT32_C(1)) << 16) | (((patch)*UINT32_C(1)) << 8) | (((local)*UINT32_C(1)) << 0))
 
 #define	ARDUINO_LMIC_VERSION	ARDUINO_LMIC_VERSION_CALC(3, 0, 99, 9)	/* v3.0.99.9 */
 
 #define	ARDUINO_LMIC_VERSION_GET_MAJOR(v)	\
-	(((v) >> 24u) & 0xFFu)
+	((((v)*UINT32_C(1)) >> 24u) & 0xFFu)
 
 #define	ARDUINO_LMIC_VERSION_GET_MINOR(v)	\
-	(((v) >> 16u) & 0xFFu)
+	((((v)*UINT32_C(1)) >> 16u) & 0xFFu)
 
 #define	ARDUINO_LMIC_VERSION_GET_PATCH(v)	\
-	(((v) >> 8u) & 0xFFu)
+	((((v)*UINT32_C(1)) >> 8u) & 0xFFu)
 
 #define	ARDUINO_LMIC_VERSION_GET_LOCAL(v)	\
 	((v) & 0xFFu)
