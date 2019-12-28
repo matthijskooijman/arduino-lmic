@@ -320,9 +320,24 @@ static inline bit_t LMIC_BEACON_SUCCESSFUL(lmic_beacon_error_t e) {
     return e < 0;
 }
 
+// LMIC_CFG_max_clock_error_ppm
+#if !defined(LMIC_CFG_max_clock_error_ppm)
+# define LMIC_CFG_max_clock_error_ppm	2000	/* max clock error: 0.2% (2000 ppm) */
+#endif
+
+
 enum {
         // This value represents 100% error in LMIC.clockError
         MAX_CLOCK_ERROR = 65536,
+        //! \brief maximum clock error that users can specify: 2000 ppm (0.2%).
+        //! \details This is the limit for clock error, unless LMIC_ENABLE_arbitrary_clock_error is set.
+        //! The default is 2,000 ppm, which is .002, or 0.2%. If your clock error is bigger,
+        //! usually you want to calibrate it so that millis() and micros() are reasonably
+        //! accurate. Important: do not use clock error to compensate for late serving
+        //! of the LMIC. If you see that LMIC.radio.rxlate_count is increasing, you need
+        //! to adjust your application logic so the LMIC gets serviced promptly when a
+        //! Class A downlink (or beacon) is pending.
+        LMIC_kMaxClockError_ppm = 2000,
 };
 
 // callbacks for client alerts.

@@ -204,4 +204,12 @@
 # define LMIC_LORAWAN_SPEC_VERSION	LMIC_LORAWAN_SPEC_VERSION_1_0_3
 #endif
 
+// LMIC_ENABLE_arbitrary_clock_error
+// We normally don't want to allow users to set wide clock errors, because
+// we assume reasonably-disciplined os_getTime() values. But... there might
+// be platforms that require wider errors.
+#if !defined(LMIC_ENABLE_arbitrary_clock_error)
+# define LMIC_ENABLE_arbitrary_clock_error 0	/* PARAM */
+#endif
+
 #endif // _lmic_config_h_

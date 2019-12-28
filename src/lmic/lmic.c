@@ -1430,43 +1430,63 @@ static void setupRx2 (void) {
     radioRx();
 }
 
-ostime_t LMICcore_adjustForDrift (ostime_t delay, ostime_t hsym) {
-    if (LMIC.client.clockError != 0) {
-        // Calculate how much the clock will drift maximally after delay has
-        // passed. This indicates the amount of time we can be early
-        // _or_ late.
-        ostime_t drift = (int64_t)delay * LMIC.client.clockError / MAX_CLOCK_ERROR;
-
-        // Increase the receive window by twice the maximum drift (to
-        // compensate for a slow or a fast clock).
-        delay -= drift;
-
-        // adjust rxsyms (the size of the window in syms) according to our
-        // uncertainty. do this in a strange order to avoid a divide if we can.
-        // rely on hsym = Tsym / 2
-        if ((1023 - LMIC.rxsyms) * hsym < drift) {
-            LMIC.rxsyms = 1023;
-        } else {
-            LMIC.rxsyms = (rxsyms_t) (LMIC.rxsyms + drift / hsym);
-        }
-    }
-    return delay;
-}
-
-ostime_t LMICcore_RxWindowOffset (ostime_t hsym, rxsyms_t rxsyms_in) {
-    ostime_t const Tsym = 2 * hsym;
-    ostime_t rxsyms;
+//! \brief Adjust the delay (in ticks) of the target window-open time from nominal.
+//! \param hsym the duration of one-half symbol in osticks.
+//! \param rxsyms_in the nominal window length -- minimum length of time to delay.
+//! \return Effective delay to use (positive for later, negative for earlier).
+//! \post LMIC.rxsyms is set to the number of rxsymbols to be used for preamble timeout.
+//! \bug For FSK, the radio driver ignores LMIC.rxsysms, and uses a fixed value of 4080 bits
+//! (81 ms)
+//!
+//! \details The calculation of the RX Window opening time has to balance several things.
+//! The system clock might be inaccurate. Generally, the LMIC assumes that the timebase
+//! is accurage to 100 ppm, or 0.01%.  0.01% of a 6 second window is 600 microseconds.
+//! For LoRa, the fastest data rates of interest is SF7 (1024 us/symbol); with an 8-byte
+//! preamble, the shortest preamble is 8.092ms long. If using FSK, the symbol rate is
+//! 20 microseconds, but the preamble is 8*5 bits long, so the preamble is 800 microseconds.
+//! If the user has not set the clock error, an error of 0.01% is assumed. 
+ostime_t LMICcore_adjustForDrift (ostime_t delay, ostime_t hsym, rxsyms_t rxsyms_in) {
     ostime_t rxoffset;
 
-    rxsyms = ((2 * (int)rxsyms_in - 8) * Tsym + LMICbandplan_RX_ERROR_ABS_osticks * 2 + Tsym - 1) / Tsym;
-    if (rxsyms < rxsyms_in) {
-        rxsyms = rxsyms_in;
-    }
-    setRxsyms(rxsyms);
+    // decide if we want to move left or right of the reference time.
+    rxoffset = -LMICbandplan_RX_EXTRA_MARGIN_osticks;
 
-    rxoffset = (8 - rxsyms) * hsym - LMICbandplan_RX_EXTRA_MARGIN_osticks;
+    u2_t clockerr = LMIC.client.clockError;
 
-    return rxoffset;
+    // Most crystal oscillators are 100 ppm. If things are that tight, there's
+    // no point in specifying a drift, as 6 seconds at 100ppm is +/- 600 microseconds.
+    // We position the windows at the front, and there's some extra margin, so...
+    // don't bother setting values <= 100 ppm.
+    if (clockerr != 0)
+        {
+        // client has set clock error. Limit this to 0.1% unless there's
+        // a compile-time configuration. (In other words, assume that millis()
+        // clock is accurate to 0.1%.) You should never use clockerror to
+        // compensate for system-late problems.
+        u2_t const maxError = LMIC_kMaxClockError_ppm * MAX_CLOCK_ERROR / (1000 * 1000);
+        if (! LMIC_ENABLE_arbitrary_clock_error && clockerr > maxError)
+            {
+            clockerr = maxError;
+            }
+        }
+
+    // If the clock is slow, the window needs to open earlier in our time
+    // in order to open at or before the specified time (in real world),.
+    // Don't bother to round, as this is very fine-grained.
+    // and bear in mind that the delay is always
+    ostime_t drift = (ostime_t)(((int64_t)delay * clockerr) / MAX_CLOCK_ERROR);
+
+    // we add symbols if we're starting tx before the window.
+    rxoffset -= drift;
+
+    // if we're starting before the window, extend the number of symbols
+    // for timeout appropriately.
+    if (rxoffset < 0)
+        rxsyms_in += (-rxoffset + 2 * hsym - 1) / (2 * hsym);
+
+    setRxsyms(rxsyms_in);
+
+    return delay + rxoffset;
 }
 
 static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
@@ -1478,8 +1498,8 @@ static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
     // that are too long for SF12, and too short for other SFs, so we follow the
     // Semtech reference code.
     //
-    // This also sets LMIC.rxsyms.
-    LMIC.rxtime = LMIC.txend + LMICcore_adjustForDrift(delay + LMICcore_RxWindowOffset(hsym, LMICbandplan_MINRX_SYMS_LoRa_ClassA), hsym);
+    // This also sets LMIC.rxsyms. This is NOT normally used for FSK; see LMICbandplan_txDoneFSK()
+    LMIC.rxtime = LMIC.txend + LMICcore_adjustForDrift(delay, hsym, LMICbandplan_MINRX_SYMS_LoRa_ClassA);
 
     LMIC_X_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": sched Rx12 %"LMIC_PRId_ostime_t"\n", os_getTime(), LMIC.rxtime - RX_RAMPUP);
     os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
@@ -1509,8 +1529,7 @@ static void txDone (ostime_t delay, osjobcb_t func) {
     LMICbandplan_setRx1Params();
 
     // LMIC.dndr carries the TX datarate (can be != LMIC.datarate [confirm retries etc.])
-    // Setup receive - LMIC.rxtime is preloaded with 1.5 symbols offset to tune
-    // into the middle of the 8 symbols preamble. 
+    // Setup receive -- either schedule FSK or schedule rx1 or rx2 window.
     if( LMICbandplan_isFSK() ) {
         LMICbandplan_txDoneFSK(delay, func);
     }
