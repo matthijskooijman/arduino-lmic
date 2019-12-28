@@ -110,9 +110,10 @@ void hal_sleep (void);
 u4_t hal_ticks (void);
 
 /*
- * busy-wait until specified timestamp (in ticks) is reached.
+ * busy-wait until specified timestamp (in ticks) is reached. If on-time, return 0,
+ * otherwise return the number of ticks we were late.
  */
-void hal_waitUntil (u4_t time);
+u4_t hal_waitUntil (u4_t time);
 
 /*
  * check and rewind timer for target time.

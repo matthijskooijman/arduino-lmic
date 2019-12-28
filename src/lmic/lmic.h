@@ -417,6 +417,32 @@ struct lmic_client_data_s {
 
 /*
 
+Structure:  lmic_radio_data_t
+
+Function:
+    Holds LMIC radio driver.
+
+Description:
+    Eventually this will be used for all portable things for the radio driver,
+    but for now it's where we can start to add things.
+
+*/
+
+typedef struct lmic_radio_data_s lmic_radio_data_t;
+
+struct lmic_radio_data_s {
+    // total os ticks of accumulated delay error. Can overflow!
+    ostime_t    rxlate_ticks;
+    // number of rx late launches.
+    unsigned    rxlate_count;
+    // total os ticks of accumulated tx delay error. Can overflow!
+    ostime_t    txlate_ticks;
+    // number of tx late launches.
+    unsigned    txlate_count;
+};
+
+/*
+
 Structure:  lmic_t
 
 Function:
@@ -438,6 +464,9 @@ struct lmic_t {
 #if !defined(DISABLE_PING)
     rxsched_t   ping;         // pingable setup
 #endif
+
+    // the radio driver portable context
+    lmic_radio_data_t   radio;
 
     /* (u)int32_t things */
 
