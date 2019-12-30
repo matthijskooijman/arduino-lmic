@@ -22,6 +22,8 @@ Author:
 #include <SPI.h>
 class cEventQueue;
 
+#define APPLICATION_VERSION _mcci_arduino_version_calc(3,0,99,10)
+
 //
 // For compliance tests with the RWC5020A, we use the default addresses
 // from the tester; except that we use APPKEY 0,..., 0, 2, to avoid
@@ -757,12 +759,13 @@ void setup_printSignOn()
     setup_printSignOnDashLine();
 
     Serial.println(filebasename(__FILE__));
-    Serial.print(F("LMIC version "));
+    Serial.print(F("Version "));
+    printVersion(APPLICATION_VERSION);
+    Serial.print(F("\nLMIC version "));
     printVersion(ARDUINO_LMIC_VERSION);
     Serial.print(F(" configured for region "));
     Serial.print(CFG_region);
-    Serial.println('.');
-    Serial.println(F("Remember to select 'Line Ending: Newline' at the bottom of the monitor window."));
+    Serial.println(F(".\nRemember to select 'Line Ending: Newline' at the bottom of the monitor window."));
 
     setup_printSignOnDashLine();
     printNl();
