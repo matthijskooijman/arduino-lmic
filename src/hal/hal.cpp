@@ -248,16 +248,34 @@ static s4_t delta_time(u4_t time) {
     return (s4_t)(time - hal_ticks());
 }
 
-void hal_waitUntil (u4_t time) {
+u4_t hal_waitUntil (u4_t time) {
     s4_t delta = delta_time(time);
+    // check for already too late.
+    if (delta < 0)
+        return -delta;
+
     // From delayMicroseconds docs: Currently, the largest value that
-    // will produce an accurate delay is 16383.
-    while (delta > (16000 / US_PER_OSTICK)) {
-        delay(16);
-        delta -= (16000 / US_PER_OSTICK);
+    // will produce an accurate delay is 16383. Also, STM32 does a better
+    // job with delay is less than 10,000 us; so reduce in steps.
+    // It's nice to use delay() for the longer times.
+    while (delta > (9000 / US_PER_OSTICK)) {
+        // deliberately delay 8ms rather than 9ms, so we
+        // will exit loop with delta typically positive.
+        // Depends on BSP keeping time accurately even if interrupts
+        // are disabled.
+        delay(8);
+        // re-synchronize.
+        delta = delta_time(time);
     }
-    if (delta > 0)
-        delayMicroseconds(delta * US_PER_OSTICK);
+
+    // unluckily, delayMicroseconds() isn't very accurate.
+    // so spin using delta_time().
+    while (delta_time(time) > 0)
+        /* loop */;
+
+    // we aren't "late". Callers are interested in gross delays, not
+    // necessarily delays due to poor timekeeping here.
+    return 0;
 }
 
 // check and rewind for target time

@@ -103,18 +103,18 @@ extern "C"{
 
 // Arduino LMIC version
 #define ARDUINO_LMIC_VERSION_CALC(major, minor, patch, local)	\
-	(((major) << 24ul) | ((minor) << 16ul) | ((patch) << 8ul) | ((local) << 0ul))
+	((((major)*UINT32_C(1)) << 24) | (((minor)*UINT32_C(1)) << 16) | (((patch)*UINT32_C(1)) << 8) | (((local)*UINT32_C(1)) << 0))
 
-#define	ARDUINO_LMIC_VERSION	ARDUINO_LMIC_VERSION_CALC(3, 0, 99, 5)	/* v3.0.99.5 */
+#define	ARDUINO_LMIC_VERSION	ARDUINO_LMIC_VERSION_CALC(3, 0, 99, 10)	/* v3.0.99.10 */
 
 #define	ARDUINO_LMIC_VERSION_GET_MAJOR(v)	\
-	(((v) >> 24u) & 0xFFu)
+	((((v)*UINT32_C(1)) >> 24u) & 0xFFu)
 
 #define	ARDUINO_LMIC_VERSION_GET_MINOR(v)	\
-	(((v) >> 16u) & 0xFFu)
+	((((v)*UINT32_C(1)) >> 16u) & 0xFFu)
 
 #define	ARDUINO_LMIC_VERSION_GET_PATCH(v)	\
-	(((v) >> 8u) & 0xFFu)
+	((((v)*UINT32_C(1)) >> 8u) & 0xFFu)
 
 #define	ARDUINO_LMIC_VERSION_GET_LOCAL(v)	\
 	((v) & 0xFFu)
@@ -127,8 +127,15 @@ extern "C"{
 enum { MAX_FRAME_LEN      =  MAX_LEN_FRAME };   //!< Library cap on max frame length
 
 enum { TXCONF_ATTEMPTS    =   8 };   //!< Transmit attempts for confirmed frames
-enum { MAX_MISSED_BCNS    =  20 };   // threshold for triggering rejoin requests
-enum { MAX_RXSYMS         = 100 };   // stop tracking beacon beyond this
+enum { MAX_MISSED_BCNS    =  (2 * 60 * 60 + 127) / 128 };   //!< threshold for dropping out of class B, triggering rejoin requests
+                                     // note that we need 100 ppm timing accuracy for
+                                     // this, to keep the timing error to +/- 700ms.
+enum { MAX_RXSYMS         = 350 };   // Stop tracking beacon if sync error grows beyond this. A 0.4% clock error
+                                     // at SF9.125k means 512 ms; one sybol is 4.096 ms,
+                                     // so this needs to be at least 125 for an STM32L0.
+                                     // And for 100ppm clocks and 2 hours of beacon misses,
+                                     // this needs to accomodate 1.4 seconds of error at
+                                     // 4.096 ms/sym or at least 342 symbols.
 
 enum { LINK_CHECK_CONT    =  0  ,    // continue with this after reported dead link
        LINK_CHECK_DEAD    =  32 ,    // after this UP frames and no response to ack from NWK assume link is dead (ADR_ACK_DELAY)
@@ -185,10 +192,10 @@ enum { KEEP_TXPOW = -128 };
 #if !defined(DISABLE_PING)
 //! \internal
 struct rxsched_t {
-    u1_t     dr;
+    dr_t     dr;
     u1_t     intvExp;   // 0..7
     u1_t     slot;      // runs from 0 to 128
-    u1_t     rxsyms;
+    rxsyms_t rxsyms;
     ostime_t rxbase;
     ostime_t rxtime;    // start of next spot
     u4_t     freq;
@@ -219,7 +226,7 @@ struct bcninfo_t {
 #endif // !DISABLE_BEACONS
 
 // purpose of receive window - lmic_t.rxState
-enum { RADIO_RST=0, RADIO_TX=1, RADIO_RX=2, RADIO_RXON=3 };
+enum { RADIO_RST=0, RADIO_TX=1, RADIO_RX=2, RADIO_RXON=3, RADIO_TX_AT=4, };
 // Netid values /  lmic_t.netid
 enum { NETID_NONE=(int)~0U, NETID_MASK=(int)0xFFFFFF };
 // MAC operation modes (lmic_t.opmode).
@@ -320,9 +327,25 @@ static inline bit_t LMIC_BEACON_SUCCESSFUL(lmic_beacon_error_t e) {
     return e < 0;
 }
 
+// LMIC_CFG_max_clock_error_ppm
+#if !defined(LMIC_CFG_max_clock_error_ppm)
+# define LMIC_CFG_max_clock_error_ppm	2000	/* max clock error: 0.2% (2000 ppm) */
+#endif
+
+
 enum {
         // This value represents 100% error in LMIC.clockError
         MAX_CLOCK_ERROR = 65536,
+        //! \brief maximum clock error that users can specify: 2000 ppm (0.2%).
+        //! \details This is the limit for clock error, unless LMIC_ENABLE_arbitrary_clock_error is set.
+        //! The default is 4,000 ppm, which is .004, or 0.4%; this is what you get on an
+        //! STM32L0 running with the HSI oscillator after cal. If your clock error is bigger,
+        //! usually you want to calibrate it so that millis() and micros() are reasonably
+        //! accurate. Important: do not use clock error to compensate for late serving
+        //! of the LMIC. If you see that LMIC.radio.rxlate_count is increasing, you need
+        //! to adjust your application logic so the LMIC gets serviced promptly when a
+        //! Class A downlink (or beacon) is pending.
+        LMIC_kMaxClockError_ppm = 4000,
 };
 
 // callbacks for client alerts.
@@ -417,6 +440,32 @@ struct lmic_client_data_s {
 
 /*
 
+Structure:  lmic_radio_data_t
+
+Function:
+    Holds LMIC radio driver.
+
+Description:
+    Eventually this will be used for all portable things for the radio driver,
+    but for now it's where we can start to add things.
+
+*/
+
+typedef struct lmic_radio_data_s lmic_radio_data_t;
+
+struct lmic_radio_data_s {
+    // total os ticks of accumulated delay error. Can overflow!
+    ostime_t    rxlate_ticks;
+    // number of rx late launches.
+    unsigned    rxlate_count;
+    // total os ticks of accumulated tx delay error. Can overflow!
+    ostime_t    txlate_ticks;
+    // number of tx late launches.
+    unsigned    txlate_count;
+};
+
+/*
+
 Structure:  lmic_t
 
 Function:
@@ -438,6 +487,9 @@ struct lmic_t {
 #if !defined(DISABLE_PING)
     rxsched_t   ping;         // pingable setup
 #endif
+
+    // the radio driver portable context
+    lmic_radio_data_t   radio;
 
     /* (u)int32_t things */
 
@@ -498,13 +550,14 @@ struct lmic_t {
     s2_t        drift;          // last measured drift
     s2_t        lastDriftDiff;
     s2_t        maxDriftDiff;
+    rxsyms_t    bcnRxsyms;      //
 #endif
 
     /* (u)int8_t things */
     lmic_engine_update_state_t engineUpdateState;   // state of the engineUpdate() evaluator.
     s1_t        rssi;
     s1_t        snr;            // LMIC.snr is SNR times 4
-    u1_t        rxsyms;
+    rxsyms_t    rxsyms;         // symbols for receive timeout.
     u1_t        dndr;
     s1_t        txpow;          // transmit dBm (administrative)
     s1_t        radio_txpow;    // the radio driver's copy of txpow, in dB limited by adrTxPow, and
@@ -586,7 +639,6 @@ struct lmic_t {
 
 #if !defined(DISABLE_BEACONS)
     u1_t        bcnChnl;
-    u1_t        bcnRxsyms;    //
 #endif
 
     u1_t        noRXIQinversion;

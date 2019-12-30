@@ -226,7 +226,6 @@
 // internal APIs
 ostime_t LMICcore_rndDelay(u1_t secSpan);
 void LMICcore_setDrJoin(u1_t reason, u1_t dr);
-ostime_t LMICcore_adjustForDrift(ostime_t delay, ostime_t hsym);
-ostime_t LMICcore_RxWindowOffset(ostime_t hsym, u1_t rxsyms_in);
+ostime_t LMICcore_adjustForDrift(ostime_t delay, ostime_t hsym, rxsyms_t rxsyms_in);
 
 #endif // _lmic_bandplan_h_

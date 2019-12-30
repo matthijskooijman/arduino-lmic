@@ -255,14 +255,15 @@ void LMICeulike_setRx1Freq(void) {
 // Class A txDone handling for FSK.
 void
 LMICeulike_txDoneFSK(ostime_t delay, osjobcb_t func) {
-        ostime_t const hsym = us2osticksRound(80);
+        // one symbol == one bit at 50kHz == 20us.
+        ostime_t const hsym = us2osticksRound(10);
 
-        // start a little earlier.
+        // start a little earlier.  PRERX_FSK is in bytes; one byte at 50 kHz == 160us
         delay -= LMICbandplan_PRERX_FSK * us2osticksRound(160);
 
         // set LMIC.rxtime and LMIC.rxsyms:
-        LMIC.rxtime = LMIC.txend + LMICcore_adjustForDrift(delay + LMICcore_RxWindowOffset(hsym, LMICbandplan_RXLEN_FSK), hsym);
-        os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
+        LMIC.rxtime = LMIC.txend + LMICcore_adjustForDrift(delay, hsym, 8 * LMICbandplan_RXLEN_FSK);
+        os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - os_getRadioRxRampup(), func);
 }
 
 #endif // CFG_LMIC_EU_like

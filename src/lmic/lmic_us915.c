@@ -68,7 +68,10 @@ uint8_t LMICus915_maxFrameLen(uint8_t dr) {
 }
 
 int8_t LMICus915_pow2dbm(uint8_t mcmd_ladr_p1) {
-        if ((mcmd_ladr_p1 & MCMD_LinkADRReq_POW_MASK) == MCMD_LinkADRReq_POW_MASK)
+        if ((mcmd_ladr_p1 & MCMD_LinkADRReq_POW_MASK) >
+            ((LMIC_LORAWAN_SPEC_VERSION < LMIC_LORAWAN_SPEC_VERSION_1_0_3)
+                        ? US915_LinkAdrReq_POW_MAX_1_0_2
+                        : US915_LinkAdrReq_POW_MAX_1_0_3))
                 return -128;
         else
                 return ((s1_t)(US915_TX_MAX_DBM - (((mcmd_ladr_p1)&MCMD_LinkADRReq_POW_MASK)<<1)));

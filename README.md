@@ -42,6 +42,9 @@ requires C99 mode to be enabled by default.
 		- [Working with MCCI Murata-based boards](#working-with-mcci-murata-based-boards)
 		- [Event-Handling Issues](#event-handling-issues)
 - [Configuration](#configuration)
+	- [Selecting the LoRaWAN Version](#selecting-the-lorawan-version)
+		- [Selecting V1.0.2](#selecting-v102)
+		- [Selecting V1.0.3](#selecting-v103)
 	- [Selecting the LoRaWAN Region Configuration](#selecting-the-lorawan-region-configuration)
 		- [eu868, as923, in866, kr920](#eu868-as923-in866-kr920)
 		- [us915, au921](#us915-au921)
@@ -188,9 +191,47 @@ so that your local changes are more clearly separated from
 the distribution files. The Arduino environment doesn't give
 us a better way to do this, unless you change `BOARDS.txt`.
 
-Unlike other ports of the LMIC code, in this port, you should not edit `src/lmic/config.h` to configure this package.
+Unlike other ports of the LMIC code, in this port, you should not edit `src/lmic/config.h` to configure this package. The intention is that you'll edit the `project_config/lmic_project_config.h` (if using the Arduino environment), or change compiler command-line input (if using PlatformIO, make, etc.).
 
 The following configuration variables are available.
+
+### Selecting the LoRaWAN Version
+
+This library implements V1.0.3 of the LoRaWAN specification. However, it can also be used with V1.0.2. The only significant change when selecting V1.0.2 is that the US accepted power range in MAC commands is 10 dBm to 30 dBm; whereas in V1.0.3 the accepted range 2 dBm to 30 dBm.
+
+The default LoRaWAN version, if no version is explicitly selected, is V1.0.3.
+
+`LMIC_LORAWAN_SPEC_VERSION` is defined as an integer reflecting the targeted spec version; it will be set to `LMIC_LORAWAN_SPEC_VERSION_1_0_2` or `LMIC_LORAWAN_SPEC_VERSION_1_0_3`. Arithmetic comparisons can be done on these version numbers: and we guarantee `LMIC_LORAWAN_SPEC_VERSION_1_0_3 > LMIC_LORAWAN_SPEC_VERSION_1_0_2`, but the details of the how the versions are encoded may change, and your code should not rely upon the details.
+
+#### Selecting V1.0.2
+
+In `project_config/lmic_project_config.h`, add:
+
+```c
+#define LMIC_LORAWAN_SPEC_VERSION   LMIC_LORAWAN_SPEC_VERSION_1_0_2
+```
+
+On your compiler command line, add:
+
+```shell
+-D LMIC_LORAWAN_SPEC_VERSION=LMIC_LORAWAN_SPEC_VERSION_1_0_2
+```
+
+#### Selecting V1.0.3
+
+In `project_config/lmic_project_config.h`, add:
+
+```c
+#define LMIC_LORAWAN_SPEC_VERSION    LMIC_LORAWAN_SPEC_VERSION_1_0_3
+```
+
+On your compiler command line, add:
+
+```shell
+-D LMIC_LORAWAN_SPEC_VERSION=LMIC_LORAWAN_SPEC_VERSION_1_0_3
+```
+
+This is the default.
 
 ### Selecting the LoRaWAN Region Configuration
 
@@ -210,7 +251,7 @@ The library requires that the compile environment or the project config file def
 
 MCCI BSPs add menu entries to the Arduino IDE so you can select the target region interactively.
 
-The library changes configuration pretty substantially according to the region selected, and this affects the symbols in-scope in your sketches and cpp files. Some of the differences are listed below. This list is not comprehensive, and is subject to change in future major releases.
+The library changes configuration pretty substantially according to the region selected, and this affects the symbols in-scope in your sketches and `.cpp` files. Some of the differences are listed below. This list is not comprehensive, and is subject to change in future major releases.
 
 #### eu868, as923, in866, kr920
 

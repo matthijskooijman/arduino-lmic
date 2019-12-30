@@ -119,12 +119,13 @@ void radio_monitor_rssi(ostime_t n, oslmic_radio_rssi_t *pRssi);
 
 //================================================================================
 
-#ifndef RX_RAMPUP
-// RX_RAMPUP specifies the extra time we must allow to set up an RX event due
-// to platform issues. It's specified in units of ostime_t. It must reflect
-// platform jitter and latency, as well as the speed of the LMIC when running
-// on this plaform.
-#define RX_RAMPUP  (us2osticks(2000))
+#ifndef RX_RAMPUP_DEFAULT
+//! \brief RX_RAMPUP_DEFAULT specifies the extra time we must allow to set up an RX event due
+//! to platform issues. It's specified in units of ostime_t. It must reflect
+//! platform jitter and latency, as well as the speed of the LMIC when running
+//! on this plaform. It's not used directly; clients call os_getRadioRxRampup(),
+//! which might adaptively vary this based on observed timeouts.
+#define RX_RAMPUP_DEFAULT  (us2osticks(10000))
 #endif
 
 #ifndef TX_RAMPUP
@@ -132,7 +133,7 @@ void radio_monitor_rssi(ostime_t n, oslmic_radio_rssi_t *pRssi);
 // to platform issues. It's specified in units of ostime_t. It must reflect
 // platform jitter and latency, as well as the speed of the LMIC when running
 // on this plaform.
-#define TX_RAMPUP  (us2osticks(2000))
+#define TX_RAMPUP  (us2osticks(10000))
 #endif
 
 #ifndef OSTICKS_PER_SEC
@@ -195,6 +196,9 @@ void os_setTimedCallback (xref2osjob_t job, ostime_t time, osjobcb_t cb);
 #endif
 #ifndef os_clearCallback
 void os_clearCallback (xref2osjob_t job);
+#endif
+#ifndef os_getRadioRxRampup
+ostime_t os_getRadioRxRampup (void);
 #endif
 #ifndef os_getTime
 ostime_t os_getTime (void);

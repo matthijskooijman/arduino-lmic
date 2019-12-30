@@ -294,6 +294,16 @@ ostime_t calcAirTime (rps_t rps, u1_t plen) {
 //      500kHz   |  0   1   2   3   4   5
 //
 
+static void setRxsyms (ostime_t rxsyms) {
+    if (rxsyms >= (1u << 10u)) {
+        LMIC.rxsyms = (1u << 10u) - 1;
+    } else if (rxsyms < 0) {
+        LMIC.rxsyms = 0;
+    } else {
+        LMIC.rxsyms = rxsyms;
+    }
+}
+
 #if !defined(DISABLE_BEACONS)
 static ostime_t calcRxWindow (u1_t secs, dr_t dr) {
     ostime_t rxoff, err;
@@ -306,9 +316,9 @@ static ostime_t calcRxWindow (u1_t secs, dr_t dr) {
         rxoff = (LMIC.drift * (ostime_t)secs) >> BCN_INTV_exp;
         err = (LMIC.lastDriftDiff * (ostime_t)secs) >> BCN_INTV_exp;
     }
-    u1_t rxsyms = LMICbandplan_MINRX_SYMS_LoRa_ClassB;
+    rxsyms_t rxsyms = LMICbandplan_MINRX_SYMS_LoRa_ClassB;
     err += (ostime_t)LMIC.maxDriftDiff * LMIC.missedBcns;
-    LMIC.rxsyms = LMICbandplan_MINRX_SYMS_LoRa_ClassB + (err / dr2hsym(dr));
+    setRxsyms(LMICbandplan_MINRX_SYMS_LoRa_ClassB + (err / dr2hsym(dr)));
 
     return (rxsyms-LMICbandplan_PAMBL_SYMS) * dr2hsym(dr) + rxoff;
 }
@@ -616,7 +626,9 @@ static void stateJustJoined (void) {
 #if !defined(DISABLE_BEACONS)
 // Decode beacon  - do not overwrite bcninfo unless we have a match!
 static lmic_beacon_error_t decodeBeacon (void) {
-    ASSERT(LMIC.dataLen == LEN_BCN); // implicit header RX guarantees this
+    if (LMIC.dataLen != LEN_BCN) { // implicit header RX guarantees this
+        return LMIC_BEACON_ERROR_INVALID;
+    }
     xref2u1_t d = LMIC.frame;
     if(! LMICbandplan_isValidBeacon1(d))
         return LMIC_BEACON_ERROR_INVALID;   // first (common) part fails CRC check
@@ -711,7 +723,7 @@ static CONST_TABLE(u1_t, macCmdSize)[] = {
 static u1_t getMacCmdSize(u1_t macCmd) {
     if (macCmd < 2)
         return 0;
-    if (macCmd >= LENOF_TABLE(macCmdSize) - 2)
+    if ((macCmd - 2) >= LENOF_TABLE(macCmdSize))
         return 0;
     return TABLE_GET_U1(macCmdSize, macCmd - 2);
 }
@@ -747,7 +759,7 @@ applyAdrRequests(
             u1_t chpage = p4 & MCMD_LinkADRReq_Redundancy_ChMaskCntl_MASK;     // channel page
 
             map_ok = LMICbandplan_mapChannels(chpage, chmap);
-            LMICOS_logEventUint32("applyAdrRequests: mapChannels", (chpage << 16)|(chmap << 0));
+            LMICOS_logEventUint32("applyAdrRequests: mapChannels", ((u4_t)chpage << 16)|(chmap << 0));
         }
     }
 
@@ -789,7 +801,7 @@ applyAdrRequests(
             changes = 1;
         }
 
-        LMICOS_logEventUint32("applyAdrRequests: setDrTxPow", (adrAns << 16)|(dr << 8)|(p1 << 0));
+        LMICOS_logEventUint32("applyAdrRequests: setDrTxPow", ((u4_t)adrAns << 16)|(dr << 8)|(p1 << 0));
 
         // handle power changes here, too.
         changes |= setDrTxpow(DRCHG_NWKCMD, dr, pow2dBm(p1));
@@ -836,7 +848,7 @@ scan_mac_cmds_link_adr(
 
         if( !LMICbandplan_canMapChannels(chpage, chmap) ) {
             adrAns &= ~MCMD_LinkADRAns_ChannelACK;
-            LMICOS_logEventUint32("scan_mac_cmds_link_adr: failed canMapChannels", (chpage << UINT32_C(16))|(chmap << UINT32_C(0)));
+            LMICOS_logEventUint32("scan_mac_cmds_link_adr: failed canMapChannels", ((u4_t)chpage << 16)|((u4_t)chmap << 0));
         }
 
         if( !validDR(dr) ) {
@@ -883,8 +895,9 @@ scan_mac_cmds(
         cmd = opts[oidx];
 
         /* compute length, and exit for illegal commands */
+        // cmdlen == 0 for error, or > 0 length of command.
         int const cmdlen = getMacCmdSize(cmd);
-        if (cmdlen > olen - oidx) {
+        if (cmdlen <= 0 || cmdlen > olen - oidx) {
             // "the first unknown command terminates processing"
             olen = oidx;
             break;
@@ -993,7 +1006,7 @@ scan_mac_cmds(
 
             if( ans == (MCMD_NewChannelAns_DataRateACK|MCMD_NewChannelAns_ChannelACK)) {
                 if ( ! LMIC_setupChannel(chidx, freq, DR_RANGE_MAP(MinDR, MaxDR), -1) ) {
-                    LMICOS_logEventUint32("NewChannelReq: setupChannel failed", (MaxDR << 24u) | (MinDR << 16u) | (raw_f_not_zero << 8) | (chidx << 0));
+                    LMICOS_logEventUint32("NewChannelReq: setupChannel failed", ((u4_t)MaxDR << 24u) | ((u4_t)MinDR << 16u) | (raw_f_not_zero << 8) | (chidx << 0));
                     ans &= ~MCMD_NewChannelAns_ChannelACK;
                 }
             }
@@ -1059,13 +1072,12 @@ scan_mac_cmds(
 
 #if defined(ENABLE_MCMD_BeaconTimingAns) && !defined(DISABLE_BEACONS)
         case MCMD_BeaconTimingAns: {
-            // Ignore if tracking already enabled
-            if( (LMIC.opmode & OP_TRACK) == 0 ) {
+            // Ignore if tracking already enabled or bcninfoTries == 0
+            if( (LMIC.opmode & OP_TRACK) == 0 && LMIC.bcninfoTries != 0) {
                 LMIC.bcnChnl = opts[oidx+3];
                 // Enable tracking - bcninfoTries
                 LMIC.opmode |= OP_TRACK;
-                // Cleared later in txComplete handling - triggers EV_BEACON_FOUND
-                ASSERT(LMIC.bcninfoTries!=0);
+                // LMIC.bcninfoTries is cleared later in txComplete handling - triggers EV_BEACON_FOUND
                 // Setup RX parameters
                 LMIC.bcninfo.txtime = (LMIC.rxtime
                                        + ms2osticks(os_rlsbf2(&opts[oidx+1]) * MCMD_BeaconTimingAns_TUNIT)
@@ -1204,7 +1216,7 @@ static bit_t decodeFrame (void) {
         goto norx;
     }
     if( poff > pend ) {
-        LMICOS_logEventUint32("decodeFrame: corrupted frame", (dlen << 16) | (fct << 8) | (poff - pend));
+        LMICOS_logEventUint32("decodeFrame: corrupted frame", ((u4_t)dlen << 16) | (fct << 8) | (poff - pend));
         EV(specCond, ERR, (e_.reason = EV::specCond_t::CORRUPTED_FRAME,
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = 0x1000000 + (poff-pend) + (fct<<8) + (dlen<<16)));
@@ -1245,7 +1257,7 @@ static bit_t decodeFrame (void) {
                                 e_.eui    = MAIN::CDEV->getEui(),
                                 e_.info   = LMIC.seqnoDn,
                                 e_.info2  = seqno));
-            LMICOS_logEventUint32("decodeFrame: rollover discarded", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+            LMICOS_logEventUint32("decodeFrame: rollover discarded", ((u4_t)seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
             goto norx;
         }
         if( seqno != LMIC.seqnoDn-1 || !LMIC.lastDnConf || ftype != HDR_FTYPE_DCDN ) {
@@ -1253,19 +1265,19 @@ static bit_t decodeFrame (void) {
                                 e_.eui    = MAIN::CDEV->getEui(),
                                 e_.info   = LMIC.seqnoDn,
                                 e_.info2  = seqno));
-            LMICOS_logEventUint32("decodeFrame: Retransmit confimed discarded", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+            LMICOS_logEventUint32("decodeFrame: Retransmit confimed discarded", ((u4_t)seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
             goto norx;
         }
         // Replay of previous sequence number allowed only if
         // previous frame and repeated both requested confirmation
         // but set a flag, so we don't actually process the message.
-        LMICOS_logEventUint32("decodeFrame: Retransmit confimed accepted", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+        LMICOS_logEventUint32("decodeFrame: Retransmit confimed accepted", ((u4_t)seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
         replayConf = 1;
         LMIC.dnConf = FCT_ACK;
     }
     else {
         if( seqnoDiff > LMICbandplan_MAX_FCNT_GAP) {
-            LMICOS_logEventUint32("decodeFrame: gap too big", (seqnoDiff << 16) | (seqno & 0xFFFFu));
+            LMICOS_logEventUint32("decodeFrame: gap too big", ((u4_t)seqnoDiff << 16) | (seqno & 0xFFFFu));
             goto norx;
         }
         if( seqno > LMIC.seqnoDn ) {
@@ -1279,7 +1291,7 @@ static bit_t decodeFrame (void) {
         // DN frame requested confirmation - provide ACK once with next UP frame
         LMIC.dnConf = LMIC.lastDnConf = (ftype == HDR_FTYPE_DCDN ? FCT_ACK : 0);
         if (LMIC.dnConf)
-            LMICOS_logEventUint32("decodeFrame: Confirmed downlink", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+            LMICOS_logEventUint32("decodeFrame: Confirmed downlink", ((u4_t)seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
     }
 
     if (port == 0 && olen != 0 && pend > poff) {
@@ -1364,7 +1376,7 @@ static bit_t decodeFrame (void) {
                             e_.info   = Base::lsbf4(&d[pend]),
                             e_.info2  = seqno));
         // discard the data
-        LMICOS_logEventUint32("decodeFrame: discarding replay", (seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
+        LMICOS_logEventUint32("decodeFrame: discarding replay", ((u4_t)seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
         goto norx;
     }
 
@@ -1420,59 +1432,84 @@ static void setupRx2 (void) {
     radioRx();
 }
 
-ostime_t LMICcore_adjustForDrift (ostime_t delay, ostime_t hsym) {
-    if (LMIC.client.clockError != 0) {
-        // Calculate how much the clock will drift maximally after delay has
-        // passed. This indicates the amount of time we can be early
-        // _or_ late.
-        ostime_t drift = (int64_t)delay * LMIC.client.clockError / MAX_CLOCK_ERROR;
-
-        // Increase the receive window by twice the maximum drift (to
-        // compensate for a slow or a fast clock).
-        delay -= drift;
-
-        // adjust rxsyms (the size of the window in syms) according to our
-        // uncertainty. do this in a strange order to avoid a divide if we can.
-        // rely on hsym = Tsym / 2
-        if ((255 - LMIC.rxsyms) * hsym < drift) {
-            LMIC.rxsyms = 255;
-        } else {
-            LMIC.rxsyms = (u1_t) (LMIC.rxsyms + drift / hsym);
-        }
-    }
-    return delay;
-}
-
-ostime_t LMICcore_RxWindowOffset (ostime_t hsym, u1_t rxsyms_in) {
-    ostime_t const Tsym = 2 * hsym;
-    ostime_t rxsyms;
+//! \brief Adjust the delay (in ticks) of the target window-open time from nominal.
+//! \param hsym the duration of one-half symbol in osticks.
+//! \param rxsyms_in the nominal window length -- minimum length of time to delay.
+//! \return Effective delay to use (positive for later, negative for earlier).
+//! \post LMIC.rxsyms is set to the number of rxsymbols to be used for preamble timeout.
+//! \bug For FSK, the radio driver ignores LMIC.rxsysms, and uses a fixed value of 4080 bits
+//! (81 ms)
+//!
+//! \details The calculation of the RX Window opening time has to balance several things.
+//! The system clock might be inaccurate. Generally, the LMIC assumes that the timebase
+//! is accurage to 100 ppm, or 0.01%.  0.01% of a 6 second window is 600 microseconds.
+//! For LoRa, the fastest data rates of interest is SF7 (1024 us/symbol); with an 8-byte
+//! preamble, the shortest preamble is 8.092ms long. If using FSK, the symbol rate is
+//! 20 microseconds, but the preamble is 8*5 bits long, so the preamble is 800 microseconds.
+//! Unless LMIC_ENABLE_arbitrary_clock_error is true, we fold clock errors of > 0.4% back
+//! to 0.4%.
+ostime_t LMICcore_adjustForDrift (ostime_t delay, ostime_t hsym, rxsyms_t rxsyms_in) {
     ostime_t rxoffset;
 
-    rxsyms = ((2 * (int)rxsyms_in - 8) * Tsym + LMICbandplan_RX_ERROR_ABS_osticks * 2 + Tsym - 1) / Tsym;
-    if (rxsyms < rxsyms_in) {
-        rxsyms = rxsyms_in;
-    }
-    LMIC.rxsyms = (u1_t) rxsyms;
+    // decide if we want to move left or right of the reference time.
+    rxoffset = -LMICbandplan_RX_EXTRA_MARGIN_osticks;
 
-    rxoffset = (8 - rxsyms) * hsym - LMICbandplan_RX_EXTRA_MARGIN_osticks;
+    u2_t clockerr = LMIC.client.clockError;
 
-    return rxoffset;
+    // Most crystal oscillators are 100 ppm. If things are that tight, there's
+    // no point in specifying a drift, as 6 seconds at 100ppm is +/- 600 microseconds.
+    // We position the windows at the front, and there's some extra margin, so...
+    // don't bother setting values <= 100 ppm.
+    if (clockerr != 0)
+        {
+        // client has set clock error. Limit this to 0.1% unless there's
+        // a compile-time configuration. (In other words, assume that millis()
+        // clock is accurate to 0.1%.) You should never use clockerror to
+        // compensate for system-late problems.
+        u2_t const maxError = LMIC_kMaxClockError_ppm * MAX_CLOCK_ERROR / (1000 * 1000);
+        if (! LMIC_ENABLE_arbitrary_clock_error && clockerr > maxError)
+            {
+            clockerr = maxError;
+            }
+        }
+
+    // If the clock is slow, the window needs to open earlier in our time
+    // in order to open at or before the specified time (in real world),.
+    // Don't bother to round, as this is very fine-grained.
+    ostime_t drift = (ostime_t)(((int64_t)delay * clockerr) / MAX_CLOCK_ERROR);
+
+    // calculate the additional rxsyms needed to hit the window nominally.
+    ostime_t const tsym = 2 * hsym;
+    ostime_t driftwin;
+    driftwin = 2 * drift;
+    if (rxoffset < 0)
+        driftwin += -rxoffset;
+    // else we'll hit the window nominally.
+
+    rxsyms_in += (driftwin + tsym - 1) / tsym;
+
+    // reduce the rxoffset by the drift; this compensates for a slow clock;
+    // but it makes the rxtime too early by approximately `drift` if clock
+    // is fast.
+    rxoffset -= drift;
+
+    setRxsyms(rxsyms_in);
+
+    return delay + rxoffset;
 }
 
 static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
     ostime_t hsym = dr2hsym(dr);
 
-    // Center the receive window on the center of the expected preamble and timeout.
-    // (again note that hsym is half a sumbol time, so no /2 needed)
-    // we leave RX_RAMPUP unadjusted for the clock drift.  The IBM LMIC generates delays
-    // that are too long for SF12, and too short for other SFs, so we follow the
-    // Semtech reference code.
+    // Schedule the start of the receive window. os_getRadioRxRampup() is used to make sure we
+    // exit "sleep" well enough in advance of the receive window to be able to
+    // time things accurately.
     //
-    // This also sets LMIC.rxsyms.
-    LMIC.rxtime = LMIC.txend + LMICcore_adjustForDrift(delay + LMICcore_RxWindowOffset(hsym, LMICbandplan_MINRX_SYMS_LoRa_ClassA), hsym);
+    // This also sets LMIC.rxsyms. This is NOT normally used for FSK; see LMICbandplan_txDoneFSK()
+    LMIC.rxtime = LMIC.txend + LMICcore_adjustForDrift(delay, hsym, LMICbandplan_MINRX_SYMS_LoRa_ClassA);
 
-    LMIC_X_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": sched Rx12 %"LMIC_PRId_ostime_t"\n", os_getTime(), LMIC.rxtime - RX_RAMPUP);
-    os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
+    LMIC_X_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": sched Rx12 %"LMIC_PRId_ostime_t"\n", os_getTime(), LMIC.rxtime - os_getRadioRxRampup());
+    os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - os_getRadioRxRampup(), func);
 }
 
 static void setupRx1 (osjobcb_t func) {
@@ -1498,9 +1535,8 @@ static void txDone (ostime_t delay, osjobcb_t func) {
     // change params and rps (US only) before we increment txChnl
     LMICbandplan_setRx1Params();
 
-    // LMIC.rxsyms carries the TX datarate (can be != LMIC.datarate [confirm retries etc.])
-    // Setup receive - LMIC.rxtime is preloaded with 1.5 symbols offset to tune
-    // into the middle of the 8 symbols preamble.
+    // LMIC.dndr carries the TX datarate (can be != LMIC.datarate [confirm retries etc.])
+    // Setup receive -- either schedule FSK or schedule rx1 or rx2 window.
     if( LMICbandplan_isFSK() ) {
         LMICbandplan_txDoneFSK(delay, func);
     }
@@ -1527,12 +1563,22 @@ static bit_t processJoinAccept (void) {
     if ((LMIC.txrxFlags & TXRX_DNW1) != 0 && LMIC.dataLen == 0)
         return 0;
 
-    ASSERT((LMIC.opmode & OP_TXRXPEND)!=0);
+    // formerly we asserted.
+    if ((LMIC.opmode & OP_TXRXPEND) == 0)
+        // nothing we can do.
+        return 1;
+
+    // formerly we asserted.
+    if ((LMIC.opmode & (OP_JOINING|OP_REJOIN)) == 0) {
+        // we shouldn't be here. just drop the frame, but clean up txrxpend.
+        return processJoinAccept_badframe();
+    }
 
     if( LMIC.dataLen == 0 ) {
         // we didn't get any data and we're in slot 2. So... there's no join frame.
         return processJoinAccept_nojoinframe();
     }
+
     u1_t hdr  = LMIC.frame[0];
     u1_t dlen = LMIC.dataLen;
     u4_t mic  = os_rlsbf4(&LMIC.frame[dlen-4]); // safe before modified by encrypt!
@@ -1594,7 +1640,6 @@ static bit_t processJoinAccept (void) {
                                       ? EV::joininfo_t::REJOIN_ACCEPT
                                       : EV::joininfo_t::ACCEPT)));
 
-    ASSERT((LMIC.opmode & (OP_JOINING|OP_REJOIN))!=0);
     //
     // XXX(tmm@mcci.com) OP_REJOIN confuses me, and I'm not sure why we're
     // adjusting DRs here. We've just received a join accept, and the
@@ -1646,7 +1691,12 @@ static bit_t processJoinAccept_nojoinframe(void) {
         // the rejoin-sent count. Internal callers will turn on rejoin
         // occasionally.
         if( (LMIC.opmode & OP_JOINING) == 0) {
-            ASSERT((LMIC.opmode & OP_REJOIN) != 0);
+            // formerly, we asserted ((LMIC.opmode & OP_REJOIN) != 0);
+            // but now we just return 1 if it's not asserted.
+            if ( (LMIC.opmode & OP_REJOIN) == 0) {
+                LMIC.opmode &= ~OP_TXRXPEND;
+                return 1;
+            }
             LMIC.opmode &= ~(OP_REJOIN|OP_TXRXPEND);
             if( LMIC.rejoinCnt < 10 )
                 LMIC.rejoinCnt++;
@@ -1882,7 +1932,7 @@ static bit_t buildDataFrame (void) {
     u1_t maxFlen = LMICbandplan_maxFrameLen(LMIC.datarate);
 
     if (flen > maxFlen) {
-        LMICOS_logEventUint32("frame too long for this bandplan", (dlen << 16) | (flen << 8) | maxFlen);
+        LMICOS_logEventUint32("frame too long for this bandplan", ((u4_t)dlen << 16) | (flen << 8) | maxFlen);
         return 0;
     }
 
@@ -1896,7 +1946,7 @@ static bit_t buildDataFrame (void) {
         LMIC.seqnoUp += 1;
         DO_DEVDB(LMIC.seqnoUp,seqnoUp);
     } else {
-        LMICOS_logEventUint32("retransmit", (LMIC.frame[OFF_DAT_FCT] << 24u) | (LMIC.txCnt << 16u) | (LMIC.upRepeatCount << 8u) | (LMIC.upRepeat<<0u));
+        LMICOS_logEventUint32("retransmit", ((u4_t)LMIC.frame[OFF_DAT_FCT] << 24u) | ((u4_t)LMIC.txCnt << 16u) | (LMIC.upRepeatCount << 8u) | (LMIC.upRepeat<<0u));
         EV(devCond, INFO, (e_.reason = EV::devCond_t::RE_TX,
                            e_.eui    = MAIN::CDEV->getEui(),
                            e_.info   = LMIC.seqnoUp-1,
@@ -1981,7 +2031,9 @@ static void onBcnRx (xref2osjob_t osjob) {
 // Implicitely cancels any pending TX/RX transaction.
 // Also cancels an onpoing joining procedure.
 static void startScan (void) {
-    ASSERT(LMIC.devaddr!=0 && (LMIC.opmode & OP_JOINING)==0);
+    // formerly, we asserted.
+    if (LMIC.devaddr == 0 || (LMIC.opmode & OP_JOINING) != 0)
+        return;
     if( (LMIC.opmode & OP_SHUTDOWN) != 0 )
         return;
     // Cancel onging TX/RX transaction
@@ -2170,7 +2222,10 @@ static bit_t processDnData_norx(void);
 static bit_t processDnData_txcomplete(void);
 
 static bit_t processDnData (void) {
-    ASSERT((LMIC.opmode & OP_TXRXPEND)!=0);
+    // if no TXRXPEND, we shouldn't be here and can do nothign.
+    // formerly we asserted.
+    if ((LMIC.opmode & OP_TXRXPEND) == 0)
+        return 1;
 
     if( LMIC.dataLen == 0 ) {
         // if this is an RX1 window, shouldn't we return 0 to schedule
@@ -2416,7 +2471,7 @@ static void processBeacon (xref2osjob_t osjob) {
                          e_.eui    = MAIN::CDEV->getEui(),
                          e_.info   = drift,
                          e_.info2  = /*occasion BEACON*/0));
-        ASSERT((LMIC.bcninfo.flags & (BCN_PARTIAL|BCN_FULL)) != 0);
+        // formerly we'd assert on BCN_PARTIAL|BCN_FULL, but we can't get here if so
     } else {
         ev = EV_BEACON_MISSED;
         LMIC.bcninfo.txtime += BCN_INTV_osticks - LMIC.drift;
@@ -2424,9 +2479,9 @@ static void processBeacon (xref2osjob_t osjob) {
         LMIC.missedBcns++;
         // Delay any possible TX after surmised beacon - it's there although we missed it
         txDelay(LMIC.bcninfo.txtime + BCN_RESERVE_osticks, 4);
-        if( LMIC.missedBcns > MAX_MISSED_BCNS )
-            LMIC.opmode |= OP_REJOIN;  // try if we can roam to another network
-        if( LMIC.bcnRxsyms > MAX_RXSYMS ) {
+        // if too many missed beacons or we lose sync, drop back to Class A.
+        if( LMIC.missedBcns > MAX_MISSED_BCNS ||
+            LMIC.bcnRxsyms > MAX_RXSYMS ) {
             LMIC.opmode &= ~(OP_TRACK|OP_PINGABLE|OP_PINGINI|OP_REJOIN);
             reportEventAndUpdate(EV_LOST_TSYNC);
             return;
@@ -2495,8 +2550,14 @@ static void engineUpdate_inner (void) {
 
     if( (LMIC.opmode & OP_TRACK) != 0 ) {
         // We are tracking a beacon
-        ASSERT( now + RX_RAMPUP - LMIC.bcnRxtime <= 0 );
-        rxtime = LMIC.bcnRxtime - RX_RAMPUP;
+        // formerly asserted ( now - (LMIC.bcnRxtime - os_getRadioRxRampup()) <= 0 );
+        rxtime = LMIC.bcnRxtime - os_getRadioRxRampup();
+        if (now - rxtime < 0) {
+            // too late: drop out of Class B.
+            LMIC.opmode &= ~(OP_TRACK|OP_PINGABLE|OP_PINGINI|OP_REJOIN);
+            reportEventNoUpdate(EV_LOST_TSYNC);
+            return;
+        }
     }
 #endif // !DISABLE_BEACONS
 
@@ -2609,7 +2670,7 @@ static void engineUpdate_inner (void) {
 #if !defined(DISABLE_PING)
     if( (LMIC.opmode & OP_PINGINI) != 0 ) {
         // One more RX slot in this beacon period?
-        if( rxschedNext(&LMIC.ping, now+RX_RAMPUP) ) {
+        if( rxschedNext(&LMIC.ping, now+os_getRadioRxRampup()) ) {
             if( txbeg != 0  &&  (txbeg - LMIC.ping.rxtime) < 0 )
                 goto txdelay;
             LMIC.rxsyms  = LMIC.ping.rxsyms;
@@ -2617,8 +2678,14 @@ static void engineUpdate_inner (void) {
             LMIC.freq    = LMIC.ping.freq;
             LMIC.rps     = dndr2rps(LMIC.ping.dr);
             LMIC.dataLen = 0;
-            ASSERT(LMIC.rxtime - now+RX_RAMPUP >= 0 );
-            os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, FUNC_ADDR(startRxPing));
+            ostime_t rxtime_ping = LMIC.rxtime - os_getRadioRxRampup();
+            // did we miss the time?
+            if (now - rxtime_ping > 0) {
+                LMIC.opmode &= ~(OP_TRACK|OP_PINGABLE|OP_PINGINI|OP_REJOIN);
+                reportEventNoUpdate(EV_LOST_TSYNC);
+            } else {
+                os_setTimedCallback(&LMIC.osjob, rxtime_ping, FUNC_ADDR(startRxPing));
+            }
             return;
         }
         // no - just wait for the beacon
@@ -2819,7 +2886,7 @@ void LMIC_setTxData (void) {
 }
 
 void LMIC_setTxData_strict (void) {
-    LMICOS_logEventUint32(__func__, (LMIC.pendTxPort << 24u) | (LMIC.pendTxConf << 16u) | (LMIC.pendTxLen << 0u));
+    LMICOS_logEventUint32(__func__, ((u4_t)LMIC.pendTxPort << 24u) | ((u4_t)LMIC.pendTxConf << 16u) | (LMIC.pendTxLen << 0u));
     LMIC.opmode |= OP_TXDATA;
     if( (LMIC.opmode & OP_JOINING) == 0 ) {
         LMIC.txCnt = 0;             // reset the confirmed uplink FSM
