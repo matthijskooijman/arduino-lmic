@@ -626,7 +626,9 @@ static void stateJustJoined (void) {
 #if !defined(DISABLE_BEACONS)
 // Decode beacon  - do not overwrite bcninfo unless we have a match!
 static lmic_beacon_error_t decodeBeacon (void) {
-    ASSERT(LMIC.dataLen == LEN_BCN); // implicit header RX guarantees this
+    if (LMIC.dataLen != LEN_BCN) { // implicit header RX guarantees this
+        return LMIC_BEACON_ERROR_INVALID;
+    }
     xref2u1_t d = LMIC.frame;
     if(! LMICbandplan_isValidBeacon1(d))
         return LMIC_BEACON_ERROR_INVALID;   // first (common) part fails CRC check
@@ -1070,13 +1072,12 @@ scan_mac_cmds(
 
 #if defined(ENABLE_MCMD_BeaconTimingAns) && !defined(DISABLE_BEACONS)
         case MCMD_BeaconTimingAns: {
-            // Ignore if tracking already enabled
-            if( (LMIC.opmode & OP_TRACK) == 0 ) {
+            // Ignore if tracking already enabled or bcninfoTries == 0
+            if( (LMIC.opmode & OP_TRACK) == 0 && LMIC.bcninfoTries != 0) {
                 LMIC.bcnChnl = opts[oidx+3];
                 // Enable tracking - bcninfoTries
                 LMIC.opmode |= OP_TRACK;
-                // Cleared later in txComplete handling - triggers EV_BEACON_FOUND
-                ASSERT(LMIC.bcninfoTries!=0);
+                // LMIC.bcninfoTries is cleared later in txComplete handling - triggers EV_BEACON_FOUND
                 // Setup RX parameters
                 LMIC.bcninfo.txtime = (LMIC.rxtime
                                        + ms2osticks(os_rlsbf2(&opts[oidx+1]) * MCMD_BeaconTimingAns_TUNIT)
@@ -1557,12 +1558,22 @@ static bit_t processJoinAccept (void) {
     if ((LMIC.txrxFlags & TXRX_DNW1) != 0 && LMIC.dataLen == 0)
         return 0;
 
-    ASSERT((LMIC.opmode & OP_TXRXPEND)!=0);
+    // formerly we asserted.
+    if ((LMIC.opmode & OP_TXRXPEND) == 0)
+        // nothing we can do.
+        return 1;
+
+    // formerly we asserted.
+    if ((LMIC.opmode & (OP_JOINING|OP_REJOIN)) == 0) {
+        // we shouldn't be here. just drop the frame, but clean up txrxpend.
+        return processJoinAccept_badframe();
+    }
 
     if( LMIC.dataLen == 0 ) {
         // we didn't get any data and we're in slot 2. So... there's no join frame.
         return processJoinAccept_nojoinframe();
     }
+
     u1_t hdr  = LMIC.frame[0];
     u1_t dlen = LMIC.dataLen;
     u4_t mic  = os_rlsbf4(&LMIC.frame[dlen-4]); // safe before modified by encrypt!
@@ -1624,7 +1635,6 @@ static bit_t processJoinAccept (void) {
                                       ? EV::joininfo_t::REJOIN_ACCEPT
                                       : EV::joininfo_t::ACCEPT)));
 
-    ASSERT((LMIC.opmode & (OP_JOINING|OP_REJOIN))!=0);
     //
     // XXX(tmm@mcci.com) OP_REJOIN confuses me, and I'm not sure why we're
     // adjusting DRs here. We've just received a join accept, and the
@@ -1676,7 +1686,12 @@ static bit_t processJoinAccept_nojoinframe(void) {
         // the rejoin-sent count. Internal callers will turn on rejoin
         // occasionally.
         if( (LMIC.opmode & OP_JOINING) == 0) {
-            ASSERT((LMIC.opmode & OP_REJOIN) != 0);
+            // formerly, we asserted ((LMIC.opmode & OP_REJOIN) != 0);
+            // but now we just return 1 if it's not asserted.
+            if ( (LMIC.opmode & OP_REJOIN) == 0) {
+                LMIC.opmode &= ~OP_TXRXPEND;
+                return 1;
+            }
             LMIC.opmode &= ~(OP_REJOIN|OP_TXRXPEND);
             if( LMIC.rejoinCnt < 10 )
                 LMIC.rejoinCnt++;
@@ -2011,7 +2026,9 @@ static void onBcnRx (xref2osjob_t osjob) {
 // Implicitely cancels any pending TX/RX transaction.
 // Also cancels an onpoing joining procedure.
 static void startScan (void) {
-    ASSERT(LMIC.devaddr!=0 && (LMIC.opmode & OP_JOINING)==0);
+    // formerly, we asserted.
+    if (LMIC.devaddr == 0 || (LMIC.opmode & OP_JOINING) != 0)
+        return;
     if( (LMIC.opmode & OP_SHUTDOWN) != 0 )
         return;
     // Cancel onging TX/RX transaction
@@ -2200,7 +2217,10 @@ static bit_t processDnData_norx(void);
 static bit_t processDnData_txcomplete(void);
 
 static bit_t processDnData (void) {
-    ASSERT((LMIC.opmode & OP_TXRXPEND)!=0);
+    // if no TXRXPEND, we shouldn't be here and can do nothign.
+    // formerly we asserted.
+    if ((LMIC.opmode & OP_TXRXPEND) == 0)
+        return 1;
 
     if( LMIC.dataLen == 0 ) {
         // if this is an RX1 window, shouldn't we return 0 to schedule
@@ -2446,7 +2466,7 @@ static void processBeacon (xref2osjob_t osjob) {
                          e_.eui    = MAIN::CDEV->getEui(),
                          e_.info   = drift,
                          e_.info2  = /*occasion BEACON*/0));
-        ASSERT((LMIC.bcninfo.flags & (BCN_PARTIAL|BCN_FULL)) != 0);
+        // formerly we'd assert on BCN_PARTIAL|BCN_FULL, but we can't get here if so
     } else {
         ev = EV_BEACON_MISSED;
         LMIC.bcninfo.txtime += BCN_INTV_osticks - LMIC.drift;
@@ -2454,9 +2474,9 @@ static void processBeacon (xref2osjob_t osjob) {
         LMIC.missedBcns++;
         // Delay any possible TX after surmised beacon - it's there although we missed it
         txDelay(LMIC.bcninfo.txtime + BCN_RESERVE_osticks, 4);
-        if( LMIC.missedBcns > MAX_MISSED_BCNS )
-            LMIC.opmode |= OP_REJOIN;  // try if we can roam to another network
-        if( LMIC.bcnRxsyms > MAX_RXSYMS ) {
+        // if too many missed beacons or we lose sync, drop back to Class A.
+        if( LMIC.missedBcns > MAX_MISSED_BCNS ||
+            LMIC.bcnRxsyms > MAX_RXSYMS ) {
             LMIC.opmode &= ~(OP_TRACK|OP_PINGABLE|OP_PINGINI|OP_REJOIN);
             reportEventAndUpdate(EV_LOST_TSYNC);
             return;
@@ -2525,8 +2545,14 @@ static void engineUpdate_inner (void) {
 
     if( (LMIC.opmode & OP_TRACK) != 0 ) {
         // We are tracking a beacon
-        ASSERT( now + RX_RAMPUP - LMIC.bcnRxtime <= 0 );
+        // formerly asserted ( now - (LMIC.bcnRxtime - RX_RAMPUP) <= 0 );
         rxtime = LMIC.bcnRxtime - RX_RAMPUP;
+        if (now - rxtime < 0) {
+            // too late: drop out of Class B.
+            LMIC.opmode &= ~(OP_TRACK|OP_PINGABLE|OP_PINGINI|OP_REJOIN);
+            reportEventNoUpdate(EV_LOST_TSYNC);
+            return;
+        }
     }
 #endif // !DISABLE_BEACONS
 
@@ -2647,8 +2673,14 @@ static void engineUpdate_inner (void) {
             LMIC.freq    = LMIC.ping.freq;
             LMIC.rps     = dndr2rps(LMIC.ping.dr);
             LMIC.dataLen = 0;
-            ASSERT(LMIC.rxtime - now+RX_RAMPUP >= 0 );
-            os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, FUNC_ADDR(startRxPing));
+            ostime_t rxtime_ping = LMIC.rxtime - RX_RAMPUP;
+            // did we miss the time?
+            if (now - rxtime_ping > 0) {
+                LMIC.opmode &= ~(OP_TRACK|OP_PINGABLE|OP_PINGINI|OP_REJOIN);
+                reportEventNoUpdate(EV_LOST_TSYNC);
+            } else {
+                os_setTimedCallback(&LMIC.osjob, rxtime_ping, FUNC_ADDR(startRxPing));
+            }
             return;
         }
         // no - just wait for the beacon
