@@ -127,8 +127,10 @@ extern "C"{
 enum { MAX_FRAME_LEN      =  MAX_LEN_FRAME };   //!< Library cap on max frame length
 
 enum { TXCONF_ATTEMPTS    =   8 };   //!< Transmit attempts for confirmed frames
-enum { MAX_MISSED_BCNS    =  20 };   // threshold for triggering rejoin requests
 enum { MAX_RXSYMS         = 100 };   // stop tracking beacon beyond this
+enum { MAX_MISSED_BCNS    =  (2 * 60 * 60 + 127) / 128 };   //!< threshold for dropping out of class B, triggering rejoin requests
+                                     // note that we need 100 ppm timing accuracy for
+                                     // this, to keep the timing error to +/- 700ms.
 
 enum { LINK_CHECK_CONT    =  0  ,    // continue with this after reported dead link
        LINK_CHECK_DEAD    =  32 ,    // after this UP frames and no response to ack from NWK assume link is dead (ADR_ACK_DELAY)
