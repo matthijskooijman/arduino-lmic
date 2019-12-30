@@ -1501,17 +1501,15 @@ ostime_t LMICcore_adjustForDrift (ostime_t delay, ostime_t hsym, rxsyms_t rxsyms
 static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
     ostime_t hsym = dr2hsym(dr);
 
-    // Center the receive window on the center of the expected preamble and timeout.
-    // (again note that hsym is half a sumbol time, so no /2 needed)
-    // we leave RX_RAMPUP unadjusted for the clock drift.  The IBM LMIC generates delays
-    // that are too long for SF12, and too short for other SFs, so we follow the
-    // Semtech reference code.
+    // Schedule the start of the receive window. os_getRadioRxRampup() is used to make sure we
+    // exit "sleep" well enough in advance of the receive window to be able to
+    // time things accurately.
     //
     // This also sets LMIC.rxsyms. This is NOT normally used for FSK; see LMICbandplan_txDoneFSK()
     LMIC.rxtime = LMIC.txend + LMICcore_adjustForDrift(delay, hsym, LMICbandplan_MINRX_SYMS_LoRa_ClassA);
 
-    LMIC_X_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": sched Rx12 %"LMIC_PRId_ostime_t"\n", os_getTime(), LMIC.rxtime - RX_RAMPUP);
-    os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
+    LMIC_X_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": sched Rx12 %"LMIC_PRId_ostime_t"\n", os_getTime(), LMIC.rxtime - os_getRadioRxRampup());
+    os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - os_getRadioRxRampup(), func);
 }
 
 static void setupRx1 (osjobcb_t func) {
@@ -2552,8 +2550,8 @@ static void engineUpdate_inner (void) {
 
     if( (LMIC.opmode & OP_TRACK) != 0 ) {
         // We are tracking a beacon
-        // formerly asserted ( now - (LMIC.bcnRxtime - RX_RAMPUP) <= 0 );
-        rxtime = LMIC.bcnRxtime - RX_RAMPUP;
+        // formerly asserted ( now - (LMIC.bcnRxtime - os_getRadioRxRampup()) <= 0 );
+        rxtime = LMIC.bcnRxtime - os_getRadioRxRampup();
         if (now - rxtime < 0) {
             // too late: drop out of Class B.
             LMIC.opmode &= ~(OP_TRACK|OP_PINGABLE|OP_PINGINI|OP_REJOIN);
@@ -2672,7 +2670,7 @@ static void engineUpdate_inner (void) {
 #if !defined(DISABLE_PING)
     if( (LMIC.opmode & OP_PINGINI) != 0 ) {
         // One more RX slot in this beacon period?
-        if( rxschedNext(&LMIC.ping, now+RX_RAMPUP) ) {
+        if( rxschedNext(&LMIC.ping, now+os_getRadioRxRampup()) ) {
             if( txbeg != 0  &&  (txbeg - LMIC.ping.rxtime) < 0 )
                 goto txdelay;
             LMIC.rxsyms  = LMIC.ping.rxsyms;
@@ -2680,7 +2678,7 @@ static void engineUpdate_inner (void) {
             LMIC.freq    = LMIC.ping.freq;
             LMIC.rps     = dndr2rps(LMIC.ping.dr);
             LMIC.dataLen = 0;
-            ostime_t rxtime_ping = LMIC.rxtime - RX_RAMPUP;
+            ostime_t rxtime_ping = LMIC.rxtime - os_getRadioRxRampup();
             // did we miss the time?
             if (now - rxtime_ping > 0) {
                 LMIC.opmode &= ~(OP_TRACK|OP_PINGABLE|OP_PINGINI|OP_REJOIN);

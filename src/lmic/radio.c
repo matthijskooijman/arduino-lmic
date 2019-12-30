@@ -1401,3 +1401,7 @@ void os_radio (u1_t mode) {
     }
     hal_enableIRQs();
 }
+
+ostime_t os_getRadioRxRampup (void) {
+    return RX_RAMPUP_DEFAULT;
+}

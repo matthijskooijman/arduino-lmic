@@ -263,7 +263,7 @@ LMICeulike_txDoneFSK(ostime_t delay, osjobcb_t func) {
 
         // set LMIC.rxtime and LMIC.rxsyms:
         LMIC.rxtime = LMIC.txend + LMICcore_adjustForDrift(delay, hsym, 8 * LMICbandplan_RXLEN_FSK);
-        os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
+        os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - os_getRadioRxRampup(), func);
 }
 
 #endif // CFG_LMIC_EU_like
