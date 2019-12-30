@@ -893,8 +893,9 @@ scan_mac_cmds(
         cmd = opts[oidx];
 
         /* compute length, and exit for illegal commands */
+        // cmdlen == 0 for error, or > 0 length of command.
         int const cmdlen = getMacCmdSize(cmd);
-        if (cmdlen > olen - oidx) {
+        if (cmdlen <= 0 || cmdlen > olen - oidx) {
             // "the first unknown command terminates processing"
             olen = oidx;
             break;
