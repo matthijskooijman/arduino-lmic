@@ -60,6 +60,32 @@ lmic_rxmessage_cb_t myRxMessageCb;
 
 const char * const evNames[] = { LMIC_EVENT_NAME_TABLE__INIT };
 
+static void rtccount_begin();
+static uint16_t rtccount_read();
+
+#define NEED_USBD_LL_ConnectionState    0
+#ifdef ARDUINO_ARCH_STM32
+# ifdef _mcci_arduino_version
+#  if _mcci_arduino_version < _mcci_arduino_version_calc(2, 5, 0, 10)
+#   undef NEED_USBD_LL_ConnectionState
+#   define NEED_USBD_LL_ConnectionState 1
+#  endif // _mcci_arduino_version < _mcci_arduino_version_calc(2, 5, 0, 10)
+# endif // def _mcci_arduino_version
+#endif // def ARDUINO_ARCH_STM32
+
+#define NEED_STM32_ClockCalibration    0
+#ifdef ARDUINO_ARCH_STM32
+# ifdef _mcci_arduino_version
+#  if _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 10)
+#   undef NEED_STM32_ClockCalibration
+#   define NEED_STM32_ClockCalibration 1
+#  endif // _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 10)
+# endif // def _mcci_arduino_version
+# define SUPPORT_STM32_ClockCalibration 1
+#else
+# define SUPPORT_STM32_ClockCalibration 0
+#endif // def ARDUINO_ARCH_STM32
+
 /*
 
 Name:	myEventCb()
@@ -93,8 +119,12 @@ public:
         uint32_t    datum;
         ostime_t    time;
         ostime_t    txend;
+        ostime_t    rxtime;
         ostime_t    globalDutyAvail;
+        u4_t        nLateRx;
+        ostime_t    ticksLateRx;
         u4_t        freq;
+        u2_t        rtccount;
         u2_t        opmode;
         u2_t        fcntDn;
         u2_t        fcntUp;
@@ -126,11 +156,15 @@ public:
             auto const pn = &m_queue[m_tail];
             pn->job = LMIC.osjob;
             pn->time = os_getTime();
+            pn->rtccount = rtccount_read();
             pn->txend = LMIC.txend;
+            pn->rxtime = LMIC.rxtime;
             pn->globalDutyAvail = LMIC.globalDutyAvail;
             pn->event = event;
             pn->pMessage = pMessage;
             pn->datum = datum;
+            pn->nLateRx = LMIC.radio.rxlate_count;
+            pn->ticksLateRx = LMIC.radio.rxlate_ticks;
             pn->freq = LMIC.freq;
             pn->opmode = LMIC.opmode;
             pn->fcntDn = (u2_t) LMIC.seqnoDn;
@@ -205,6 +239,8 @@ void myEventCb(void *pUserData, ev_t ev) {
 void eventPrint(cEventQueue::eventnode_t &e);
 void printFcnts(cEventQueue::eventnode_t &e);
 void printTxend(cEventQueue::eventnode_t &e);
+void printRxtime(cEventQueue::eventnode_t &e);
+void printLateStats(cEventQueue::eventnode_t &e);
 
 void eventPrintAll(void) {
     while (eventPrintOne())
@@ -288,6 +324,10 @@ void printTxend(cEventQueue::eventnode_t &e) {
     Serial.print(F(", avail=")); Serial.print(e.globalDutyAvail);
 }
 
+void printRxtime(cEventQueue::eventnode_t &e) {
+    Serial.print(F(", rxtime=")); Serial.print(e.rxtime);
+}
+
 void printTxChnl(u1_t txChnl) {
     Serial.print(F(": ch="));
     Serial.print(unsigned(txChnl));
@@ -306,6 +346,13 @@ void printTxrxflags(u1_t txrxFlags) {
 void printSaveIrqFlags(u1_t saveIrqFlags) {
     Serial.print(F(", saveIrqFlags 0x"));
     printHex2(saveIrqFlags);
+}
+
+void printLateStats(cEventQueue::eventnode_t &e) {
+    Serial.print(F(", nLateRx="));
+    Serial.print(e.nLateRx);
+    Serial.print(F(" ticks="));
+    Serial.print(e.ticksLateRx);
 }
 
 void printFcnts(cEventQueue::eventnode_t &e) {
@@ -353,7 +400,13 @@ void eventPrint(cEventQueue::eventnode_t &e) {
     Serial.print(e.time);
     Serial.print(F(" ("));
     Serial.print(osticks2ms(e.time));
+#if SUPPORT_STM32_ClockCalibration
+    Serial.print(F(" ms, lptim1="));
+    Serial.print(e.rtccount);
+    Serial.print(F("): "));
+#else
     Serial.print(F(" ms): "));
+#endif
 
     if (ev == ev_t(-1) || ev == ev_t(-2)) {
         Serial.print(e.pMessage);
@@ -371,6 +424,7 @@ void eventPrint(cEventQueue::eventnode_t &e) {
         printOpmode(e.opmode);
         printTxrxflags(e.txrxFlags);
         printSaveIrqFlags(e.saveIrqFlags);
+        printLateStats(e);
 #if LMIC_ENABLE_event_logging
         printAllRegisters();
 #endif
@@ -450,6 +504,7 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printTxrxflags(e.txrxFlags);
                 printFcnts(e);
                 printTxend(e);
+                printLateStats(e);
                 break;
             case EV_LOST_TSYNC:
                 break;
@@ -485,12 +540,13 @@ void eventPrint(cEventQueue::eventnode_t &e) {
                 printDatarate(e.datarate);
                 printOpmode(e.opmode);
                 printTxend(e);
-                Serial.print(F(", delta ms ")); Serial.print(osticks2ms(e.time - e.txend));
+                printRxtime(e);
                 Serial.print(F(", rxsyms=")); Serial.print(unsigned(e.rxsyms));
                 break;
 
             case EV_JOIN_TXCOMPLETE:
                 printSaveIrqFlags(e.saveIrqFlags);
+                printLateStats(e);
                 break;
 
             default:
@@ -652,9 +708,6 @@ void setup() {
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
 
-    // set clock rate error to 0.1%
-    //LMIC_setClockError(1 * MAX_CLOCK_ERROR / 1000);
-
     // do the network-specific setup prior to join.
     setupForNetwork(false);
 
@@ -740,26 +793,6 @@ void loop() {
     }
 }
 
-#define NEED_USBD_LL_ConnectionState    0
-#ifdef ARDUINO_ARCH_STM32
-# ifdef _mcci_arduino_version
-#  if _mcci_arduino_version < _mcci_arduino_version_calc(2, 5, 0, 10)
-#   undef NEED_USBD_LL_ConnectionState
-#   define NEED_USBD_LL_ConnectionState 1
-#  endif // _mcci_arduino_version < _mcci_arduino_version_calc(2, 5, 0, 10)
-# endif // def _mcci_arduino_version
-#endif // def ARDUINO_ARCH_STM32
-
-#define NEED_STM32_ClockCalibration    0
-#ifdef ARDUINO_ARCH_STM32
-# ifdef _mcci_arduino_version
-#  if _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 10)
-#   undef NEED_STM32_ClockCalibration
-#   define NEED_STM32_ClockCalibration 1
-#  endif // _mcci_arduino_version <= _mcci_arduino_version_calc(2, 5, 0, 10)
-# endif // def _mcci_arduino_version
-#endif // def ARDUINO_ARCH_STM32
-
 
 // there's a problem with running 2.5 of the MCCI STM32 BSPs;
 // hack around it.
@@ -769,19 +802,23 @@ uint32_t USBD_LL_ConnectionState(void) {
 }
 #endif // NEED_USBD_LL_ConnectionState
 
-#if NEED_STM32_ClockCalibration
-        static constexpr bool kUsesLSE = true;          // _mcci_arduino_version indicates that LSE clock is used.
-#else
-        static constexpr bool kUsesLSE = false;
-#endif
-
+static constexpr bool kMustCalibrateLSE = NEED_STM32_ClockCalibration;          // _mcci_arduino_version indicates that LSE clock is used.
+static constexpr bool kCanCalibrateLSE = SUPPORT_STM32_ClockCalibration;
 
 void setup_calibrateSystemClock(void) {
-    if (kUsesLSE) {
+    if (kMustCalibrateLSE) {
         Serial.println("need to calibrate clock");
 #if NEED_STM32_ClockCalibration
         Stm32_CalibrateSystemClock();
 #endif // NEED_STM32_ClockCalibration
+        Serial.println("setting LPTIM1");
+        // set clock rate error to 0.4%
+        LMIC_setClockError(4 * MAX_CLOCK_ERROR / 1000);
+        rtccount_begin();
+    } else if (kCanCalibrateLSE) {
+        Serial.println("assuming BIOS has calibrated clock, setting LPTIM1");
+        LMIC_setClockError(4 * MAX_CLOCK_ERROR / 1000);
+        rtccount_begin();
     } else {
         Serial.println("calibration not supported");
     }
@@ -1183,3 +1220,59 @@ MeasureMicrosPerRtcSecond(
     return end - start;
     }
 #endif // NEED_STM32_ClockCalibration
+
+#if SUPPORT_STM32_ClockCalibration
+static void rtccount_begin()
+    {
+    // enable clock to LPTIM1
+    __HAL_RCC_LPTIM1_CLK_ENABLE();
+    auto const pLptim = LPTIM1;
+
+    // set LPTIM1 clock to LSE clock.
+    __HAL_RCC_LPTIM1_CONFIG(RCC_LPTIM1CLKSOURCE_LSE);
+
+    // disable everything so we can tweak the CFGR
+    pLptim->CR = 0;
+
+    // disable interrupts (needs to be done while disabled globally)
+    pLptim->IER = 0;
+
+    // upcount from selected internal clock (which is LSE)
+    auto rCfg = pLptim->CFGR & ~0x01FEEEDF;
+    rCfg |=  0;
+    pLptim->CFGR = rCfg;
+
+    // enable the counter but don't start it
+    pLptim->CR = LPTIM_CR_ENABLE;
+    delayMicroseconds(100);
+
+    // set ARR to max value so we can count from 0 to 0xFFFF.
+    // must be done after enabling.
+    pLptim->ARR = 0xFFFF;
+
+    // start in continuous mode.
+    pLptim->CR = LPTIM_CR_ENABLE | LPTIM_CR_CNTSTRT;
+    }
+
+static uint16_t rtccount_read()
+    {
+    auto const pLptim = LPTIM1;
+    uint32_t v1, v2;
+
+    for (v1 = pLptim->CNT & 0xFFFF; (v2 = pLptim->CNT & 0xFFFF) != v1; v1 = v2)
+        /* loop */;
+
+    return (uint16_t) v1;
+    }
+
+#else
+static void rtccount_begin()
+    {
+    // nothing
+    }
+
+static uint16_t rtccount_read()
+    {
+    return 0;
+    }
+#endif
