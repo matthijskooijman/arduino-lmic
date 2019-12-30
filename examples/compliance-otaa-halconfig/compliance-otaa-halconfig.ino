@@ -22,7 +22,7 @@ Author:
 #include <SPI.h>
 class cEventQueue;
 
-#define APPLICATION_VERSION _mcci_arduino_version_calc(3,0,99,10)
+#define APPLICATION_VERSION ARDUINO_LMIC_VERSION_CALC(3,0,99,10)
 
 //
 // For compliance tests with the RWC5020A, we use the default addresses
