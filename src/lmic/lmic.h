@@ -127,10 +127,15 @@ extern "C"{
 enum { MAX_FRAME_LEN      =  MAX_LEN_FRAME };   //!< Library cap on max frame length
 
 enum { TXCONF_ATTEMPTS    =   8 };   //!< Transmit attempts for confirmed frames
-enum { MAX_RXSYMS         = 100 };   // stop tracking beacon beyond this
 enum { MAX_MISSED_BCNS    =  (2 * 60 * 60 + 127) / 128 };   //!< threshold for dropping out of class B, triggering rejoin requests
                                      // note that we need 100 ppm timing accuracy for
                                      // this, to keep the timing error to +/- 700ms.
+enum { MAX_RXSYMS         = 350 };   // Stop tracking beacon if sync error grows beyond this. A 0.4% clock error
+                                     // at SF9.125k means 512 ms; one sybol is 4.096 ms,
+                                     // so this needs to be at least 125 for an STM32L0.
+                                     // And for 100ppm clocks and 2 hours of beacon misses,
+                                     // this needs to accomodate 1.4 seconds of error at
+                                     // 4.096 ms/sym or at least 342 symbols.
 
 enum { LINK_CHECK_CONT    =  0  ,    // continue with this after reported dead link
        LINK_CHECK_DEAD    =  32 ,    // after this UP frames and no response to ack from NWK assume link is dead (ADR_ACK_DELAY)
