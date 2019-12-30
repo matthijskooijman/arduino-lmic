@@ -257,6 +257,7 @@ u4_t hal_waitUntil (u4_t time) {
     // From delayMicroseconds docs: Currently, the largest value that
     // will produce an accurate delay is 16383. Also, STM32 does a better
     // job with delay is less than 10,000 us; so reduce in steps.
+    // It's nice to use delay() for the longer times.
     while (delta > (9000 / US_PER_OSTICK)) {
         // deliberately delay 8ms rather than 9ms, so we
         // will exit loop with delta typically positive.
@@ -266,8 +267,11 @@ u4_t hal_waitUntil (u4_t time) {
         // re-synchronize.
         delta = delta_time(time);
     }
-    if (delta > 0)
-        delayMicroseconds(delta * US_PER_OSTICK);
+
+    // unluckily, delayMicroseconds() isn't very accurate.
+    // so spin using delta_time().
+    while (delta_time(time) > 0)
+        /* loop */;
 
     // we aren't "late". Callers are interested in gross delays, not
     // necessarily delays due to poor timekeeping here.
