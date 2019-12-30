@@ -1446,7 +1446,8 @@ static void setupRx2 (void) {
 //! For LoRa, the fastest data rates of interest is SF7 (1024 us/symbol); with an 8-byte
 //! preamble, the shortest preamble is 8.092ms long. If using FSK, the symbol rate is
 //! 20 microseconds, but the preamble is 8*5 bits long, so the preamble is 800 microseconds.
-//! If the user has not set the clock error, an error of 0.01% is assumed. 
+//! Unless LMIC_ENABLE_arbitrary_clock_error is true, we fold clock errors of > 0.4% back
+//! to 0.4%.
 ostime_t LMICcore_adjustForDrift (ostime_t delay, ostime_t hsym, rxsyms_t rxsyms_in) {
     ostime_t rxoffset;
 
