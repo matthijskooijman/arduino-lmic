@@ -1476,16 +1476,22 @@ ostime_t LMICcore_adjustForDrift (ostime_t delay, ostime_t hsym, rxsyms_t rxsyms
     // If the clock is slow, the window needs to open earlier in our time
     // in order to open at or before the specified time (in real world),.
     // Don't bother to round, as this is very fine-grained.
-    // and bear in mind that the delay is always
     ostime_t drift = (ostime_t)(((int64_t)delay * clockerr) / MAX_CLOCK_ERROR);
 
-    // we add symbols if we're starting tx before the window.
-    rxoffset -= drift;
-
-    // if we're starting before the window, extend the number of symbols
-    // for timeout appropriately.
+    // calculate the additional rxsyms needed to hit the window nominally.
+    ostime_t const tsym = 2 * hsym;
+    ostime_t driftwin;
+    driftwin = 2 * drift;
     if (rxoffset < 0)
-        rxsyms_in += (-rxoffset + 2 * hsym - 1) / (2 * hsym);
+        driftwin += -rxoffset;
+    // else we'll hit the window nominally.
+
+    rxsyms_in += (driftwin + tsym - 1) / tsym;
+
+    // reduce the rxoffset by the drift; this compensates for a slow clock;
+    // but it makes the rxtime too early by approximately `drift` if clock
+    // is fast.
+    rxoffset -= drift;
 
     setRxsyms(rxsyms_in);
 

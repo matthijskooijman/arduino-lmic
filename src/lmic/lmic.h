@@ -331,13 +331,14 @@ enum {
         MAX_CLOCK_ERROR = 65536,
         //! \brief maximum clock error that users can specify: 2000 ppm (0.2%).
         //! \details This is the limit for clock error, unless LMIC_ENABLE_arbitrary_clock_error is set.
-        //! The default is 2,000 ppm, which is .002, or 0.2%. If your clock error is bigger,
+        //! The default is 4,000 ppm, which is .004, or 0.4%; this is what you get on an
+        //! STM32L0 running with the HSI oscillator after cal. If your clock error is bigger,
         //! usually you want to calibrate it so that millis() and micros() are reasonably
         //! accurate. Important: do not use clock error to compensate for late serving
         //! of the LMIC. If you see that LMIC.radio.rxlate_count is increasing, you need
         //! to adjust your application logic so the LMIC gets serviced promptly when a
         //! Class A downlink (or beacon) is pending.
-        LMIC_kMaxClockError_ppm = 2000,
+        LMIC_kMaxClockError_ppm = 4000,
 };
 
 // callbacks for client alerts.

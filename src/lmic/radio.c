@@ -902,6 +902,18 @@ static CONST_TABLE(u1_t, rxlorairqmask)[] = {
     [RXMODE_RSSI]   = 0x00,
 };
 
+//! \brief handle late RX events.
+//! \param nLate is the number of `ostime_t` ticks that the event was late.
+//! \details If nLate is non-zero, increment the count of events, totalize
+//! the number of ticks late, and (if implemented) adjust the estimate of
+//! what would be best to return from `os_getRadioRxRampup()`.
+static void rxlate (u4_t nLate) {
+    if (nLate) {
+            LMIC.radio.rxlate_ticks += nLate;
+            ++LMIC.radio.rxlate_count;
+    }
+}
+
 // start LoRa receiver (time=LMIC.rxtime, timeout=LMIC.rxsyms, result=LMIC.frame[LMIC.dataLen])
 static void rxlora (u1_t rxmode) {
     // select LoRa modem (from sleep mode)
@@ -966,13 +978,9 @@ static void rxlora (u1_t rxmode) {
     // now instruct the radio to receive
     if (rxmode == RXMODE_SINGLE) { // single rx
         u4_t nLate = hal_waitUntil(LMIC.rxtime); // busy wait until exact rx time
-        LMICOS_logEventUint32("+Rx LoRa Single", nLate);
         opmode(OPMODE_RX_SINGLE);
-        if (nLate)
-            {
-            ++LMIC.radio.rxlate_count;
-            LMIC.radio.rxlate_ticks += nLate;
-            }
+        LMICOS_logEventUint32("+Rx LoRa Single", nLate);
+        rxlate(nLate);
 #if LMIC_DEBUG_LEVEL > 0
         ostime_t now = os_getTime();
         LMIC_DEBUG_PRINTF("start single rx: now-rxtime: %"LMIC_PRId_ostime_t"\n", now - LMIC.rxtime);
@@ -1042,12 +1050,9 @@ static void rxfsk (u1_t rxmode) {
     // now instruct the radio to receive
     if (rxmode == RXMODE_SINGLE) {
         u4_t nLate = hal_waitUntil(LMIC.rxtime); // busy wait until exact rx time
-        LMICOS_logEventUint32("+Rx FSK", nLate);
         opmode(OPMODE_RX); // no single rx mode available in FSK
-        if (nLate) {
-            LMIC.radio.rxlate_ticks += nLate;
-            ++LMIC.radio.rxlate_count;
-        }
+        LMICOS_logEventUint32("+Rx FSK", nLate);
+        rxlate(nLate);
     } else {
         LMICOS_logEvent("+Rx FSK Continuous");
         opmode(OPMODE_RX);
