@@ -721,7 +721,7 @@ static CONST_TABLE(u1_t, macCmdSize)[] = {
 static u1_t getMacCmdSize(u1_t macCmd) {
     if (macCmd < 2)
         return 0;
-    if (macCmd >= LENOF_TABLE(macCmdSize) - 2)
+    if ((macCmd - 2) >= LENOF_TABLE(macCmdSize))
         return 0;
     return TABLE_GET_U1(macCmdSize, macCmd - 2);
 }
