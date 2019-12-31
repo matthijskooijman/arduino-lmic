@@ -47,7 +47,7 @@ requires C99 mode to be enabled by default.
 		- [Selecting V1.0.3](#selecting-v103)
 	- [Selecting the LoRaWAN Region Configuration](#selecting-the-lorawan-region-configuration)
 		- [eu868, as923, in866, kr920](#eu868-as923-in866-kr920)
-		- [us915, au921](#us915-au921)
+		- [us915, au915](#us915-au915)
 	- [Selecting the target radio transceiver](#selecting-the-target-radio-transceiver)
 	- [Controlling use of interrupts](#controlling-use-of-interrupts)
 	- [Disabling PING](#disabling-ping)
@@ -241,7 +241,7 @@ The library supports the following regions:
 ------------|-----------------|:----------------:|:-------------------:|--------
 `-D CFG_eu868` | `LMIC_REGION_eu868` | 1 | 2.2 | EU 863-870 MHz ISM
 `-D CFG_us915` | `LMIC_REGION_us915` | 2 | 2.3 | US 902-928 MHz ISM
-`-D CFG_au921` | `LMIC_REGION_au921` | 5 | 2.6 | Australia 915-928 MHz ISM
+`-D CFG_au915` | `LMIC_REGION_au915` | 5 | 2.6 | Australia 915-928 MHz ISM
 `-D CFG_as923` | `LMIC_REGION_as923` | 7 | 2.8 | Asia 923 MHz ISM
 `-D CFG_as923jp` | `LMIC_REGION_as923` and `LMIC_COUNTRY_CODE_JP` | 7 | 2.8 | Asia 923 MHz ISM with Japan listen-before-talk (LBT) rules
 `-D CFG_kr920` | `LMIC_REGION_kr920` | 8 | 2.9 | Korea 920-923 MHz ISM
@@ -262,7 +262,7 @@ the following changes:
 - Add the constants `MAX_CHANNELS`, `MAX_BANDS`, `LIMIT_CHANNELS`, `BAND_MILLI`,
 `BAND_CENTI`, `BAND_DECI`, and `BAND_AUX`.
 
-#### us915, au921
+#### us915, au915
 
 If the library is configured for US915 operation, we make the following changes:
 

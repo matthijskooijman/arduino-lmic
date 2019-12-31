@@ -66,7 +66,7 @@ Revision history:
 #define LMIC_REGION_us915    2
 #define LMIC_REGION_cn783    3
 #define LMIC_REGION_eu433    4
-#define LMIC_REGION_au921    5
+#define LMIC_REGION_au915    5
 #define LMIC_REGION_cn490    6
 #define LMIC_REGION_as923    7
 #define LMIC_REGION_kr920    8
@@ -92,6 +92,16 @@ Revision history:
 # include CFG_TEXT_1(ARDUINO_LMIC_PROJECT_CONFIG_H)
 #endif /* ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS */
 
+#if defined(CFG_au921) && !defined(CFG_au915)
+#   warning "CFG_au921 was deprecated in favour of CFG_au915. Support for CFG_au921 might be removed in the future."
+#   define CFG_au915
+#endif
+
+// for backwards compatibility to legacy code, define CFG_au921 if we see CFG_au915.
+#if defined(CFG_au915) && !defined(CFG_au921)
+#   define CFG_au921
+#endif
+
 // a mask of the supported regions
 // TODO(tmm@mcci.com) consider moving this block to a central file as it's not
 // user-editable.
@@ -100,7 +110,7 @@ Revision history:
                                 (1 << LMIC_REGION_us915) |      \
                              /* (1 << LMIC_REGION_cn783) | */   \
                              /* (1 << LMIC_REGION_eu433) | */   \
-                                (1 << LMIC_REGION_au921) |      \
+                                (1 << LMIC_REGION_au915) |      \
                              /* (1 << LMIC_REGION_cn490) | */   \
                                 (1 << LMIC_REGION_as923) |      \
                                 (1 << LMIC_REGION_kr920) |      \
@@ -124,7 +134,7 @@ Revision history:
                          (defined(CFG_us915) << LMIC_REGION_us915) | \
                          (defined(CFG_cn783) << LMIC_REGION_cn783) | \
                          (defined(CFG_eu433) << LMIC_REGION_eu433) | \
-                         (defined(CFG_au921) << LMIC_REGION_au921) | \
+                         (defined(CFG_au915) << LMIC_REGION_au915) | \
                          (defined(CFG_cn490) << LMIC_REGION_cn490) | \
                          (defined(CFG_as923) << LMIC_REGION_as923) | \
                          (defined(CFG_kr920) << LMIC_REGION_kr920) | \
@@ -142,8 +152,8 @@ Revision history:
 # define CFG_region     LMIC_REGION_cn783
 #elif defined(CFG_eu433)
 # define CFG_region     LMIC_REGION_eu433
-#elif defined(CFG_au921)
-# define CFG_region     LMIC_REGION_au921
+#elif defined(CFG_au915)
+# define CFG_region     LMIC_REGION_au915
 #elif defined(CFG_cn490)
 # define CFG_region     LMIC_REGION_cn490
 #elif defined(CFG_as923jp)
@@ -170,7 +180,7 @@ Revision history:
                              /* (1 << LMIC_REGION_us915) | */   \
                                 (1 << LMIC_REGION_cn783) |      \
                                 (1 << LMIC_REGION_eu433) |      \
-                             /* (1 << LMIC_REGION_au921) | */   \
+                             /* (1 << LMIC_REGION_au915) | */   \
                              /* (1 << LMIC_REGION_cn490) | */   \
                                 (1 << LMIC_REGION_as923) |      \
                                 (1 << LMIC_REGION_kr920) |      \
@@ -188,7 +198,7 @@ Revision history:
                                 (1 << LMIC_REGION_us915) |      \
                              /* (1 << LMIC_REGION_cn783) | */   \
                              /* (1 << LMIC_REGION_eu433) | */   \
-                                (1 << LMIC_REGION_au921) |      \
+                                (1 << LMIC_REGION_au915) |      \
                              /* (1 << LMIC_REGION_cn490) | */   \
                              /* (1 << LMIC_REGION_as923) | */   \
                              /* (1 << LMIC_REGION_kr920) | */   \

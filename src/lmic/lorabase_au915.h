@@ -28,8 +28,8 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _lorabase_au921_h_
-#define _lorabase_au921_h_
+#ifndef _lorabase_au915_h_
+#define _lorabase_au915_h_
 
 #ifndef _LMIC_CONFIG_PRECONDITIONS_H_
 # include "lmic_config_preconditions.h"
@@ -37,53 +37,53 @@
 
 /****************************************************************************\
 |
-| Basic definitions for AS921 (always in scope)
+| Basic definitions for AU 915 (always in scope)
 |
 \****************************************************************************/
 
-// Frequency plan for AU 921 MHz
-enum _dr_as921_t {
-        AU921_DR_SF12 = 0,
-        AU921_DR_SF11,
-        AU921_DR_SF10,
-        AU921_DR_SF9,
-        AU921_DR_SF8,
-        AU921_DR_SF7,
-        AU921_DR_SF8C,
-        AU921_DR_NONE,
+// Frequency plan for AU 915 MHz
+enum _dr_au915_t {
+        AU915_DR_SF12 = 0,
+        AU915_DR_SF11,
+        AU915_DR_SF10,
+        AU915_DR_SF9,
+        AU915_DR_SF8,
+        AU915_DR_SF7,
+        AU915_DR_SF8C,
+        AU915_DR_NONE,
         // Devices behind a router:
-        AU921_DR_SF12CR = 8,
-        AU921_DR_SF11CR,
-        AU921_DR_SF10CR,
-        AU921_DR_SF9CR,
-        AU921_DR_SF8CR,
-        AU921_DR_SF7CR
+        AU915_DR_SF12CR = 8,
+        AU915_DR_SF11CR,
+        AU915_DR_SF10CR,
+        AU915_DR_SF9CR,
+        AU915_DR_SF8CR,
+        AU915_DR_SF7CR
 };
 
-// Default frequency plan for AU 921MHz
+// Default frequency plan for AU 915MHz
 enum {
-        AU921_125kHz_UPFBASE = 915200000,
-        AU921_125kHz_UPFSTEP = 200000,
-        AU921_500kHz_UPFBASE = 915900000,
-        AU921_500kHz_UPFSTEP = 1600000,
-        AU921_500kHz_DNFBASE = 923300000,
-        AU921_500kHz_DNFSTEP = 600000
+        AU915_125kHz_UPFBASE = 915200000,
+        AU915_125kHz_UPFSTEP = 200000,
+        AU915_500kHz_UPFBASE = 915900000,
+        AU915_500kHz_UPFSTEP = 1600000,
+        AU915_500kHz_DNFBASE = 923300000,
+        AU915_500kHz_DNFSTEP = 600000
 };
 enum {
-        AU921_FREQ_MIN = 915000000,
-        AU921_FREQ_MAX = 928000000
+        AU915_FREQ_MIN = 915000000,
+        AU915_FREQ_MAX = 928000000
 };
 enum {
-        AU921_TX_EIRP_MAX_DBM = 30      // 30 dBm
+        AU915_TX_EIRP_MAX_DBM = 30      // 30 dBm
 };
 enum {
         // initial value of UplinkDwellTime before TxParamSetupReq received.
-        AU921_INITIAL_TxParam_UplinkDwellTime = 1,
-        AU921_UPLINK_DWELL_TIME_osticks = sec2osticks(20),
+        AU915_INITIAL_TxParam_UplinkDwellTime = 1,
+        AU915_UPLINK_DWELL_TIME_osticks = sec2osticks(20),
 };
 
-enum { DR_PAGE_AU921 = 0x10 * (LMIC_REGION_au921 - 1) };
+enum { DR_PAGE_AU915 = 0x10 * (LMIC_REGION_au915 - 1) };
 
-enum { AU921_LMIC_REGION_EIRP = 1 };         // region uses EIRP
+enum { AU915_LMIC_REGION_EIRP = 1 };         // region uses EIRP
 
-#endif /* _lorabase_au921_h_ */
+#endif /* _lorabase_au915_h_ */
