@@ -339,6 +339,30 @@ a bit vague on the RC oscillator's accuracy and how to use it exactly
 (some registers seem to be FSK-mode only), so this needs some
 experiments.
 
+The code can currently compensate for an inaccurate clock, by calling
+the `LMIC_setClockError()` function somewhere during setup. You can pass
+a clock error percentage, e.g. to correct for 1% clock error:
+
+    LMIC_setClockError(MAX_CLOCK_ERROR * 1 / 100);
+
+Problems with downlink and OTAA
+-------------------------------
+Uplink will often work right away, but sometimes downlink (and thus also
+OTAA) will not work directly. In practice, this is often due to
+inaccuracies in the receive window timing (see the previous section for
+details). If you run into problems with OTAA or downlink, it is a good
+idea to relax the RX mode timings to see if that helps by adding this to
+your setup somewhere:
+
+    LMIC_setClockError(MAX_CLOCK_ERROR * 10 / 100);
+
+This function is intended to compensate for clock inaccuracy (up to ±10%
+in this example), but that also works to compensate for inaccuracies due
+to software delays. The downside of this compensation is a longer
+receive window, which means a higher battery drain. So if this helps,
+you might want to try to lower the percentage (i.e. lower the 10 in the
+above call), often 1% works well already.
+
 Downlink datarate
 -----------------
 Note that the datarate used for downlink packets in the RX2 window
