@@ -12,6 +12,15 @@
 #include "lmic.h"
 #include <stdbool.h>
 
+// Output definitions of inline functions
+extern inline u1_t table_get_u1(const u1_t *table, size_t index);
+extern inline s1_t table_get_s1(const s1_t *table, size_t index);
+extern inline u2_t table_get_u2(const u2_t *table, size_t index);
+extern inline s2_t table_get_s2(const s2_t *table, size_t index);
+extern inline u4_t table_get_u4(const u4_t *table, size_t index);
+extern inline s4_t table_get_s4(const s4_t *table, size_t index);
+extern inline ostime_t table_get_ostime(const ostime_t *table, size_t index);
+
 // RUNTIME STATE
 static struct {
     osjob_t* scheduledjobs;
