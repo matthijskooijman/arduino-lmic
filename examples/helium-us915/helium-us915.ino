@@ -283,7 +283,7 @@ void setup() {
 
     LMIC_setLinkCheckMode(0);
     LMIC_setDrTxpow(DR_SF7,14);
-    LMIC_selectSubBand(1);
+    LMIC_selectSubBand(6);
 
     // Start job (sending automatically starts OTAA too)
     do_send(&sendjob);
