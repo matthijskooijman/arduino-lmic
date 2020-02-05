@@ -268,10 +268,25 @@ u4_t hal_waitUntil (u4_t time) {
         delta = delta_time(time);
     }
 
+    // The radio driver runs with interrupt disabled, and this can
+    // mess up timing APIs on some platforms. If we know the BSP feature
+    // set, we can decide whether to use delta_time() [more exact, 
+    // but not always possible with interrupts off], or fall back to
+    // delay_microseconds() [less exact, but more universal]
+
+#if defined(_mcci_arduino_version)
     // unluckily, delayMicroseconds() isn't very accurate.
+    // but delta_time() works with interrupts disabled.
     // so spin using delta_time().
     while (delta_time(time) > 0)
         /* loop */;
+#else // ! defined(_mcci_arduino_version)
+    // on other BSPs, we need to stick with the older way,
+    // until we fix the radio driver to run with interrupts
+    // enabled.
+    if (delta > 0)
+        delayMicroseconds(delta * US_PER_OSTICK);
+#endif // ! defined(_mcci_arduino_version)
 
     // we aren't "late". Callers are interested in gross delays, not
     // necessarily delays due to poor timekeeping here.
