@@ -1,15 +1,15 @@
 /*
 
-Module:  getconfig_catena4610.cpp
+Module:  getpinmap_disco_l072cz_lrwan1.cpp
 
 Function:
-        Arduino-LMIC C++ HAL pinmaps for the Catena 4610
+        Arduino-LMIC C++ HAL pinmaps for the Discovery L072CZ LRWAN1
 
 Copyright & License:
         See accompanying LICENSE file.
 
 Author:
-        Terry Moore, MCCI       November 2018
+        Helium       February 2020
 
 */
 
