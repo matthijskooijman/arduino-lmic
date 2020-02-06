@@ -296,6 +296,13 @@ void setup() {
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
 
+    // allow much more clock error than the X/1000 default. See:
+    // https://github.com/mcci-catena/arduino-lorawan/issues/74#issuecomment-462171974
+    // https://github.com/mcci-catena/arduino-lmic/commit/42da75b56#diff-16d75524a9920f5d043fe731a27cf85aL633
+    // the X/1000 means an error rate of 0.1%; the above issue discusses using values up to 10%.
+    // so, values from 10 (10% error, the most lax) to 1000 (0.1% error, the most strict) can be used.
+    LMIC_setClockError(1 * MAX_CLOCK_ERROR / 40);
+
     LMIC_setLinkCheckMode(0);
     LMIC_setDrTxpow(DR_SF7,14);
     LMIC_selectSubBand(6);
