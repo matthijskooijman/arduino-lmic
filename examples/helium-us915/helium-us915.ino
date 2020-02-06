@@ -284,6 +284,13 @@ void setup() {
     delay(1000);
     #endif
 
+    #if defined(ARDUINO_DISCO_L072CZ_LRWAN1)
+    SPI.setMOSI(RADIO_MOSI_PORT);
+    SPI.setMISO(RADIO_MISO_PORT);
+    SPI.setSCLK(RADIO_SCLK_PORT);
+    SPI.setSSEL(RADIO_NSS_PORT);
+    #endif
+
     // LMIC init
     os_init();
     // Reset the MAC state. Session and pending data transfers will be discarded.
