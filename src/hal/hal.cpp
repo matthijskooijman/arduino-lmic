@@ -250,10 +250,10 @@ static s4_t delta_time(u4_t time) {
 
 // deal with boards that are stressed by no-interrupt delays #529, etc.
 #if defined(ARDUINO_DISCO_L072CZ_LRWAN1)
-# define HAL_WAITUNTIL_DOWNCONNT_MS 16      // on this board, 16 ms works better
+# define HAL_WAITUNTIL_DOWNCOUNT_MS 16      // on this board, 16 ms works better
 # define HAL_WAITUNTIL_DOWNCOUNT_THRESH ms2osticks(16)  // as does this threashold.
 #else
-# define HAL_WAITUNTIL_DWONCOUNT_MS 8       // on most boards, delay for 8 ms
+# define HAL_WAITUNTIL_DOWNCOUNT_MS 8       // on most boards, delay for 8 ms
 # define HAL_WAITUNTIL_DOWNCOUNT_THRESH ms2osticks(9) // but try to leave a little slack for final timing.
 #endif
 
@@ -272,7 +272,7 @@ u4_t hal_waitUntil (u4_t time) {
         // will exit loop with delta typically positive.
         // Depends on BSP keeping time accurately even if interrupts
         // are disabled.
-        delay(HAL_WAITUNTIL_DWONCOUNT_MS);
+        delay(HAL_WAITUNTIL_DOWNCOUNT_MS);
         // re-synchronize.
         delta = delta_time(time);
     }
