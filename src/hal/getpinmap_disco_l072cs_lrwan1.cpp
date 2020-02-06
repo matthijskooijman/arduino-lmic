@@ -58,7 +58,7 @@ namespace Arduino_LMIC {
 
     const HalPinmap_t *GetPinmap_Disco_L072cz_Lrwan1(void)
             {
-            return myPinmap;
+            return &myPinmap;
             }
 
 }; // namespace Arduino_LMIC
