@@ -15,7 +15,7 @@ The [MCCI `arduino-lorawan`](https://github.com/mcci-catena/arduino-lorawan) lib
 This library requires Arduino IDE version 1.6.6 or above, since it
 requires C99 mode to be enabled by default.
 
-[![GitHub release](https://img.shields.io/github/release/mcci-catena/arduino-lmic.svg)](https://github.com/mcci-catena/arduino-lmic/releases/latest) [![GitHub commits](https://img.shields.io/github/commits-since/mcci-catena/arduino-lmic/latest.svg)](https://github.com/mcci-catena/arduino-lmic/compare/v2.3.2...master) [![Build Status](https://travis-ci.com/mcci-catena/arduino-lmic.svg?branch=master)](https://travis-ci.com/mcci-catena/arduino-lmic)
+[![GitHub release](https://img.shields.io/github/release/mcci-catena/arduino-lmic.svg)](https://github.com/mcci-catena/arduino-lmic/releases/latest) [![GitHub commits](https://img.shields.io/github/commits-since/mcci-catena/arduino-lmic/latest.svg)](https://github.com/mcci-catena/arduino-lmic/compare/v3.1.0...master) [![Build Status](https://travis-ci.com/mcci-catena/arduino-lmic.svg?branch=master)](https://travis-ci.com/mcci-catena/arduino-lmic)
 
 **Contents:**
 
@@ -169,7 +169,7 @@ However, in the current implementation, the LMIC is tracking the completion of u
 
 #### Working with MCCI Murata-based boards
 
-The Board Support Package V2.5.0 for the MCCI Murata-based boards ([MCCI Catena 4610](https://mcci.io/catena4610), [MCCI Catena 4612](https://mcci.io/catena4612), etc.) has a defect in clock calibration that prevents the compliance script from being used without modification.  The update to V2.6.0 is expected to solve this issue.
+The Board Support Package V2.5.0 for the MCCI Murata-based boards ([MCCI Catena 4610](https://mcci.io/catena4610), [MCCI Catena 4612](https://mcci.io/catena4612), etc.) has a defect in clock calibration that prevents the compliance script from being used without modification. Versions V2.6.0 and later solve this issue.
 
 #### Event-Handling Issues
 
@@ -437,7 +437,7 @@ low-level SPI transceiver interface.
 This library is intended to be used inside the Arduino environment. It
 should be architecture-independent. Users have tested this on AVR, ARM, Xtensa-based, and RISC-V based system.
 
-This library an be quite heavy on small systems, especially if the fairly small ATmega
+This library can be quite heavy on small systems, especially if the fairly small ATmega
 328p (such as in the Arduino Uno) is used. In the default configuration,
 the available 32K flash space is nearly filled up (this includes some
 debug output overhead, though). By disabling some features in `project_config/lmic_project_config.h`
@@ -453,7 +453,9 @@ The following boards are pre-integrated.
 - Adafruit [Feather 32u4 LoRa 900 MHz][1] (SX1276)
 - Adafruit [Feather M0 LoRa 900 MHz][2] (SX1276)
 - MCCI Catena 4410, 4420, [4450][3], [4460][4] and [4470][5] boards (based on Adafruit Feather boards plus wings) (SX1276)
-- MCCI Catena 4551, [4610][6], 4611, [4612][7], 4617, 4618, 4630, and [4801][8] boards (based on the Murata CMWX1ZZABZ-078 module) (SX1276)
+- MCCI Catena 4551, [4610][6], 4611, [4612][7], 4617, [4618][7a], 4630, and [4801][8] boards (based on the Murata CMWX1ZZABZ-078 module) (SX1276)
+- [TTGo LoRa32 V1][10] (based on the ESP32)
+- [Heltec WiFi LoRa 32 V2][11] (based on the ESP32)
 
 [1]: https://www.adafruit.com/products/3078
 [2]: https://www.adafruit.com/products/3178
@@ -462,14 +464,17 @@ The following boards are pre-integrated.
 [5]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/mcci-catena-4470-modbus-node-for-lorawan-technology
 [6]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/mcci-catena-4610-integrated-node-for-lorawan-technology
 [7]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4612-integrated-lorawan-node
+[7a]: https://mcci.com/lorawan/products/catena-4618/
 [8]: https://store.mcci.com/collections/lorawan-iot-and-the-things-network/products/catena-4801
+[10]: https://makeradvisor.com/tools/ttgo-lora32-sx1276-esp32-oled/
+[11]: https://heltec.org/project/wifi-lora-32/
 
 > To help you know if you have to worry, we'll call such boards "pre-integrated" and prefix each section with suitable guidance.
 
 ## PlatformIO
 
-For use with PlatformIO, the `lmic_project_config.h` has to be disabled with the flag `ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS`.  
-The settings are defined in PlatformIO by `build_flags`.  
+For use with PlatformIO, the `lmic_project_config.h` has to be disabled with the flag `ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS`.
+The settings are defined in PlatformIO by `build_flags`.
 
 ```ini
 lib_deps =
@@ -747,6 +752,10 @@ This library provides several examples.
    from defaults. This sketch also works with the MCCI Catena family of products
    as well as with the Feather 32u4 LoRa.
 
+- [`ttn-otaa-halconfig-us915.ino`](examples/ttn-otaa-halconfig-us915/ttn-otaa-halconfig-us915.ino) is a version of `ttn-otaa.ino` that uses the LMIC automatic configuration system, in the US915 region,
+   with The Things Network. Remember that you may also have to change `config.h`
+   from defaults. This sketch works with all the boards listed above under [Pre-Integrated Boards](#pre-integrated-boards).
+
 - [`ttn-otaa-feather-us915-dht22.ino`](examples/ttn-otaa-feather-us915-dht22/ttn-otaa-feather-us915-dht22.ino)
    is a further refinement of `ttn-otaa-feather-us915.ino`. It measures and
    transmits temperature and relative humidity using a DHT22 sensor. It's only
@@ -761,6 +770,8 @@ This library provides several examples.
 - [`raw-feather.ino`](examples/raw-feather/raw-feather.ino) is a version of `raw.ino` that is completely configured
    for the Adafruit [Feather M0 LoRa](https://www.adafruit.com/product/3178), and for a variety
    of other MCCI products.
+
+- [`raw-halconfig.ino](examples/raw-halconfig/raw-halconfig.ino) is like the other `raw` examples, but is most general. It's configured according to the LMIC's auto-configuration mechanism, and adapts according to the selected region.
 
 - [`ttn-abp.ino`](examples/ttn-abp/ttn-abp.ino) shows a basic transmission of a "Hello, world!" message
    using the LoRaWAN protocol. This example
@@ -791,6 +802,12 @@ This library provides several examples.
 
 - [`header_test.ino`](examples/header_test/header_test.ino) just tests the header files; it's used for regression testing.
 
+- [`compliance-otaa-halconfig.ino`](examples/compliance-otaa-halconfig/compliance-otaa-halconfig.ino) is a test sketch that is used for LoRaWAN compliance testing.
+
+- [`helium-us9115.ino`](examples\helium-us915\helium-us915.ino) is a complete example for using the LMIC on the Helium network. It's very similar to the OTAA examples, but sets up the prejoin parameters properly for the initial deployment of Helium LoRaWAN support.
+
+- [`ttn-otaa-network-time.ino`](examples/ttn-otaa-network-time/ttn-otaa-network-time.ino) demonstrates use of the network time request. Network time requests are not supported by The Things Network as of the time of writing.
+
 ## Timing
 
 The library is
@@ -820,25 +837,17 @@ Fortunately, LoRa is a fairly slow protocol and the timing of the
 receive windows is not super critical. To synchronize transmitter and
 receiver, a preamble is first transmitted. Using LoRaWAN, this preamble
 consists of 8 symbols, of which the receiver needs to see 4 symbols to
-lock on. The current implementation tries to enable the receiver for 5
-symbol times at 1.5 symbol after the start of the receive window,
-meaning that a inaccuracy of plus or minus 2.5 symbol times should be
-acceptable.
+lock on. The current implementation tries to enable the receiver for 6
+symbol times slightly before the start of the receive window.
 
 The HAL bases all timing on the Arduino `micros()` timer, which has a platform-specific
-granularity, and is based on the primary microcontroller clock.
+granularity and accuracy, and is based on the primary microcontroller clock.
 
-At the fastest LoRa setting supported by the SX127x (SF5BW500) a
-single preamble symbol takes 64 microseconds, so the receive window timing should
-be accurate within 160 microseconds (for LoRaWAN this is SF7BW250, needing accuracy
-within 1280μs). This accuracy should also be
-feasible with the polling approach used, provided that the LMIC loop is
-run often enough.
+If using an internal oscillator that is less than 100ppm accurate but better than 4000 ppm accurate, or if your other `loop()` processing
+is time consuming, you can use [`LMIC_setClockError()`](#lmic_setclockerror)
+to cause the library to leave the radio on longer. Note that for various reasons, it is not practical to set enormous clock errors. Oscillators that are 4000 ppm accurate or worse should be supplemented or disciplined with a better timing source. The LoRaWAN spec, for class B, implicitly assumes 100 ppm accuracy in the clock.
 
-If using an internal oscillator (which is 1% - 10%
-accurate, depending on calibration), or if your other `loop()` processing
-is time consuming, you may have to use [`LMIC_setClockError()`](#lmic_setclockerror)
-to cause the library to leave the radio on longer.
+Users of older versions of the library were advised to set large clock errors if they were experiencing timing problems. However, close analysis and debugging during the preparation of v3.1.0 of this library revealed that the real errors were in the timing calculations in the library. Once those were corrected, the need for large clock error settings was reduced. It's still possible to use large clock errors if needed, but this must be enabled via a compile time switch.
 
 An even more accurate solution could be to use a dedicated timer with an
 input capture unit, that can store the timestamp of a change on the DIO0
@@ -849,7 +858,7 @@ a special API, `radio_irq_handler_v2(u1_t dio, ostime_t tEvent)`. This
 API allows you to supply a hardware-captured time for extra accuracy.
 
 The practical consequence of inaccurate timing is reduced battery life;
-the LMIC must turn on the receiver earlier in order to be sure to capture downlink packets.
+the LMIC must turn on the receiver earlier in order to be sure to capture downlink packets. However, this is a second order effect on class A devices; every receive is preceded by a transmit, which takes approximately ten times as much power per millisecond as a receive.
 
 ### `LMIC_setClockError()`
 
@@ -872,6 +881,8 @@ LMIC_setClockError(MAX_CLOCK_ERROR * 20 / 100);
 ```
 
 Setting a high clock error causes the RX windows to be opened earlier than it otherwise would be. This causes more power to be consumed. For Class A devices, this extra power is not substantial, but for Class B devices, this can be significant.
+
+For a variety of reasons, the LMIC normally ignores clock errors greater than 4000 ppm (0.4%). The compile-time flag `LMIC_ENABLE_arbitrary_clock_error` can remove this limit. To do this, define it to a non-zero value.
 
 This clock error is not reset by `LMIC_reset()`.
 
@@ -1182,7 +1193,9 @@ function uflt12f(rawUflt12)
 
 ## Release History
 
-- v3.0.99 (still in pre-release) adds the following changes. (This is not an exhaustive list.) Note that the behavior of the LMIC changes in important ways, as it now enforces the LoRaWAN mandated maximum frame size for a given data rate. For Class A devices, this may cause your device to go silent after join, if you're not able to handle the frame size dictated by the parameters downloaded to the device by the network during join. The library will attempt to find a data rate that will work, but there is no guarantee that the network has provided such a data rate.
+- v3.1.0 officially adopts the changes from v3.0.99. There were dozens of changes; check the GitHub issue logs and change logs. This was a breaking release (due to changes in data layout in the LMIC structure; the structure is accessed by apps).
+
+- v3.0.99 (the pre-release for v3.1.0) added the following changes. (This is not an exhaustive list.) Note that the behavior of the LMIC changes in important ways, as it now enforces the LoRaWAN mandated maximum frame size for a given data rate. For Class A devices, this may cause your device to go silent after join, if you're not able to handle the frame size dictated by the parameters downloaded to the device by the network during join. The library will attempt to find a data rate that will work, but there is no guarantee that the network has provided such a data rate.
 
   - [#470](https://github.com/mcci-catena/arduino-lmic/pull/470) corrects the name of AU915 region. [#516](https://github.com/mcci-catena/arduino-lmic/pull/516) makes sure that `LMIC_REGION_au921` is defined (but deprecated) for backward compatibility.
   - [#452](https://github.com/mcci-catena/arduino-lmic/pull/452) fixes a bug [#450](https://github.com/mcci-catena/arduino-lmic/issues/450) in `LMIC_clrTxData()` that would cause join hiccups if called while (1) a join was in progress and (2) a regular data packet was waiting to be uplinked after the join completes. Also fixes AS923- and AU915-specific bugs [#446](https://github.com/mcci-catena/arduino-lmic/issues/446), [#447](https://github.com/mcci-catena/arduino-lmic/issues/447), [#448](https://github.com/mcci-catena/arduino-lmic/issues/448). Version is `v3.0.99.5`.
@@ -1244,6 +1257,14 @@ This library started from the IBM V1.5 open-source code.
 - Terry Moore added the AU915, AS923, KR920 and IN866 regions, and created the regionalization framework, and did corrections for LoRaWAN 1.0.3 compliance testing.
 
 - [`@tanupoo`](https://github.com/tanupoo) of the WIDE Project debugged AS923JP and LBT support.
+
+- [`@frazar`](https://github.com/frazar) contributed numerous features, e.g. network time support, CI testing, documentation improvements.
+
+- [`@manuelbl`](https://github.com/manuelbl) contributed numerous ESP32-related patches and improvements.
+
+- [`@ngraziano`](https://github.com/ngraziano) did extensive testing and contributed numerous ADR-related patches.
+
+There are many others, who have contributed code and also participated in discussions, performed testing, reported problems and results. Thanks to all who have participated.
 
 ## Trademark Acknowledgements
 
