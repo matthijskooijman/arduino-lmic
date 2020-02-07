@@ -169,7 +169,7 @@ However, in the current implementation, the LMIC is tracking the completion of u
 
 #### Working with MCCI Murata-based boards
 
-The Board Support Package V2.5.0 for the MCCI Murata-based boards ([MCCI Catena 4610](https://mcci.io/catena4610), [MCCI Catena 4612](https://mcci.io/catena4612), etc.) has a defect in clock calibration that prevents the compliance script from being used without modification.  The update to V2.6.0 is expected to solves this issue.
+The Board Support Package V2.5.0 for the MCCI Murata-based boards ([MCCI Catena 4610](https://mcci.io/catena4610), [MCCI Catena 4612](https://mcci.io/catena4612), etc.) has a defect in clock calibration that prevents the compliance script from being used without modification. Versions V2.6.0 and later solve this issue.
 
 #### Event-Handling Issues
 
@@ -473,8 +473,8 @@ The following boards are pre-integrated.
 
 ## PlatformIO
 
-For use with PlatformIO, the `lmic_project_config.h` has to be disabled with the flag `ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS`.  
-The settings are defined in PlatformIO by `build_flags`.  
+For use with PlatformIO, the `lmic_project_config.h` has to be disabled with the flag `ARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS`.
+The settings are defined in PlatformIO by `build_flags`.
 
 ```ini
 lib_deps =
@@ -843,10 +843,11 @@ symbol times slightly before the start of the receive window.
 The HAL bases all timing on the Arduino `micros()` timer, which has a platform-specific
 granularity and accuracy, and is based on the primary microcontroller clock.
 
-If using an internal oscillator that is 1% - 2%
-accurate, depending on calibration), or if your other `loop()` processing
-is time consuming, you may have to use [`LMIC_setClockError()`](#lmic_setclockerror)
-to cause the library to leave the radio on longer. Note that for various reasons, it is not practical to set enormous clock errors. Oscillators that are 4% accurate or worse should be supplemented or disciplined with a better timing source. The LoRaWAN spec, for class B, implicitly assumes 100 ppm accuracy in the clock.
+If using an internal oscillator that is less than 100ppm accurate but better than 4000 ppm accurate, or if your other `loop()` processing
+is time consuming, you can use [`LMIC_setClockError()`](#lmic_setclockerror)
+to cause the library to leave the radio on longer. Note that for various reasons, it is not practical to set enormous clock errors. Oscillators that are 4000 ppm accurate or worse should be supplemented or disciplined with a better timing source. The LoRaWAN spec, for class B, implicitly assumes 100 ppm accuracy in the clock.
+
+Users of older versions of the library were advised to set large clock errors if they were experiencing timing problems. However, close analysis and debugging during the preparation of v3.1.0 of this library revealed that the real errors were in the timing calculations in the library. Once those were corrected, the need for large clock error settings was reduced. It's still possible to use large clock errors if needed, but this must be enabled via a compile time switch.
 
 An even more accurate solution could be to use a dedicated timer with an
 input capture unit, that can store the timestamp of a change on the DIO0
