@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a problem
+about: Report a code defect
 title: ''
 labels: bug
 assignees: terrillmoore
