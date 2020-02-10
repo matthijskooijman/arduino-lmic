@@ -1,7 +1,7 @@
 ---
 name: Support request
 about: Ask for help on a problem
-title: ""
+title: ''
 labels: question
 assignees: terrillmoore
 
