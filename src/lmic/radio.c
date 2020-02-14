@@ -534,7 +534,7 @@ static void configLoraModem () {
 
         // set ModemConfig2 (sf, AgcAutoOn=1 SymbTimeoutHi)
         u1_t mc2;
-        mc2 = (SX1272_MC2_SF7 + ((sf-1)<<4)) | 0x04 | ((LMIC.rxsyms >> 8) & 0x3));
+        mc2 = (SX1272_MC2_SF7 + ((sf-1)<<4)) | 0x04 | ((LMIC.rxsyms >> 8) & 0x3);
 
 #if CFG_TxContinuousMode
         // Only for testing
