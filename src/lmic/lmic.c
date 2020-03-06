@@ -295,7 +295,7 @@ ostime_t calcAirTime (rps_t rps, u1_t plen) {
 //
 
 static void setRxsyms (ostime_t rxsyms) {
-    if (rxsyms >= (ostime_t)(1 << 10u)) {
+    if (rxsyms >= (((ostime_t)1) << 10u)) {
         LMIC.rxsyms = (1u << 10u) - 1;
     } else if (rxsyms < 0) {
         LMIC.rxsyms = 0;
@@ -723,7 +723,7 @@ static CONST_TABLE(u1_t, macCmdSize)[] = {
 static u1_t getMacCmdSize(u1_t macCmd) {
     if (macCmd < 2)
         return 0;
-    if ((macCmd - 2) >= (u1_t)LENOF_TABLE(macCmdSize))
+    if (((size_t)(macCmd - 2)) >= LENOF_TABLE(macCmdSize))
         return 0;
     return TABLE_GET_U1(macCmdSize, macCmd - 2);
 }
