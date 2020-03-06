@@ -3081,7 +3081,7 @@ int LMIC_getNetworkTimeReference(lmic_time_reference_t *pReference) {
         return 1;
     }
 #else
-    (void)pReference;
+    LMIC_API_PARAMETER(pReference);
 #endif // LMIC_ENABLE_DeviceTimeReq
     return 0;
 }
