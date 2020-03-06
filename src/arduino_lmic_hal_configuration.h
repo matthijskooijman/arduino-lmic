@@ -97,9 +97,9 @@ public:
 	// PA_BOOST mode. So that's our default. Override this
 	// for the Murata module.
 	virtual TxPowerPolicy_t getTxPowerPolicy(
-		TxPowerPolicy_t policy,
-		int8_t requestedPower,
-		uint32_t frequency
+		__attribute__((unused)) TxPowerPolicy_t policy,
+		__attribute__((unused)) int8_t requestedPower,
+		__attribute__((unused)) uint32_t frequency
 		)
 		{
 		// default: use PA_BOOST exclusively
