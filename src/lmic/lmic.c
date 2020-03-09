@@ -721,11 +721,17 @@ static CONST_TABLE(u1_t, macCmdSize)[] = {
 };
 
 static u1_t getMacCmdSize(u1_t macCmd) {
-    if (macCmd < 2)
-        return 0;
-    if (((size_t)(macCmd - 2)) >= LENOF_TABLE(macCmdSize))
-        return 0;
-    return TABLE_GET_U1(macCmdSize, macCmd - 2);
+    if (macCmd >= 2) {
+        const unsigned macCmdMinus2 = macCmd - 2u;
+        if (macCmdMinus2 < LENOF_TABLE(macCmdSize)) {
+            // macCmd in table, fetch it's size.
+            return TABLE_GET_U1(macCmdSize, macCmdMinus2);
+        }
+    }
+    // macCmd too small or too large: return zero. Zero is
+    // never a legal command size, so it signals an error
+    // to the caller.
+    return 0;
 }
 
 static bit_t
