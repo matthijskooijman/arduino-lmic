@@ -149,7 +149,7 @@ void do_send(osjob_t* j){
 }
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(115200);
     Serial.println(F("Starting"));
 
     #ifdef VCC_ENABLE
