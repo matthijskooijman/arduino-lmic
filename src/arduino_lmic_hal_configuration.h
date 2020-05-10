@@ -102,6 +102,9 @@ public:
 		uint32_t frequency
 		)
 		{
+		LMIC_API_PARAMETER(policy);
+		LMIC_API_PARAMETER(requestedPower);
+		LMIC_API_PARAMETER(frequency);
 		// default: use PA_BOOST exclusively
 		return TxPowerPolicy_t::PA_BOOST;
 		}

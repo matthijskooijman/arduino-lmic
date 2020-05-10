@@ -659,6 +659,7 @@ void acSetTimer(ostime_t delay) {
 }
 
 static void timerExpiredCb(osjob_t *j) {
+    LMIC_API_PARAMETER(j);
     LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_TIMER_EXPIRED;
     fsmEval();
 }
@@ -734,6 +735,8 @@ static void acSendUplink(void) {
 }
 
 static void sendUplinkCompleteCb(void *pUserData, int fSuccess) {
+    LMIC_API_PARAMETER(pUserData);
+    LMIC_API_PARAMETER(fSuccess);
     LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE;
     LMIC_COMPLIANCE_PRINTF("%s(%s)\n", __func__, LMICcompliance_txSuccessToString(fSuccess));
     fsmEvalDeferred();
