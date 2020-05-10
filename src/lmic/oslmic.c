@@ -139,6 +139,8 @@ void os_runloop () {
 
 void os_runloop_once() {
     osjob_t* j = NULL;
+    hal_processPendingIRQs();
+
     hal_disableIRQs();
     // check for runnable jobs
     if(OS.runnablejobs) {

@@ -1089,9 +1089,9 @@ static void startrx (u1_t rxmode) {
 //!   are enabled.
 //! - The `hal_spi_..()` functions must be ready for use.
 //!
+//! Generally, all these are satisfied by a call to `hal_init_with_pinmap()`.
+//!
 int radio_init () {
-    hal_disableIRQs();
-
     requestModuleActive(1);
 
     // manually reset radio
@@ -1154,7 +1154,6 @@ int radio_init () {
 
     opmode(OPMODE_SLEEP);
 
-    hal_enableIRQs();
     return 1;
 }
 
@@ -1173,9 +1172,7 @@ u1_t radio_rand1 () {
 }
 
 u1_t radio_rssi () {
-    hal_disableIRQs();
     u1_t r = readReg(LORARegRssiValue);
-    hal_enableIRQs();
     return r;
 }
 
@@ -1229,13 +1226,8 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
     tBegin = os_getTime();
     rssiMax = 0;
 
-    /* XXX(tanupoo)
-     * In this loop, micros() in os_getTime() returns a past time sometimes.
-     * At least, it happens on Dragino LoRa Mini.
-     * the return value of micros() looks not to be stable in IRQ disabled.
-     * Once it happens, this loop never exit infinitely.
-     * In order to prevent it, it enables IRQ before calling os_getTime(),
-     * disable IRQ again after that.
+    /* Per bug report from tanupoo, it's critical that interrupts be enabled
+     * in the loop below so that `os_getTime()` always advances.
      */
     do {
         ostime_t now;
@@ -1248,10 +1240,7 @@ void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
                 rssiMin = rssiNow;
         rssiSum += rssiNow;
         ++rssiN;
-        // TODO(tmm@mcci.com) move this to os_getTime().
-        hal_enableIRQs();
         now = os_getTime();
-        hal_disableIRQs();
         notDone = now - (tBegin + nTicks) < 0;
     } while (notDone);
 
@@ -1419,7 +1408,6 @@ which will cause `LMIC.osjob` to be scheduled with its current function.
 */
 
 void os_radio (u1_t mode) {
-    hal_disableIRQs();
     switch (mode) {
       case RADIO_RST:
         // put radio to sleep
@@ -1448,7 +1436,6 @@ void os_radio (u1_t mode) {
         startrx(RXMODE_SCAN); // buf=LMIC.frame
         break;
     }
-    hal_enableIRQs();
 }
 
 ostime_t os_getRadioRxRampup (void) {

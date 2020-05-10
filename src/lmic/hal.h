@@ -169,6 +169,17 @@ uint8_t hal_getTxPowerPolicy(
 	u4_t freq
 	);
 
+void hal_pollPendingIRQs_helper();
+void hal_processPendingIRQs(void);
+
+/// \brief check for any pending interrupts: stub if interrupts are enabled.
+static void inline hal_pollPendingIRQs(void)
+	{
+#if !defined(LMIC_USE_INTERRUPTS)
+	hal_pollPendingIRQs_helper();
+#endif /* !defined(LMIC_USE_INTERRUPTS) */
+	}
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
