@@ -26,6 +26,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+//! \file
+
 #define LMIC_DR_LEGACY 0
 
 #include "lmic.h"
@@ -1070,7 +1072,23 @@ static void startrx (u1_t rxmode) {
     // or timed out, and the corresponding IRQ will inform us about completion.
 }
 
-// get random seed from wideband noise rssi
+//! \brief Initialize radio at system startup.
+//!
+//! \details This procedure is called during initialization by the `os_init()`
+//! routine. It does a hardware reset of the radio, checks the version and confirms
+//! that we're operating a suitable chip, and gets a random seed from wideband
+//! noise rssi. It then puts the radio to sleep.
+//!
+//! \result True if successful, false if it doesn't look like the right radio is attached.
+//!
+//! \pre
+//! Preconditions must be observed, or you'll get hangs during initialization.
+//!
+//! - The `hal_pin_..()` functions must be ready for use.
+//! - The `hal_waitUntl()` function must be ready for use. This may mean that interrupts
+//!   are enabled.
+//! - The `hal_spi_..()` functions must be ready for use.
+//!
 int radio_init () {
     hal_disableIRQs();
 
@@ -1161,13 +1179,19 @@ u1_t radio_rssi () {
     return r;
 }
 
-// monitor rssi for specified number of ostime_t ticks, and return statistics
-// This puts the radio into RX continuous mode, waits long enough for the
-// oscillators to start and the PLL to lock, and then measures for the specified
-// period of time.  The radio is then returned to idle.
-//
-// RSSI returned is expressed in units of dB, and is offset according to the
-// current radio setting per section 5.5.5 of Semtech 1276 datasheet.
+/// \brief get the current RSSI on the current channel.
+///
+/// monitor rssi for specified number of ostime_t ticks, and return statistics
+/// This puts the radio into RX continuous mode, waits long enough for the
+/// oscillators to start and the PLL to lock, and then measures for the specified
+/// period of time.  The radio is then returned to idle.
+///
+/// RSSI returned is expressed in units of dB, and is offset according to the
+/// current radio setting per section 5.5.5 of Semtech 1276 datasheet.
+///
+/// \param nTicks How long to monitor
+/// \param pRssi pointer to structure to fill in with RSSI data.
+///
 void radio_monitor_rssi(ostime_t nTicks, oslmic_radio_rssi_t *pRssi) {
     uint8_t rssiMax, rssiMin;
     uint16_t rssiSum;
@@ -1368,6 +1392,31 @@ void radio_irq_handler_v2 (u1_t dio, ostime_t now) {
     os_setCallback(&LMIC.osjob, LMIC.osjob.func);
 #endif /* ! CFG_TxContinuousMode */
 }
+
+/*!
+
+\brief Initiate a radio operation.
+
+\param mode Selects the operation to be performed.
+
+The requested radio operation is initiated. Some operations complete
+immediately; others require hardware to do work, and don't complete until
+an interrupt occurs. In that case, `LMIC.osjob` is scheduled. Because the
+interrupt may occur right away, it's important that the caller initialize
+`LMIC.osjob` before calling this routine.
+
+- `RADIO_RST` causes the radio to be put to sleep. No interrupt follows;
+when control returns, the radio is ready for the next operation.
+
+- `RADIO_TX` and `RADIO_TX_AT` launch the transmission of a frame. An interrupt will
+occur, which will cause `LMIC.osjob` to be scheduled with its current
+function.
+
+- `RADIO_RX` and `RADIO_RX_ON` launch either single or continuous receives.
+An interrupt will occur when a packet is recieved or the receive times out,
+which will cause `LMIC.osjob` to be scheduled with its current function.
+
+*/
 
 void os_radio (u1_t mode) {
     hal_disableIRQs();
