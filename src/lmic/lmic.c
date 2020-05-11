@@ -889,10 +889,14 @@ scan_mac_cmds(
     uint8_t cmd;
 
     LMIC.pendMacLen = 0;
-    if (port == 0)
+    if (port == 0) {
+        // port zero: mac data is in the normal payload, and there can't be
+        // piggyback mac data.
         LMIC.pendMacPiggyback = 0;
-    else
+    } else {
+        // port is either -1 (no port) or non-zero (piggyback): treat as piggyback.
         LMIC.pendMacPiggyback = 1;
+    }
 
     while( oidx < olen ) {
         bit_t response_fit;
