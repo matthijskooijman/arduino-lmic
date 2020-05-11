@@ -727,7 +727,7 @@ static void acSendUplink(void) {
                 __func__,
                 eSend,
                 (unsigned) downlink & 0xFFFF,
-                LMIC.client.txMessageCb
+                (unsigned) sizeof(payload)
                 );
         LMIC_Compliance.eventflags |= LMIC_COMPLIANCE_EVENT_UPLINK_COMPLETE;
         fsmEval();
