@@ -1861,7 +1861,8 @@ static bit_t buildDataFrame (void) {
     // highest importance are the ones in the pendMac buffer.
     int  end = OFF_DAT_OPTS;
 
-    if (LMIC.pendTxPort != 0 && LMIC.pendMacPiggyback && LMIC.pendMacLen != 0) {
+    // Send piggyback data if: !txdata or txport != 0
+    if ((! txdata || LMIC.pendTxPort != 0) && LMIC.pendMacPiggyback && LMIC.pendMacLen != 0) {
         os_copyMem(LMIC.frame + end, LMIC.pendMacData, LMIC.pendMacLen);
         end += LMIC.pendMacLen;
     }

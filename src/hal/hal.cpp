@@ -85,7 +85,7 @@ s1_t hal_getRssiCal (void) {
 // Interrupt handling
 //--------------------
 static constexpr unsigned NUM_DIO_INTERRUPT = 3;
-static_assert(NUM_DIO_INTERRUPT <= NUM_DIO);
+static_assert(NUM_DIO_INTERRUPT <= NUM_DIO, "Number of interrupt-sensitive lines must be less than number of GPIOs");
 static ostime_t interrupt_time[NUM_DIO_INTERRUPT] = {0};
 
 #if !defined(LMIC_USE_INTERRUPTS)
@@ -95,7 +95,7 @@ static void hal_interrupt_init() {
         pinMode(plmic_pins->dio[1], INPUT);
     if (plmic_pins->dio[2] != LMIC_UNUSED_PIN)
         pinMode(plmic_pins->dio[2], INPUT);
-    static_assert(NUM_DIO_INTERRUPT == 3);
+    static_assert(NUM_DIO_INTERRUPT == 3, "Number of interrupt lines must be set to 3");
 }
 
 static bool dio_states[NUM_DIO_INTERRUPT] = {0};
@@ -131,7 +131,7 @@ static void hal_isrPin1() {
     }
 }
 static void hal_isrPin2() {
-    if (interupt_time[2] == 0) {
+    if (interrupt_time[2] == 0) {
         ostime_t now = os_getTime();
         interrupt_time[2] = now ? now : 1;
     }
@@ -139,7 +139,7 @@ static void hal_isrPin2() {
 
 typedef void (*isr_t)();
 static const isr_t interrupt_fns[NUM_DIO_INTERRUPT] = {hal_isrPin0, hal_isrPin1, hal_isrPin2};
-static_assert(NUM_DIO_INTERRUPT == 3);
+static_assert(NUM_DIO_INTERRUPT == 3, "number of interrupts must be 3 for initializing interrupt_fns[]");
 
 static void hal_interrupt_init() {
   for (uint8_t i = 0; i < NUM_DIO_INTERRUPT; ++i) {
