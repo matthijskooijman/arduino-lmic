@@ -2791,6 +2791,11 @@ void LMIC_reset (void) {
     LMIC.adrEnabled   =  FCT_ADREN;
     resetJoinParams();
     LMIC.rxDelay      =  DELAY_DNW1;
+    // LMIC.pendMacLen  =  0;
+    // LMIC.pendMacPiggyback = 0;
+    // LMIC.dn2Ans       = 0;
+    // LMIC.macDlChannelAns = 0;
+    // LMIC.macRxTimingSetupAns = 0;
 #if !defined(DISABLE_PING)
     LMIC.ping.freq    =  FREQ_PING; // defaults for ping
     LMIC.ping.dr      =  DR_PING;   // ditto
