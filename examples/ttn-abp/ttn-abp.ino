@@ -237,7 +237,8 @@ void setup() {
     // frequencies, so be sure to configure the full frequency range of
     // your network here (unless your network autoconfigures them).
     // Setting up channels should happen after LMIC_setSession, as that
-    // configures the minimal channel set.
+    // configures the minimal channel set. The LMIC doesn't let you change
+    // the three basic settings, but we show them here.
     LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
     LMIC_setupChannel(1, 868300000, DR_RANGE_MAP(DR_SF12, DR_SF7B), BAND_CENTI);      // g-band
     LMIC_setupChannel(2, 868500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
@@ -251,12 +252,39 @@ void setup() {
     // devices' ping slots. LMIC does not have an easy way to define set this
     // frequency and support for class B is spotty and untested, so this
     // frequency is not configured here.
-    #elif defined(CFG_us915)
-    // NA-US channels 0-71 are configured automatically
+    #elif defined(CFG_us915) || defined(CFG_au915)
+    // NA-US and AU channels 0-71 are configured automatically
     // but only one group of 8 should (a subband) should be active
     // TTN recommends the second sub band, 1 in a zero based count.
     // https://github.com/TheThingsNetwork/gateway-conf/blob/master/US-global_conf.json
     LMIC_selectSubBand(1);
+    #elif defined(CFG_as923)
+    // Set up the channels used in your country. Only two are defined by default,
+    // and they cannot be changed.  Use BAND_CENTI to indicate 1% duty cycle.
+    // LMIC_setupChannel(0, 923200000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+    // LMIC_setupChannel(1, 923400000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
+
+    // ... extra definitions for channels 2..n here
+    #elif defined(CFG_kr920)
+    // Set up the channels used in your country. Three are defined by default,
+    // and they cannot be changed. Duty cycle doesn't matter, but is conventionally
+    // BAND_MILLI.
+    // LMIC_setupChannel(0, 922100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_MILLI);
+    // LMIC_setupChannel(1, 922300000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_MILLI);
+    // LMIC_setupChannel(2, 922500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_MILLI);
+
+    // ... extra definitions for channels 3..n here.
+    #elif defined(CFG_in866)
+    // Set up the channels used in your country. Three are defined by default,
+    // and they cannot be changed. Duty cycle doesn't matter, but is conventionally
+    // BAND_MILLI.
+    // LMIC_setupChannel(0, 865062500, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_MILLI);
+    // LMIC_setupChannel(1, 865402500, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_MILLI);
+    // LMIC_setupChannel(2, 865985000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_MILLI);
+
+    // ... extra definitions for channels 3..n here.
+    #else
+    # error Region not supported
     #endif
 
     // Disable link check validation
