@@ -1215,6 +1215,7 @@ function uflt12f(rawUflt12)
 
 - HEAD has the following changes:
 
+ - [#570](https://github.com/mcci-catena/arduino-lmic/issue/570) corrects handling of piggy-back MAC responses when sending an `LMIC_sendAlive()` (`OPMODE_POLL`) message.
  - [#524](https://github.com/mcci-catena/arduino-lmic/issue/524) corrects handling of interrupt disable, and slightly refactors the low-level interrupt handling wrappers for clarity. With this change, `radio_irq_handler_v2()` is never called except from the run loop, and so the radio driver need not (and does not) disable interrupts. Version is v3.1.0.20.
  - [#568](https://github.com/mcci-catena/arduino-lmic/issue/568) improves documentation for the radio driver.
  - [#537](https://github.com/mcci-catena/arduino-lmic/pull/537) fixes a compile error in SX1272 support. (Thanks @ricaun.) Version is v3.1.0.10.
