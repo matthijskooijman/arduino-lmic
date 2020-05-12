@@ -889,10 +889,14 @@ scan_mac_cmds(
     uint8_t cmd;
 
     LMIC.pendMacLen = 0;
-    if (port == 0)
+    if (port == 0) {
+        // port zero: mac data is in the normal payload, and there can't be
+        // piggyback mac data.
         LMIC.pendMacPiggyback = 0;
-    else
+    } else {
+        // port is either -1 (no port) or non-zero (piggyback): treat as piggyback.
         LMIC.pendMacPiggyback = 1;
+    }
 
     while( oidx < olen ) {
         bit_t response_fit;
@@ -1861,7 +1865,8 @@ static bit_t buildDataFrame (void) {
     // highest importance are the ones in the pendMac buffer.
     int  end = OFF_DAT_OPTS;
 
-    if (LMIC.pendTxPort != 0 && LMIC.pendMacPiggyback && LMIC.pendMacLen != 0) {
+    // Send piggyback data if: !txdata or txport != 0
+    if ((! txdata || LMIC.pendTxPort != 0) && LMIC.pendMacPiggyback && LMIC.pendMacLen != 0) {
         os_copyMem(LMIC.frame + end, LMIC.pendMacData, LMIC.pendMacLen);
         end += LMIC.pendMacLen;
     }
@@ -2786,6 +2791,11 @@ void LMIC_reset (void) {
     LMIC.adrEnabled   =  FCT_ADREN;
     resetJoinParams();
     LMIC.rxDelay      =  DELAY_DNW1;
+    // LMIC.pendMacLen  =  0;
+    // LMIC.pendMacPiggyback = 0;
+    // LMIC.dn2Ans       = 0;
+    // LMIC.macDlChannelAns = 0;
+    // LMIC.macRxTimingSetupAns = 0;
 #if !defined(DISABLE_PING)
     LMIC.ping.freq    =  FREQ_PING; // defaults for ping
     LMIC.ping.dr      =  DR_PING;   // ditto

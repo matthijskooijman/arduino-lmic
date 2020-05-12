@@ -84,7 +84,9 @@ requires C99 mode to be enabled by default.
 		- [LoRa Nexus by Ideetron](#lora-nexus-by-ideetron)
 - [Example Sketches](#example-sketches)
 - [Timing](#timing)
+	- [Controlling protocol timing](#controlling-protocol-timing)
 	- [`LMIC_setClockError()`](#lmic_setclockerror)
+	- [Interrupts and Arduino system timing](#interrupts-and-arduino-system-timing)
 - [Downlink data rate](#downlink-data-rate)
 - [Encoding Utilities](#encoding-utilities)
 	- [sflt16](#sflt16)
@@ -290,7 +292,7 @@ Configures the library for use with an sx1276 transceiver.
 
 `#define LMIC_USE_INTERRUPTS`
 
-If defined, configures the library to use interrupts for detecting events from the transceiver. If left undefined, the library will poll for events from the transceiver.  See [Timing](#timing) for more info.
+If defined, configures the library to use interrupts for detecting events from the transceiver. If left undefined, the library will poll for events from the transceiver.  See [Timing](#timing) for more info. Be aware that interrupts are not tested or supported on many platforms.
 
 ### Disabling PING
 
@@ -812,32 +814,36 @@ This library provides several examples.
 
 The library is
 responsible for keeping track of time of certain network events, and scheduling
-other events relative to those events. In particular, the library must note
+other events relative to those events. For Class A uplink transmissions, the library must note
 when a packet finishes transmitting, so it can open up the RX1 and RX2
 receive windows at a fixed time after the end of transmission. The library does this
 by watching for rising edges on the DIO0 output of the SX127x, and noting the time.
 
 The library observes and processes rising edges on the pins as part of `os_runloop()` processing.
 This can be configured in one of two ways (see
-[Controlling use of interrupts](#controlling-use-of-interrupts)).
+[Controlling use of interrupts](#controlling-use-of-interrupts)).  See [Interrupts and Arduino system timing](#interrupts-and-arduino-system-timing) for implementation details.
 
-By default, the routine `hal_io_check()`
+By default, the library 
 polls the enabled pins to determine whether an event has occurred. This approach
 allows use of any CPU pin to sense the DIOs, and makes no assumptions about
 interrupts. However, it means that the end-of-transmit event is not observed
-(and time-stamped) until `os_runloop()` is called.
+(and time-stamped) until `os_runloop_once()` is called.
 
 Optionally, you can configure the LMIC library to use interrupts. The
 interrupt handlers capture the time of
-the event. Actual processing is done the next time that `os_runloop()`
+the event. Actual processing is done the next time that `os_runloop_once()`
 is called, using the captured time. However, this requires that the
-DIO pins be wired to Arduino pins that support rising-edge interrupts.
+DIO pins be wired to Arduino pins that support rising-edge interrupts,
+and it may require custom initialization code on your platform to
+hook up the interrupts.
 
-Fortunately, LoRa is a fairly slow protocol and the timing of the
-receive windows is not super critical. To synchronize transmitter and
-receiver, a preamble is first transmitted. Using LoRaWAN, this preamble
-consists of 8 symbols, of which the receiver needs to see 4 symbols to
-lock on. The current implementation tries to enable the receiver for 6
+### Controlling protocol timing
+
+The timing of end-of-transmit interrupts is used to determine when to open the downlink receive window. Because of the considerations above, some inaccuracy in the time stamp for the end-of-transmit interrupt is inevitable.
+
+Fortunately, the timing of the receive windows at the device need not be extremely accurate; the LMIC has to turn on the receiver early enough to capture a downlink
+from the gateway and must leave the receiver on long enough to compensate for timing
+errors due to various inaccuracies. To make it easier for the device to catch downlinks, the gateway first transmits a preamble consisting of 8 symbols. The SX127x receiver needs to see at least 4 symbols to detect a message. The Arduino LMIC tries to enable the receiver for 6
 symbol times slightly before the start of the receive window.
 
 The HAL bases all timing on the Arduino `micros()` timer, which has a platform-specific
@@ -885,6 +891,20 @@ Setting a high clock error causes the RX windows to be opened earlier than it ot
 For a variety of reasons, the LMIC normally ignores clock errors greater than 4000 ppm (0.4%). The compile-time flag `LMIC_ENABLE_arbitrary_clock_error` can remove this limit. To do this, define it to a non-zero value.
 
 This clock error is not reset by `LMIC_reset()`.
+
+### Interrupts and Arduino system timing
+
+The IBM LMIC used as the basis for this code disables interrupts while the radio driver is active, to prevent reentrancy via `radio_irq_handler()` at unexpected moments. It uses `os_getTime()`, and assumes that `os_getTime()` still works when interrupts were disabled. This causes problems on Arduino platforms. Most board support packages use interrupts to advance `millis()` and `micros()`, and with these BSPs, `millis()` and `micros()` return incorrect values while interrupts are disabled. Although some BSPs (like the ones provided by MCCI) provide real time correctly while interrupts are disabled, this is not portable. It's not practical to make such changes in every BSP.
+
+To avoid this, the LMIC processes events in several steps; these steps ensure that `radio_irq_handler_v2()` is only called at predictable times.
+
+1. If interrupts are enabled via `LMIC_USE_INTERRUPTS`, hardware interrupts catch the time of the interrupt and record that the interrupt occurred. These routines rely on hardware edge-sensitive interrupts. If your hardware interrupts are level-sensitive, you must mask the interrupt somehow at the ISR. You can't use SPI routines to talk to the radio, because this may leave the SPI system and the radio in undefined states. In this configuration, `hal_io_pollIRQs()` exists but is a no-op.
+
+2. If interrupts are not enabled via `LMIC_USE_INTERRUPTS`, the digital I/O lines are polled every so often by calling the routine `hal_io_pollIRQs()`. This routine watches for edges on the relevant digital I/O lines, and records the time of transition.
+
+3. The LMIC `os_runloop_once()` routine calls `hal_processPendingIRQs()`. This routine uses the timestamps captured by the hardware ISRs and `hal_io_pollIRQs()` to invoke `radio_irq_hander_v2()` with the appropriate information.  `hal_processPendingIRQs()` in turn calls `hal_io_pollIRQs()` (in case interrupts are not configured).
+
+4. For compatibility with older versions of the Arduino LMIC, `hal_enableIRQs()` also calls `hal_io_pollIRQs()` when enabling interrupts. However, it does not dispatch the interrupts to `radio_irq_handler_v2()`; this must be done by a subsequent call to `hal_processPendingIRQs()`.
 
 ## Downlink data rate
 
@@ -1195,6 +1215,9 @@ function uflt12f(rawUflt12)
 
 - HEAD has the following changes:
 
+ - [#570](https://github.com/mcci-catena/arduino-lmic/issue/570) corrects handling of piggy-back MAC responses when sending an `LMIC_sendAlive()` (`OPMODE_POLL`) message.
+ - [#524](https://github.com/mcci-catena/arduino-lmic/issue/524) corrects handling of interrupt disable, and slightly refactors the low-level interrupt handling wrappers for clarity. With this change, `radio_irq_handler_v2()` is never called except from the run loop, and so the radio driver need not (and does not) disable interrupts. Version is v3.1.0.20.
+ - [#568](https://github.com/mcci-catena/arduino-lmic/issue/568) improves documentation for the radio driver.
  - [#537](https://github.com/mcci-catena/arduino-lmic/pull/537) fixes a compile error in SX1272 support. (Thanks @ricaun.) Version is v3.1.0.10.
 
 - v3.1.0 officially adopts the changes from v3.0.99. There were dozens of changes; check the GitHub issue logs and change logs. This was a breaking release (due to changes in data layout in the LMIC structure; the structure is accessed by apps).
