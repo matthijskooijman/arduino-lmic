@@ -139,23 +139,221 @@ void setup() {
   // initialize runtime env
   os_init();
 
-  // Set up these settings once, and use them for both TX and RX
-
 #if defined(CFG_eu868)
   // Use a frequency in the g3 which allows 10% duty cycling.
   LMIC.freq = 869525000;
-#elif defined(CFG_us915)
-  LMIC.freq = 902300000;
-#else
-  error Region not supported!
-#endif
-
+  // Use a medium spread factor. This can be increased up to SF12 for
+  // better range, but then, the interval should be (significantly)
+  // raised to comply with duty cycle limits as well.
+  LMIC.datarate = DR_SF9;
   // Maximum TX power
   LMIC.txpow = 27;
-  // Use a medium spread factor. This can be increased up to SF12 for
-  // better range, but then the interval should be (significantly)
-  // lowered to comply with duty cycle limits as well.
-  LMIC.datarate = DR_SF9;
+#elif defined(CFG_us915)
+  // make it easier for test, by pull the parameters up to the top of the
+  // block. Ideally, we'd use the serial port to drive this; or have
+  // a voting protocol where one side is elected the controller and
+  // guides the responder through all the channels, powers, ramps
+  // the transmit power from min to max, and measures the RSSI and SNR.
+  // Even more amazing would be a scheme where the controller could
+  // handle multiple nodes; in that case we'd have a way to do
+  // production test and qualification. However, using an RWC5020A
+  // is a much better use of development time.
+
+  // set fDownlink true to use a downlink channel; false
+  // to use an uplink channel. Generally speaking, uplink
+  // is more interesting, because you can prove that gateways
+  // *should* be able to hear you.
+  const static bool fDownlink = false;
+
+  // the downlink channel to be used.
+  const static uint8_t kDownlinkChannel = 3;
+
+  // the uplink channel to be used.
+  const static uint8_t kUplinkChannel = 8 + 3;
+
+  // this is automatically set to the proper bandwidth in kHz,
+  // based on the selected channel.
+  uint32_t uBandwidth;
+
+  if (! fDownlink)
+        {
+        if (kUplinkChannel < 64)
+                {
+                LMIC.freq = US915_125kHz_UPFBASE +
+                            kUplinkChannel * US915_125kHz_UPFSTEP;
+                uBandwidth = 125;
+                }
+        else
+                {
+                LMIC.freq = US915_500kHz_UPFBASE +
+                            (kUplinkChannel - 64) * US915_500kHz_UPFSTEP;
+                uBandwidth = 500;
+                }
+        }
+  else
+        {
+        // downlink channel
+        LMIC.freq = US915_500kHz_DNFBASE +
+                    kDownlinkChannel * US915_500kHz_DNFSTEP;
+        uBandwidth = 500;
+        }
+
+  // Use a suitable spreading factor
+  if (uBandwidth < 500)
+        LMIC.datarate = US915_DR_SF7;         // DR4
+  else
+        LMIC.datarate = US915_DR_SF12CR;      // DR8
+
+  // default tx power for US: 21 dBm
+  LMIC.txpow = 21;
+#elif defined(CFG_au915)
+  // make it easier for test, by pull the parameters up to the top of the
+  // block. Ideally, we'd use the serial port to drive this; or have
+  // a voting protocol where one side is elected the controller and
+  // guides the responder through all the channels, powers, ramps
+  // the transmit power from min to max, and measures the RSSI and SNR.
+  // Even more amazing would be a scheme where the controller could
+  // handle multiple nodes; in that case we'd have a way to do
+  // production test and qualification. However, using an RWC5020A
+  // is a much better use of development time.
+
+  // set fDownlink true to use a downlink channel; false
+  // to use an uplink channel. Generally speaking, uplink
+  // is more interesting, because you can prove that gateways
+  // *should* be able to hear you.
+  const static bool fDownlink = false;
+
+  // the downlink channel to be used.
+  const static uint8_t kDownlinkChannel = 3;
+
+  // the uplink channel to be used.
+  const static uint8_t kUplinkChannel = 8 + 3;
+
+  // this is automatically set to the proper bandwidth in kHz,
+  // based on the selected channel.
+  uint32_t uBandwidth;
+
+  if (! fDownlink)
+        {
+        if (kUplinkChannel < 64)
+                {
+                LMIC.freq = AU915_125kHz_UPFBASE +
+                            kUplinkChannel * AU915_125kHz_UPFSTEP;
+                uBandwidth = 125;
+                }
+        else
+                {
+                LMIC.freq = AU915_500kHz_UPFBASE +
+                            (kUplinkChannel - 64) * AU915_500kHz_UPFSTEP;
+                uBandwidth = 500;
+                }
+        }
+  else
+        {
+        // downlink channel
+        LMIC.freq = AU915_500kHz_DNFBASE +
+                    kDownlinkChannel * AU915_500kHz_DNFSTEP;
+        uBandwidth = 500;
+        }
+
+  // Use a suitable spreading factor
+  if (uBandwidth < 500)
+        LMIC.datarate = AU915_DR_SF7;         // DR4
+  else
+        LMIC.datarate = AU915_DR_SF12CR;      // DR8
+
+  // default tx power for AU: 30 dBm
+  LMIC.txpow = 30;
+#elif defined(CFG_as923)
+// make it easier for test, by pull the parameters up to the top of the
+// block. Ideally, we'd use the serial port to drive this; or have
+// a voting protocol where one side is elected the controller and
+// guides the responder through all the channels, powers, ramps
+// the transmit power from min to max, and measures the RSSI and SNR.
+// Even more amazing would be a scheme where the controller could
+// handle multiple nodes; in that case we'd have a way to do
+// production test and qualification. However, using an RWC5020A
+// is a much better use of development time.
+        const static uint8_t kChannel = 0;
+        uint32_t uBandwidth;
+
+        LMIC.freq = AS923_F1 + kChannel * 200000;
+        uBandwidth = 125;
+
+        // Use a suitable spreading factor
+        if (uBandwidth == 125)
+                LMIC.datarate = AS923_DR_SF7;         // DR7
+        else
+                LMIC.datarate = AS923_DR_SF7B;        // DR8
+
+        // default tx power for AS: 21 dBm
+        LMIC.txpow = 16;
+
+        if (LMIC_COUNTRY_CODE == LMIC_COUNTRY_CODE_JP)
+                {
+                LMIC.lbt_ticks = us2osticks(AS923JP_LBT_US);
+                LMIC.lbt_dbmax = AS923JP_LBT_DB_MAX;
+                }
+#elif defined(CFG_kr920)
+// make it easier for test, by pull the parameters up to the top of the
+// block. Ideally, we'd use the serial port to drive this; or have
+// a voting protocol where one side is elected the controller and
+// guides the responder through all the channels, powers, ramps
+// the transmit power from min to max, and measures the RSSI and SNR.
+// Even more amazing would be a scheme where the controller could
+// handle multiple nodes; in that case we'd have a way to do
+// production test and qualification. However, using an RWC5020A
+// is a much better use of development time.
+        const static uint8_t kChannel = 0;
+        uint32_t uBandwidth;
+
+        LMIC.freq = KR920_F1 + kChannel * 200000;
+        uBandwidth = 125;
+
+        LMIC.datarate = KR920_DR_SF7;         // DR7
+        // default tx power for KR: 14 dBm
+        LMIC.txpow = KR920_TX_EIRP_MAX_DBM;
+        if (LMIC.freq < KR920_F14DBM)
+          LMIC.txpow = KR920_TX_EIRP_MAX_DBM_LOW;
+
+        LMIC.lbt_ticks = us2osticks(KR920_LBT_US);
+        LMIC.lbt_dbmax = KR920_LBT_DB_MAX;
+#elif defined(CFG_in866)
+// make it easier for test, by pull the parameters up to the top of the
+// block. Ideally, we'd use the serial port to drive this; or have
+// a voting protocol where one side is elected the controller and
+// guides the responder through all the channels, powers, ramps
+// the transmit power from min to max, and measures the RSSI and SNR.
+// Even more amazing would be a scheme where the controller could
+// handle multiple nodes; in that case we'd have a way to do
+// production test and qualification. However, using an RWC5020A
+// is a much better use of development time.
+        const static uint8_t kChannel = 0;
+        uint32_t uBandwidth;
+
+        LMIC.freq = IN866_F1 + kChannel * 200000;
+        uBandwidth = 125;
+
+        LMIC.datarate = IN866_DR_SF7;         // DR7
+        // default tx power for IN: 30 dBm
+        LMIC.txpow = IN866_TX_EIRP_MAX_DBM;
+#else
+# error Unsupported LMIC regional configuration.
+#endif
+
+
+  // disable RX IQ inversion
+  LMIC.noRXIQinversion = true;
+
+  // This sets CR 4/5, BW125 (except for EU/AS923 DR_SF7B, which uses BW250)
+  LMIC.rps = updr2rps(LMIC.datarate);
+
+  Serial.print("Frequency: "); Serial.print(LMIC.freq / 1000000);
+            Serial.print("."); Serial.print((LMIC.freq / 100000) % 10);
+            Serial.print("MHz");
+  Serial.print("  LMIC.datarate: "); Serial.print(LMIC.datarate);
+  Serial.print("  LMIC.txpow: "); Serial.println(LMIC.txpow);
+
   // This sets CR 4/5, BW125 (except for DR_SF7B, which uses BW250)
   LMIC.rps = updr2rps(LMIC.datarate);
 
