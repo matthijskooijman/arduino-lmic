@@ -1,3 +1,5 @@
+The original distribution from IBM includes the following notice as README.txt.
+
 DISCLAIMER:
 Please note that the software is provided AS IS and we cannot
 provide support for optimizations, adaptations, integration,
