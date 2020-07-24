@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<c:Diagram
+xmlns:c="http://www.cadifra.com/schema/1.0"
+xmlns:c1v3="http://www.cadifra.com/schema/1.3"
+ProductVersion="1.3.3">
+
+<Page id="r1"
+Size="1"
+Width="21590"
+Height="27940"
+Landscape="1"
+Rows="1"
+Columns="1"
+Margins="1016 1016 1016 1016"
+CutGlueMargins="1016 1016 1016 1016"
+Scale="1"/>
+
+<DiagramType id="r2"
+TypeValue="2"/>
+
+<Style id="r3">
+<dir n="Base" Typeface="arial" Size="11" Bold="0">
+<dir n="Class Diagram">
+<dir n="Class" Bold="0">
+<dir n="Attached Text"/>
+<dir n="Header" Bold="1"/>
+</dir>
+</dir>
+<dir n="Free Text" Size="10" Bold="0"/>
+<dir n="Object Diagram">
+<dir n="Link" Bold="1"/>
+<dir n="Object" Bold="0">
+<dir n="Header" Bold="1"/>
+</dir>
+<dir n="Role" Bold="0"/>
+</dir>
+</dir>
+</Style>
+
+<Object id="r4"
+Pos="7700 -2700"
+Size="2000 1000">
+<Text>LMIC</Text>
+</Object>
+
+<Object id="r5"
+Pos="10600 -6600"
+Size="2000 1000">
+<Text>Radio</Text>
+</Object>
+
+<Link id="r6">
+<End id="r7"
+Pos="9300 -3700"
+Object="r4"
+Type="2"/>
+<Segment id="r8"
+Ends="r7 r9"
+Oblique="1"/>
+<End id="r9"
+Pos="11500 -6600"
+Object="r5"
+Type="1"/>
+</Link>
+
+<Object id="r10"
+Pos="10600 -9200"
+Size="2000 1000">
+<Text>Chip</Text>
+</Object>
+
+<Link id="r11">
+<End id="r12"
+Pos="11600 -7600"
+Object="r5"
+Type="1"/>
+<Segment id="r13"
+Ends="r12 r14"/>
+<End id="r14"
+Pos="11600 -9200"
+Object="r10"
+Type="1"
+Traversed="1"/>
+</Link>
+
+<FreeText id="r15"
+Pos="13600 -6900"
+Origin="1">
+<Text>Radio layer just does what it's told.<p/>
+It's dumb. "Send these bytes" or "start listening"</Text>
+</FreeText>
+
+<FreeText id="r16"
+Pos="13800 -9500"
+Origin="1">
+<Text>Hardware: SX1276</Text>
+</FreeText>
+
+<Object id="r17"
+Pos="6300 -6600"
+Size="3200 1000">
+<Text>Secure Element</Text>
+</Object>
+
+<Link id="r18">
+<End id="r19"
+Pos="8600 -3700"
+Object="r4"
+Type="1"/>
+<Segment id="r20"
+Ends="r19 r21"
+Oblique="1"/>
+<End id="r21"
+Pos="7900 -6600"
+Object="r17"
+Type="1"/>
+</Link>
+
+<Object id="r22"
+Pos="2300 -6600"
+Size="3200 1000">
+<Text>AES Decrypt</Text>
+</Object>
+
+<Link id="r23">
+<End id="r24"
+Pos="8100 -3700"
+Object="r4"
+Type="1"/>
+<Segment id="r25"
+Ends="r24 r26"
+Oblique="1"/>
+<End id="r26"
+Pos="3900 -6600"
+Object="r22"
+Type="1"/>
+</Link>
+
+</c:Diagram>

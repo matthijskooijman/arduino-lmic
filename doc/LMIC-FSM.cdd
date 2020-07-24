@@ -1,0 +1,802 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<c:Diagram
+xmlns:c="http://www.cadifra.com/schema/1.0"
+xmlns:c1v3="http://www.cadifra.com/schema/1.3"
+ProductVersion="1.3.3">
+
+<Page id="r1"
+Size="8"
+Width="29700"
+Height="42000"
+Landscape="1"
+Rows="1"
+Columns="1"
+Margins="1016 1016 1016 1016"
+CutGlueMargins="1016 1016 1016 1016"
+Scale="1"/>
+
+<DiagramType id="r2"
+TypeValue="5"/>
+
+<InitialState id="r3"
+Pos="9000 -300"/>
+
+<Style id="r4">
+<dir n="Base" Typeface="arial" Size="11" Bold="0">
+<dir n="Free Text" Size="10" Bold="0"/>
+<dir n="Note" Size="9" Bold="0"/>
+<dir n="State Diagram">
+<dir n="State" Bold="0">
+<dir n="Compartment" Size="8"/>
+<dir n="Header" Bold="1"/>
+</dir>
+<dir n="Transition" Bold="0"/>
+</dir>
+</dir>
+<c1v3:ElementStyle Name="Big box" FillColor="0xF0F0F0"/>
+<c1v3:ElementStyle Name="State" FillColor="0xFFFFF0"/>
+</Style>
+
+<State id="r5"
+Pos="8300 -1700"
+Size="2000 1000"
+c1v3:ElementStyle="State">
+<Text>Initialize</Text>
+</State>
+
+<Transition id="r6">
+<End id="r7"
+Pos="9200 -700"
+State="r3"
+Type="1"/>
+<Segment id="r8">
+<Anchor id="r26"
+Pos="9200 -1100">
+<FreeText id="r27"
+Pos="9900 -900"
+Origin="1">
+<Text>LMIC_init()</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<End id="r9"
+Pos="9200 -1700"
+State="r5"
+Type="2"/>
+</Transition>
+
+<State id="r10"
+Pos="8200 -4000"
+Size="2000 1000"
+c1v3:ElementStyle="State">
+<Text>Idle</Text>
+</State>
+
+<Transition id="r11">
+<End id="r12"
+Pos="9200 -2700"
+State="r5"
+Type="1"/>
+<Segment id="r13"/>
+<End id="r14"
+Pos="9200 -4000"
+State="r10"
+Type="2"/>
+</Transition>
+
+<Note id="r15"
+Pos="17700 -1100"
+Size="4500 1800">
+<Text>LMIC has code for class A, and class B devices. But nobody uses class B</Text>
+</Note>
+
+<Transition id="r20">
+<End id="r21"
+Pos="9000 -5000"
+State="r10"
+Type="1"/>
+<Segment id="r22">
+<Anchor id="r24"
+Pos="9000 -5200">
+<FreeText id="r25"
+Pos="8832 -5300"
+Origin="2">
+<Text>LMIC_sendWithCallback() &amp;&amp;<p/>
+deviceAddr != 0</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<End id="r23"
+Pos="9000 -8400"
+State="r87"
+Type="2"/>
+</Transition>
+
+<State id="r28"
+Pos="1400 -6900"
+Size="18200 19700"
+Large="1"
+c1v3:ElementStyle="Big box">
+<Text>Normal Class A</Text>
+<State id="r16"
+Pos="8000 -11900"
+Size="2000 1000"
+c1v3:ElementStyle="State">
+<Text>Transmit</Text>
+</State>
+<State id="r17"
+Pos="8000 -15400"
+Size="2000 1000"
+c1v3:ElementStyle="State">
+<Text>RX1</Text>
+</State>
+<State id="r18"
+Pos="8000 -18900"
+Size="2000 1000"
+c1v3:ElementStyle="State">
+<Text>RX2</Text>
+</State>
+<State id="r19"
+Pos="7600 -10300"
+Size="3200 1000"
+c1v3:ElementStyle="State">
+<Text>Prepare to send</Text>
+</State>
+<State id="r58"
+Pos="7700 -13500"
+Size="2600 1000"
+c1v3:ElementStyle="State">
+<Text>Wait for RX1</Text>
+</State>
+<State id="r67"
+Pos="7700 -17300"
+Size="2600 1000"
+c1v3:ElementStyle="State">
+<Text>Wait for RX2</Text>
+</State>
+<State id="r72"
+Pos="6800 -21100"
+Size="2600 1000"
+c1v3:ElementStyle="State">
+<Text>TX complete</Text>
+</State>
+<State id="r87"
+Pos="7700 -8400"
+Size="2900 1000"
+c1v3:ElementStyle="State">
+<Text>Prepare frame</Text>
+</State>
+<State id="r92"
+Pos="12500 -9300"
+Size="3200 1100"
+c1v3:ElementStyle="State">
+<Text>Prepare<p/>
+MAC frame</Text>
+</State>
+<State id="r99"
+Pos="10300 -20900"
+Size="2500 2200"
+c1v3:ElementStyle="State">
+<Text>Post RX</Text>
+<Compartment id="r141"
+Pos="10300 -21900"
+Size="2500 1200">
+<Text>If valid application message, deliver to app</Text>
+</Compartment>
+</State>
+</State>
+
+<Transition id="r29">
+<End id="r30"
+Pos="11500 -6900"
+State="r28"
+Type="1"/>
+<Segment id="r31"/>
+<Join id="r32"
+Pos="11500 -3200"/>
+<Segment id="r33">
+<Anchor id="r37"
+Pos="10800 -3200">
+<FreeText id="r38"
+Pos="10000 -3100"
+Origin="4">
+<Text>LMIC_reset()</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<Join id="r34"
+Pos="9700 -3200"/>
+<Segment id="r35"/>
+<End id="r36"
+Pos="9700 -4000"
+State="r10"
+Type="2"/>
+</Transition>
+
+<Transition id="r39">
+<End id="r40"
+Pos="9100 -11300"
+State="r19"
+Type="1"/>
+<Segment id="r41">
+<Anchor id="r43"
+Pos="9100 -11500">
+<FreeText id="r44"
+Pos="8005 -11600"
+Origin="2">
+<Text>Internally driven based<p/>
+ on when it's OK to send.</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<End id="r42"
+Pos="9100 -11900"
+State="r16"
+Type="2"/>
+</Transition>
+
+<Transition id="r45">
+<End id="r46"
+Pos="9000 -16400"
+State="r17"
+Type="1"/>
+<Segment id="r47">
+<Anchor id="r56"
+Pos="9000 -16900">
+<FreeText id="r57"
+Pos="8888 -17046"
+Origin="3">
+<Text>No downlink received</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<End id="r48"
+Pos="9000 -17300"
+State="r67"
+Type="2"/>
+</Transition>
+
+<Transition id="r49">
+<End id="r116"
+Pos="6800 -21700"
+State="r72"
+Type="1"/>
+<Segment id="r50">
+<Anchor id="r137"
+Pos="4200 -21700">
+<FreeText id="r138"
+Pos="3500 -21854"
+Origin="1">
+<Text>No Retrans;<p/>
+txDone()</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<Join id="r51"
+Pos="2800 -21700"/>
+<Segment id="r52"/>
+<Join id="r53"
+Pos="2800 -4400"/>
+<Segment id="r54"/>
+<End id="r55"
+Pos="8200 -4400"
+State="r10"
+Type="2"/>
+</Transition>
+
+<Transition id="r59">
+<End id="r60"
+Pos="9000 -12900"
+State="r16"
+Type="1"/>
+<Segment id="r61"/>
+<End id="r62"
+Pos="9000 -13500"
+State="r58"
+Type="2"/>
+</Transition>
+
+<Transition id="r63">
+<End id="r64"
+Pos="9000 -14500"
+State="r58"
+Type="1"/>
+<Segment id="r65"/>
+<End id="r66"
+Pos="9000 -15400"
+State="r17"
+Type="2"/>
+</Transition>
+
+<Transition id="r68">
+<End id="r69"
+Pos="9000 -18300"
+State="r67"
+Type="1"/>
+<Segment id="r70"/>
+<End id="r71"
+Pos="9000 -18900"
+State="r18"
+Type="2"/>
+</Transition>
+
+<Transition id="r73">
+<End id="r74"
+Pos="8600 -19900"
+State="r18"
+Type="1"/>
+<Segment id="r75"
+Oblique="1">
+<Anchor id="r142"
+Pos="8215.3846153846171 -20476.923076923078">
+<FreeText id="r143"
+Pos="8315 -20877"
+Origin="3">
+<Text>no downlink<p/>
+received</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<End id="r76"
+Pos="7800 -21100"
+State="r72"
+Type="2"/>
+</Transition>
+
+<Transition id="r77">
+<End id="r78"
+Pos="10000 -15900"
+State="r17"
+Type="1"/>
+<Segment id="r79">
+<Anchor id="r85"
+Pos="10500 -15900">
+<FreeText id="r86"
+Pos="10500 -15700"
+Origin="4">
+<Text>Downlink received</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<Join id="r80"
+Pos="14300 -15900"/>
+<Segment id="r81"/>
+<Join id="r82"
+Pos="14300 -21200"/>
+<Segment id="r83"/>
+<End id="r84"
+Pos="12800 -21200"
+State="r99"
+Type="2"/>
+</Transition>
+
+<Transition id="r88">
+<End id="r89"
+Pos="9100 -9400"
+State="r87"
+Type="1"/>
+<Segment id="r90"/>
+<End id="r91"
+Pos="9100 -10300"
+State="r19"
+Type="2"/>
+</Transition>
+
+<Transition id="r93">
+<End id="r94"
+Pos="12500 -9800"
+State="r92"
+Type="1"/>
+<Segment id="r95"/>
+<Join id="r96"
+Pos="9900 -9800"/>
+<Segment id="r97"/>
+<End id="r98"
+Pos="9900 -10300"
+State="r19"
+Type="2"/>
+</Transition>
+
+<Transition id="r100">
+<End id="r101"
+Pos="9800 -19900"
+State="r18"
+Type="1"/>
+<Segment id="r102"
+Oblique="1">
+<Anchor id="r114"
+Pos="9973.3196310692219 -20196.606194311611">
+<FreeText id="r115"
+Pos="10074 -20096"
+Origin="4">
+<Text>Downlink received</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<End id="r103"
+Pos="10400 -20926.794919243112"
+State="r99"
+Type="2"/>
+</Transition>
+
+<Transition id="r104">
+<End id="r105"
+Pos="11700 -23100"
+State="r99"
+Type="1"/>
+<Segment id="r106"/>
+<Join id="r107"
+Pos="11700 -23600"/>
+<Segment id="r108">
+<Anchor id="r139"
+Pos="13400 -23600">
+<FreeText id="r140"
+Pos="13400 -23754"
+Origin="1">
+<Text>txDone()</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<Join id="r109"
+Pos="18400 -23600"/>
+<Segment id="r110"/>
+<Join id="r111"
+Pos="18400 -4700"/>
+<Segment id="r112"/>
+<End id="r113"
+Pos="10200 -4700"
+State="r10"
+Type="2"/>
+</Transition>
+
+<Transition id="r117">
+<End id="r118"
+Pos="12800 -21700"
+State="r99"
+Type="1"/>
+<Segment id="r119">
+<Anchor id="r125"
+Pos="13700 -21700">
+<FreeText id="r126"
+Pos="13300 -21754"
+Origin="1">
+<Text>MAC downlink needs<p/>
+reply; txDone()</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<Join id="r120"
+Pos="16800 -21700"/>
+<Segment id="r121"/>
+<Join id="r122"
+Pos="16800 -9800"/>
+<Segment id="r123"/>
+<End id="r124"
+Pos="15700 -9800"
+State="r92"
+Type="2"/>
+</Transition>
+
+<Transition id="r127">
+<End id="r128"
+Pos="6800 -21300"
+State="r72"
+Type="1"/>
+<Segment id="r129">
+<Anchor id="r135"
+Pos="4400 -21300">
+<FreeText id="r136"
+Pos="4100 -21200"
+Origin="4">
+<Text>Retransmit<p/>
+needed</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<Join id="r130"
+Pos="3300 -21300"/>
+<Segment id="r131"/>
+<Join id="r132"
+Pos="3300 -10800"/>
+<Segment id="r133"/>
+<End id="r134"
+Pos="7600 -10800"
+State="r19"
+Type="2"/>
+</Transition>
+
+<Transition id="r149">
+<End id="r150"
+Pos="28200 -9700"
+State="r144"
+Type="1"/>
+<Segment id="r151"/>
+<End id="r152"
+Pos="28200 -12500"
+State="r145"
+Type="2"/>
+</Transition>
+
+<Transition id="r153">
+<End id="r154"
+Pos="28200 -13500"
+State="r145"
+Type="1"/>
+<Segment id="r155"/>
+<End id="r156"
+Pos="28200 -14100"
+State="r146"
+Type="2"/>
+</Transition>
+
+<Transition id="r157">
+<End id="r158"
+Pos="28200 -15100"
+State="r146"
+Type="1"/>
+<Segment id="r159"/>
+<End id="r160"
+Pos="28200 -15800"
+State="r147"
+Type="2"/>
+</Transition>
+
+<Transition id="r161">
+<End id="r162"
+Pos="28200 -16800"
+State="r147"
+Type="1"/>
+<Segment id="r163"/>
+<End id="r164"
+Pos="28200 -17600"
+State="r148"
+Type="2"/>
+</Transition>
+
+<State id="r165"
+Pos="21300 -6700"
+Size="13700 19700"
+Large="1"
+c1v3:ElementStyle="Big box">
+<Text>Join</Text>
+<State id="r144"
+Pos="26200 -8700"
+Size="4200 1000"
+c1v3:ElementStyle="State">
+<Text>Prepare Join Request</Text>
+</State>
+<State id="r145"
+Pos="26200 -12500"
+Size="4200 1000"
+c1v3:ElementStyle="State">
+<Text>Prepare to send</Text>
+</State>
+<State id="r146"
+Pos="26200 -14100"
+Size="4200 1000"
+c1v3:ElementStyle="State">
+<Text>Transmit</Text>
+</State>
+<State id="r147"
+Pos="26200 -15800"
+Size="4200 1000"
+c1v3:ElementStyle="State">
+<Text>Wait for Join RX1</Text>
+</State>
+<State id="r148"
+Pos="26200 -17600"
+Size="4200 1000"
+c1v3:ElementStyle="State">
+<Text>RX1</Text>
+</State>
+<State id="r166"
+Pos="26200 -19400"
+Size="4200 1000"
+c1v3:ElementStyle="State">
+<Text>Wait for Join RX2</Text>
+</State>
+<State id="r171"
+Pos="26400 -21000"
+Size="4200 1000"
+c1v3:ElementStyle="State">
+<Text>RX2</Text>
+</State>
+<State id="r172"
+Pos="29400 -22800"
+Size="4200 1000"
+c1v3:ElementStyle="State">
+<Text>Process Join Accept</Text>
+</State>
+<State id="r173"
+Pos="23300 -22800"
+Size="4200 1000"
+c1v3:ElementStyle="State">
+<Text>JOIN TX  Complete</Text>
+</State>
+<State id="r212"
+Pos="23300 -24400"
+Size="4200 1000"
+c1v3:ElementStyle="State">
+<Text>JOIN Failed</Text>
+</State>
+</State>
+
+<Transition id="r167">
+<End id="r168"
+Pos="28300 -18600"
+State="r148"
+Type="1"/>
+<Segment id="r169"/>
+<End id="r170"
+Pos="28300 -19400"
+State="r166"
+Type="2"/>
+</Transition>
+
+<Transition id="r174">
+<End id="r175"
+Pos="23300 -23300"
+State="r173"
+Type="1"/>
+<Segment id="r176"/>
+<Join id="r177"
+Pos="22700 -23300"/>
+<Segment id="r178"/>
+<Join id="r179"
+Pos="22700 -9400"/>
+<Segment id="r180"/>
+<End id="r181"
+Pos="26200 -9400"
+State="r144"
+Type="2"/>
+</Transition>
+
+<Transition id="r182">
+<End id="r183"
+Pos="26500 -21973.205080756888"
+State="r171"
+Type="1"/>
+<Segment id="r184"
+Oblique="1"/>
+<End id="r185"
+Pos="25800 -22800"
+State="r173"
+Type="2"/>
+</Transition>
+
+<Transition id="r186">
+<End id="r187"
+Pos="30400 -22000"
+State="r171"
+Type="1"/>
+<Segment id="r188"
+Oblique="1"/>
+<End id="r189"
+Pos="31200 -22800"
+State="r172"
+Type="2"/>
+</Transition>
+
+<Transition id="r190">
+<End id="r191"
+Pos="30400 -18100"
+State="r148"
+Type="1"/>
+<Segment id="r192"/>
+<Join id="r193"
+Pos="31700 -18100"/>
+<Segment id="r194"/>
+<End id="r195"
+Pos="31700 -22800"
+State="r172"
+Type="2"/>
+</Transition>
+
+<Transition id="r196">
+<End id="r197"
+Pos="33600 -23300"
+State="r172"
+Type="1"/>
+<Segment id="r198"/>
+<Join id="r199"
+Pos="36600 -23300"/>
+<Segment id="r200"/>
+<Join id="r201"
+Pos="36600 -3200"/>
+<Segment id="r202"/>
+<Join id="r203"
+Pos="13400 -3200"/>
+<Segment id="r204"
+Oblique="1"/>
+<End id="r205"
+Pos="10000 -8400"
+State="r87"
+Type="2"/>
+</Transition>
+
+<Transition id="r206">
+<End id="r207"
+Pos="10200 -4300"
+State="r10"
+Type="1"/>
+<Segment id="r208"/>
+<Join id="r209"
+Pos="28200 -4300"/>
+<Segment id="r210"/>
+<End id="r211"
+Pos="28200 -8700"
+State="r144"
+Type="2"/>
+</Transition>
+
+<Transition id="r213">
+<End id="r214"
+Pos="25400 -23800"
+State="r173"
+Type="1"/>
+<Segment id="r215"/>
+<End id="r216"
+Pos="25400 -24400"
+State="r212"
+Type="2"/>
+</Transition>
+
+<Transition id="r217">
+<End id="r218"
+Pos="23300 -24900"
+State="r212"
+Type="1"/>
+<Segment id="r219"/>
+<Join id="r220"
+Pos="22300 -24900"/>
+<Segment id="r221"/>
+<Join id="r222"
+Pos="22300 -9000"/>
+<Segment id="r223"/>
+<End id="r224"
+Pos="26200 -9000"
+State="r144"
+Type="2"/>
+</Transition>
+
+<Transition id="r225">
+<End id="r226"
+Pos="24300 -6700"
+State="r165"
+Type="1"/>
+<Segment id="r227">
+<Anchor id="r233"
+Pos="24300 -5900">
+<FreeText id="r234"
+Pos="24500 -5900"
+Origin="1">
+<Text>LMIC_reset()</Text>
+</FreeText>
+</Anchor>
+</Segment>
+<Join id="r228"
+Pos="24300 -3700"/>
+<Segment id="r229"/>
+<Join id="r230"
+Pos="10000 -3700"/>
+<Segment id="r231"/>
+<End id="r232"
+Pos="10000 -4000"
+State="r10"
+Type="2"/>
+</Transition>
+
+<Transition id="r235">
+<End id="r236"
+Pos="28300 -20400"
+State="r166"
+Type="1"/>
+<Segment id="r237"/>
+<End id="r238"
+Pos="28300 -21000"
+State="r171"
+Type="2"/>
+</Transition>
+
+</c:Diagram>
