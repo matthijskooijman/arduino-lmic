@@ -118,6 +118,7 @@
 // #define RegPllHop                                  0x4B // common
 // #define RegTcxo                                    0x58 // common
 #define RegPaDac                                   0x5A // common
+#define SX1276_RegPaDac                            0x4D // not common
 // #define RegPll                                     0x5C // common
 // #define RegPllLowPn                                0x5E // common
 // #define RegFormerTemp                              0x6C // common
@@ -407,7 +408,7 @@ static void configPower () {
     }
     // check board type for BOOST pin
     writeReg(RegPaConfig, (u1_t)(0x80|(pw&0xf)));
-    writeReg(RegPaDac, readReg(RegPaDac)|0x4);
+    writeReg(SX1276_RegPaDac, readReg(SX1276_RegPaDac)|0x4);
 
 #elif CFG_sx1272_radio
     // set PA config (2-17 dBm using PA_BOOST)
