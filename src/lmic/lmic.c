@@ -500,6 +500,11 @@ static void setDrTxpow (u1_t reason, u1_t dr, s1_t pow) {
                         e_.txpow     = pow,
                         e_.prevdr    = LMIC.datarate|DR_PAGE,
                         e_.prevtxpow = LMIC.adrTxPow));
+						
+	// Setting the power in the band makes it effective					
+	LMIC.bands[BAND_CENTI].txpow = pow; 
+	LMIC.bands[BAND_MILLI].txpow = pow; 
+	LMIC.bands[BAND_DECI].txpow = pow; 						
 
     if( pow != KEEP_TXPOW )
         LMIC.adrTxPow = pow;
