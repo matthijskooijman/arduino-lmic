@@ -406,7 +406,11 @@ All reference to `onEvent()` can be suppressed by setting `LMIC_ENABLE_onEvent` 
 
 #### Enabling long messages
 
-To save RAM for simple devices, the LMIC allows message length to be limited to 64 bytes instead of the LoRaWAN standard of 255 bytes max. This saves about 2*192 bytes of RAM. Unfortunately, compliance tests require the full message size. Long messages are enabled by setting `LMIC_ENABLE_long_messages` to 1, or disabled by setting it to zero. This C preprocessor macro is always defined as a post-condition of `#include "config.h"`; if non-zero, the maximum frame size is 255 bytes, and if zero, the maximum frame size is 64 bytes.
+By default, LMIC allows messages up to 255 bytes, as defined in the LoRaWAN standard and required by compliance testing. To save RAM for simple devices, this can be limited using the `LMIC_MAX_FRAME_LENGTH` macro. This macro defines the length of the full frame, the maximum payload size is a bit smaller (and can be read from the `MAX_LEN_PAYLOAD` constant).
+
+This value controls both the TX and RX buffers, so reducing it by 1 saves 2 bytes of RAM. The value should be not be set too small, since that can prevent properly receiving network downlinks (e.g. join accepts or MAC commands). Using `#define LMIC_MAX_FRAME_LENGTH 64` is common and should be big enough for most operation, while saving 384 bytes of RAM.
+
+Originally, this was configured using the `LMIC_ENABLE_long_messages` macro, which is still supported for compatibility. Setting `LMIC_ENABLE_long_messages` to 0 is equivalent to setting `LMIC_MAX_FRAME_LENGTH` to 64.
 
 #### Enabling LMIC event logging calls
 

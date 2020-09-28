@@ -187,9 +187,17 @@
 #endif
 
 // LMIC_ENABLE_long_messages
-// LMIC certification requires that this be enabled.
-#if !defined(LMIC_ENABLE_long_messages)
-# define LMIC_ENABLE_long_messages 1        /* PARAM */
+// LMIC certification requires full-length 255 frames, but to save RAM,
+// a shorter maximum can be set. This controls both RX and TX buffers,
+// so reducing this by 1 saves 2 bytes of RAM.
+#if defined(LMIC_ENABLE_long_messages) && defined(LMIC_MAX_FRAME_LENGTH)
+#error "Use only one of LMIC_ENABLE_long_messages or LMIC_MAX_FRAME_LENGTH"
+#elif defined(LMIC_ENABLE_long_messages) && LMIC_ENABLE_long_messages == 0
+# define LMIC_MAX_FRAME_LENGTH 64
+#elif !defined(LMIC_MAX_FRAME_LENGTH)
+# define LMIC_MAX_FRAME_LENGTH 255
+#elif LMIC_MAX_FRAME_LENGTH > 255
+#error "LMIC_MAX_FRAME_LENGTH cannot be larger than 255"
 #endif
 
 // LMIC_ENABLE_event_logging
