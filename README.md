@@ -329,8 +329,9 @@ The remaining variables are rarely used, but we list them here for completeness.
 
 `#define LMIC_PRINTF_TO SerialLikeObject`
 
-This variable should be set to the name of a `Serial`-like object, used for printing messages. If not defined, `Serial`
-is assumed.
+This variable should be set to the name of a `Serial`-like object (any subclass of Arduino's `Print` class), used for printing messages. If this variable is set, any calls to the standard `printf` function (or more generally all writes to the global `stdout` file descriptor) will redirected to the specified stream.
+
+When this is not defined, `printf` and `stdout` are untouched and their behavior might vary among boards (and could print to somewhere, but also throw away output or crash). So *if* you want to use `printf` or `LMIC_DEBUG_LEVEL`, make sure to also define this.
 
 #### Getting debug from the RF library
 
@@ -338,9 +339,11 @@ is assumed.
 
 This variable determines the amount of debug output to be produced by the library. The default is `0`.
 
-If `LMIC_DEBUG_LEVEL` is zero, no output is produced. If `1`, limited output is produced. If `2`, more extensive
-output is produced.  If non-zero, `printf()` is used, and the Arduino environment must be configured to support it,
-otherwise the sketch will crash at runtime.
+If `LMIC_DEBUG_LEVEL` is zero, no output is produced. If `1`, limited output is produced. If `2`, more extensive output is produced.
+
+Note that debug output will influence the timing of various parts of the library and could introduce timing problems (especially in the RX window timing), so use it carefully.
+
+Debug output is generated using the standard `printf` function, so unless your environment already redirects `printf` / `stdout` somewhere, you should also configure `LIMC_PRINTF_TO`.
 
 #### Selecting the AES library
 
