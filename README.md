@@ -1,3 +1,18 @@
+> :warning: This repository is no longer maintained. The recommended
+> alternative is the [MCCI version of LMIC][MCCI], which is based on
+> this one, but has seen much improvements over the years, has much
+> better documentation and is mostly a drop-in replacement. If you need
+> support for the SX126x, you can consider [Lacuna's port of
+> BasicMAC][BasicMAC], which is based on a parallel development based on
+> the original LMIC. Only when you have very tight constraints on RAM or
+> flash should this version still be considered.
+>
+> See [this post][Announcement] for more details and background.
+
+[MCCI]: https://github.com/mcci-catena/arduino-lmic
+[BasicMAC]: https://github.com/LacunaSpace/basicmac
+[Announcement]: https://github.com/matthijskooijman/arduino-lmic/issues/297
+
 Arduino-LMIC library
 ====================
 This repository contains the IBM LMIC (LoraMAC-in-C) library, slightly
