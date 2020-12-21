@@ -1779,7 +1779,7 @@ static void startScan (void) {
     ASSERT(LMIC.devaddr!=0 && (LMIC.opmode & OP_JOINING)==0);
     if( (LMIC.opmode & OP_SHUTDOWN) != 0 )
         return;
-    // Cancel onging TX/RX transaction
+    // Cancel ongoing TX/RX transaction
     LMIC.txCnt = LMIC.dnConf = LMIC.bcninfo.flags = 0;
     LMIC.opmode = (LMIC.opmode | OP_SCAN) & ~(OP_TXRXPEND);
     setBcnRxParams();
